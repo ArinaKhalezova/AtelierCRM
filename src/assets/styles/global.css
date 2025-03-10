@@ -1,0 +1,49 @@
+/* Глобальные стили */
+:root {
+  --primary-color: #ffccbc; /* Нежно-персиковый */
+  --secondary-color: #ffab91; /* Более насыщенный персиковый */
+  --background-color: #fff3e0; /* Светлый фон */
+  --text-color: #5d4037; /* Темно-коричневый для текста */
+  --border-color: #d7ccc8; /* Светло-коричневый для границ */
+  --hover-color: #ffe0b2; /* Цвет при наведении */
+}
+
+body {
+  font-family: 'Arial', sans-serif;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+h1, h2, h3 {
+  color: var(--text-color);
+}
+
+button {
+  background-color: var(--primary-color);
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  border-radius: 5px;
+  color: var(--text-color);
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: var(--hover-color);
+}
+
+input, select {
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  width: 100%;
+  margin-bottom: 10px;
+}
