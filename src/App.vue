@@ -1,6 +1,6 @@
 <template>
   <div class="app">
-    <nav class="main-nav">
+    <div class="main-nav">
       <router-link to="/" class="nav-logo">
         <img src="./assets/img/logo.svg" alt="atelier" style="width: 130px" />
       </router-link>
@@ -14,11 +14,11 @@
         <router-link to="/settings">Настройки</router-link>
         <router-link to="/data">Данные</router-link>
       </div>
-    </nav>
+    </div>
 
-    <main class="main-content">
+    <div class="main-content">
       <router-view></router-view>
-    </main>
+    </div>
   </div>
 </template>
 
@@ -27,6 +27,7 @@
   min-height: 100vh;
   display: grid;
   grid-template-columns: 1fr 4fr;
+  align-items: start;
 }
 
 .main-nav {
@@ -34,8 +35,8 @@
   padding: 1rem 2rem;
   display: grid;
   grid-template-rows: 1fr 4fr;
-  justify-content: space-between;
-  align-items: center;
+  justify-content: start;
+  height: 100%;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -67,7 +68,6 @@
 }
 
 .main-content {
-  flex: 1;
   padding: 2rem;
 }
 </style>

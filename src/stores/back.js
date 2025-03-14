@@ -5,6 +5,9 @@ const store = createStore({
   state: {
     clients: [],
     jobPositions: [],
+    statuses: [],
+    materialTypes: [],
+
     error: null,
   },
   mutations: {
@@ -14,6 +17,8 @@ const store = createStore({
     RESET_CLIENTS(state) {
       state.clients = [];
     },
+
+    // должности
     SET_JOB_POSITIONS(state, positions) {
       state.jobPositions = positions;
     },
@@ -25,11 +30,37 @@ const store = createStore({
         (p) => p.job_position_id !== id
       );
     },
+    
+    // статусы заказа
+    SET_STATUSES(state, statuses) {
+      state.statuses = statuses;
+    },
+    ADD_STATUS(state, status) {
+      state.statuses.push(status);
+    },
+    DELETE_STATUS(state, id) {
+      state.statuses = state.statuses.filter((p) => p.status_id !== id);
+    },
+
+    // типы материала
+    SET_MATERIAL_TYPES(state, materialTypes) {
+      state.materialTypes = materialTypes;
+    },
+    ADD_MATERIAL_TYPE(state, materialType) {
+      state.materialTypes.push(materialType);
+    },
+    DELETE_MATERIAL_TYPE(state, id) {
+      state.materialTypes = state.materialTypes.filter(
+        (p) => p.material_type_id !== id
+      );
+    },
+
     SET_ERROR(state, error) {
       state.error = error;
     },
   },
   actions: {
+    // должности
     async fetchJobPositions({ commit }) {
       try {
         const response = await api.getJobPositions();
@@ -60,9 +91,76 @@ const store = createStore({
         console.error("Error deleting job position:", error);
       }
     },
+
+    // статусы заказа
+    async fetchStatuses({ commit }) {
+      try {
+        const response = await api.getStatuses();
+        commit("SET_STATUSES", response.data);
+        commit("SET_ERROR", null);
+      } catch (error) {
+        commit("SET_ERROR", "Ошибка при загрузке статусов");
+        console.error("Error fetching statuses:", error);
+      }
+    },
+    async addStatusAction({ commit }, status) {
+      try {
+        const response = await api.addStatus(status);
+        commit("ADD_STATUS", response.data);
+        commit("SET_ERROR", null);
+      } catch (error) {
+        commit("SET_ERROR", "Ошибка при добавлении статуса");
+        console.error("Error adding status:", error);
+      }
+    },
+    async deleteStatusAction({ commit }, id) {
+      try {
+        await api.deleteStatus(id);
+        commit("DELETE_STATUS", id);
+        commit("SET_ERROR", null);
+      } catch (error) {
+        commit("SET_ERROR", "Ошибка при удалении статуса");
+        console.error("Error deleting status:", error);
+      }
+    },
+
+    // типы материала
+    async fetchMaterialTypes({ commit }) {
+      try {
+        const response = await api.getMaterialTypes();
+        commit("SET_MATERIAL_TYPES", response.data);
+        commit("SET_ERROR", null);
+      } catch (error) {
+        commit("SET_ERROR", "Ошибка при загрузке должностей");
+        console.error("Error fetching job positions:", error);
+      }
+    },
+    async addMaterialTypeAction({ commit }, material_type) {
+      try {
+        const response = await api.addMaterialType(material_type);
+        commit("ADD_MATERIAL_TYPE", response.data);
+        commit("SET_ERROR", null);
+      } catch (error) {
+        commit("SET_ERROR", "Ошибка при добавлении типа материала");
+        console.error("Error adding material type:", error);
+      }
+    },
+    async deleteMaterialTypeAction({ commit }, id) {
+      try {
+        await api.deleteMaterialType(id);
+        commit("DELETE_MATERIAL_TYPE", id);
+        commit("SET_ERROR", null);
+      } catch (error) {
+        commit("SET_ERROR", "Ошибка при удалении типа материала");
+        console.error("Error deleting material type:", error);
+      }
+    },
   },
   getters: {
     jobPositions: (state) => state.jobPositions,
+    statuses: (state) => state.statuses,
+    materialTypes: (state) => state.materialTypes,
+
     error: (state) => state.error,
   },
 });
