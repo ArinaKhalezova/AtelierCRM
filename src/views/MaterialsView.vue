@@ -11,13 +11,13 @@
 </template>
 
 <script>
-import MaterialList from '@/components/MaterialList.vue'
+import MaterialList from "@/components/Materials/MaterialList.vue";
 
 export default {
   components: {
-    MaterialList
-  }
-}
+    MaterialList,
+  },
+};
 </script>
 
 <style scoped>

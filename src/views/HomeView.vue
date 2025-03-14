@@ -23,37 +23,54 @@
         <p class="stat-value">{{ executorsCount }}</p>
       </div>
     </div>
+
+    <div class="clients-list">
+      <h3>Список клиентов</h3>
+      <ul>
+        <li v-for="client in clients" :key="client.client_id">
+          {{ client.fullname }} - {{ client.phone_number }}
+        </li>
+      </ul>
+    </div>
   </div>
 </template>
 
-<script>
-import { mapGetters } from 'vuex';
+<script setup>
+import { computed, onMounted, ref } from "vue";
+import { useStore } from "vuex";
+import api from "@/services/api";
 
-export default {
-  computed: {
-    ...mapGetters([
-      'allOrders',
-      'allMaterials',
-      'allExecutors'
-    ]),
-    
-    activeOrdersCount() {
-      return this.allOrders?.filter(order => order.status === 'в процессе').length || 0;
-    },
-    
-    notStartedOrdersCount() {
-      return this.allOrders?.filter(order => order.status === 'взять в работу').length || 0;
-    },
-    
-    materialsCount() {
-      return this.allMaterials?.length || 0;
-    },
-    
-    executorsCount() {
-      return this.allExecutors?.length || 0;
-    }
+const store = useStore();
+
+const clients = ref([]);
+
+const allClients = computed(() => store.getters.allClients);
+const allOrders = computed(() => store.getters.allOrders);
+const allMaterials = computed(() => store.getters.allMaterials);
+const allExecutors = computed(() => store.getters.allExecutors);
+
+const activeOrdersCount = computed(
+  () =>
+    allOrders.value?.filter((order) => order.status === "в процессе").length ||
+    0
+);
+const notStartedOrdersCount = computed(
+  () =>
+    allOrders.value?.filter((order) => order.status === "взять в работу")
+      .length || 0
+);
+const materialsCount = computed(() => allMaterials.value?.length || 0);
+const executorsCount = computed(() => allExecutors.value?.length || 0);
+
+onMounted(async () => {
+  try {
+    const response = await api.getClients();
+    console.log("Clients data:", response.data);
+    clients.value = response.data;
+  } catch (error) {
+    console.error("Ошибка при загрузке клиентов:", error);
   }
-};
+});
 </script>
 
 <style scoped>

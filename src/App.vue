@@ -5,11 +5,14 @@
         <img src="./assets/img/logo.svg" alt="atelier" style="width: 130px" />
       </router-link>
       <div class="nav-links">
+        <router-link to="/">Главная</router-link>
         <router-link to="/orders">Заказы</router-link>
         <router-link to="/materials">Материалы</router-link>
         <router-link to="/supplies">Поставки</router-link>
         <router-link to="/suppliers">Поставщики</router-link>
         <router-link to="/executors">Исполнители</router-link>
+        <router-link to="/settings">Настройки</router-link>
+        <router-link to="/data">Данные</router-link>
       </div>
     </nav>
 
@@ -22,14 +25,15 @@
 <style scoped>
 .app {
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 4fr;
 }
 
 .main-nav {
   background-color: var(--primary-color);
   padding: 1rem 2rem;
-  display: flex;
+  display: grid;
+  grid-template-rows: 1fr 4fr;
   justify-content: space-between;
   align-items: center;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -43,7 +47,7 @@
 
 .nav-links {
   display: flex;
-  gap: 2rem;
+  flex-direction: column;
 }
 
 .nav-links a {

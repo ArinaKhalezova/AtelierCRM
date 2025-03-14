@@ -11,7 +11,7 @@
 </template>
 
 <script>
-import ExecutorList from '@/components/ExecutorList.vue'
+import ExecutorList from '@/components/Executor/ExecutorList.vue'
 
 export default {
   components: {

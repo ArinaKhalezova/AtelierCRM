@@ -11,13 +11,13 @@
 </template>
 
 <script>
-import OrderList from '@/components/OrderList.vue'
+import OrderList from "@/components/Order/OrderList.vue";
 
 export default {
   components: {
-    OrderList
-  }
-}
+    OrderList,
+  },
+};
 </script>
 
 <style scoped>

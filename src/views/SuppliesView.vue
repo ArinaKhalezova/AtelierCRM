@@ -11,12 +11,12 @@
 </template>
 
 <script>
-import SupplyList from '@/components/SupplyList.vue';
+import SupplyList from "@/components/Supply/SupplyList.vue";
 
 export default {
   components: {
-    SupplyList
-  }
+    SupplyList,
+  },
 };
 </script>
 

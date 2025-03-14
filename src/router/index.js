@@ -3,15 +3,17 @@ import HomeView from "../views/HomeView.vue";
 import OrdersView from "../views/OrdersView.vue";
 import MaterialsView from "../views/MaterialsView.vue";
 import ExecutorsView from "../views/ExecutorsView.vue";
-import OrderDetails from "../components/OrderDetails.vue";
-import NewOrder from "../components/NewOrder.vue";
-import NewMaterial from "../components/NewMaterial.vue";
-import NewExecutor from "../components/NewExecutor.vue";
+import OrderDetails from "../components/Order/OrderDetails.vue";
+import NewOrder from "../components/Order/NewOrder.vue";
+import NewMaterial from "../components/Materials/NewMaterial.vue";
+import NewExecutor from "../components/Executor/NewExecutor.vue";
 import SuppliersView from "../views/SuppliersView.vue";
-import NewSupplier from "../components/NewSupplier.vue";
+import NewSupplier from "../components/Supplier/NewSupplier.vue";
 import SuppliesView from "@/views/SuppliesView.vue";
-import NewSupply from "../components/NewSupply.vue";
-import SupplyDetails from "../components/SupplyDetails.vue";
+import NewSupply from "../components/Supply/NewSupply.vue";
+import SupplyDetails from "../components/Supply/SupplyDetails.vue";
+import SettingsView from "@/views/SettingsView.vue";
+import DataView from "@/views/DataView.vue";
 
 const routes = [
   {
@@ -78,6 +80,16 @@ const routes = [
     path: "/supplies/:id",
     name: "supply-details",
     component: SupplyDetails,
+  },
+  {
+    path: "/settings",
+    name: "settings",
+    component: SettingsView,
+  },
+  {
+    path: "/data",
+    name: "data",
+    component: DataView,
   },
 ];
 
