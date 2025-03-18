@@ -77,4 +77,15 @@ export default {
   deleteSupplier(id) {
     return apiClient.delete(`/suppliers/${id}`);
   },
+
+  // Методы для работы с сотрудниками
+  getEmployees() {
+    return apiClient.get("/employees");
+  },
+  addEmployee(employee) {
+    return apiClient.post("/employees", employee);
+  },
+  deleteEmployee(id) {
+    return apiClient.delete(`/employees/${id}`);
+  },
 };

@@ -8,6 +8,7 @@ import machineStates from "./modules/machineStates";
 import paymentMethods from "./modules/paymentMethods";
 import materialTypes from "./modules/materialTypes";
 import suppliers from "./modules/suppliers";
+import employees from "./modules/employees";
 
 export default createStore({
   modules: {
@@ -16,7 +17,8 @@ export default createStore({
     materialTypes,
     paymentMethods,
     machineStates,
-    suppliers
+    suppliers,
+    employees,
   },
 });
 

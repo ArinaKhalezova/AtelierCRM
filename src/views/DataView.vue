@@ -1,6 +1,6 @@
 <template>
   <div class="data-view">
-    <h1>Данные из базы данных</h1>
+    <h1>Таблицы из базы данных</h1>
     <ClientsTable :clients="clients" />
     <JobPositionsTable :jobPositions="jobPositions" />
     <MaterialTypesTable :materialTypes="materialTypes" />
@@ -8,12 +8,12 @@
     <StatusesTable :statuses="statuses" />
     <StatesTable :states="states" />
     <SuppliersTable :suppliers="suppliers" />
+    <EmployeesTable :employees="employees" />
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted } from "vue";
-import api from "@/services/api";
 import { useStore } from "vuex";
 import ClientsTable from "@/components/DataView/ClientsTable.vue";
 import JobPositionsTable from "@/components/DataView/JobPositionsTable.vue";
@@ -22,6 +22,7 @@ import MaterialTypesTable from "@/components/DataView/MaterialTypesTable.vue";
 import PaymentMethodsTable from "@/components/DataView/PaymentMethodsTable.vue";
 import StatesTable from "@/components/DataView/StatesTable.vue";
 import SuppliersTable from "@/components/DataView/SuppliersTable.vue";
+import EmployeesTable from "@/components/DataView/EmployeesTable.vue";
 
 const store = useStore();
 
@@ -32,6 +33,7 @@ const materialTypes = computed(() => store.state.materialTypes);
 const paymentMethods = computed(() => store.state.paymentMethods);
 const states = computed(() => store.state.machineStates);
 const suppliers = computed(() => store.state.suppliers);
+const employees = computed(() => store.state.employees);
 
 onMounted(async () => {
   try {
@@ -41,6 +43,7 @@ onMounted(async () => {
     await store.dispatch("paymentMethods/fetchPaymentMethods");
     await store.dispatch("machineStates/fetchStates");
     await store.dispatch("suppliers/fetchSuppliers");
+    await store.dispatch("employees/fetchEmployees");
   } catch (error) {
     console.error("Ошибка при загрузке данных:", error);
   }

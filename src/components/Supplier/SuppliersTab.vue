@@ -16,7 +16,10 @@
         <p><strong>Телефон:</strong> {{ supplier.phone_number }}</p>
         <p><strong>Адрес:</strong> {{ supplier.address }}</p>
         <p><strong>ИНН:</strong> {{ supplier.inn }}</p>
-        <button @click="deleteSupplier(supplier.supplier_id)" class="delete-button">
+        <button
+          @click="deleteSupplier(supplier.supplier_id)"
+          class="delete-button"
+        >
           Удалить
         </button>
       </div>
@@ -51,7 +54,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { useStore } from "vuex";
-import Modal from "./Modal.vue";
+import Modal from "../Modal.vue";
 
 const store = useStore();
 
@@ -89,7 +92,12 @@ const addSupplier = async () => {
         address: newSupplier.value.address,
         inn: newSupplier.value.inn,
       });
-      newSupplier.value = { org_name: "", phone_number: "", address: "", inn: "" }; // Сброс формы
+      newSupplier.value = {
+        org_name: "",
+        phone_number: "",
+        address: "",
+        inn: "",
+      }; // Сброс формы
       error.value = ""; // Очистка ошибки
       closeSupplierModal(); // Закрытие модального окна
     } catch (err) {

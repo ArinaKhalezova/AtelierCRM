@@ -9,8 +9,8 @@
         <router-link to="/orders">Заказы</router-link>
         <router-link to="/materials">Материалы</router-link>
         <router-link to="/supplies">Поставки</router-link>
-        <router-link to="/executors">Исполнители</router-link>
-        <router-link to="/settings">Настройки</router-link>
+        <router-link to="/employees">Сотрудники</router-link>
+        <router-link to="/settings">Справочник</router-link>
         <router-link to="/data">Данные</router-link>
       </div>
     </div>

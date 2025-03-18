@@ -10,7 +10,10 @@
         <div class="supply-header">
           <div class="supply-info">
             <p><strong>Номер поставки:</strong> {{ supply.supplyNumber }}</p>
-            <p><strong>Поставщик:</strong> {{ getSupplierName(supply.supplierId) }}</p>
+            <p>
+              <strong>Поставщик:</strong>
+              {{ getSupplierName(supply.supplierId) }}
+            </p>
           </div>
           <div class="supply-actions">
             <router-link :to="`/supplies/${supply.id}`" class="details-button">
@@ -30,10 +33,10 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { useStore } from 'vuex';
-import Modal from '../Supplier/Modal.vue'; // Импортируем модальное окно
-import NewSupplyForm from './NewSupplyForm.vue';
+import { ref, computed } from "vue";
+import { useStore } from "vuex";
+import Modal from "../Modal.vue"; // Импортируем модальное окно
+import NewSupplyForm from "./NewSupplyForm.vue";
 
 const store = useStore();
 
@@ -51,7 +54,7 @@ const closeSupplyModal = () => {
 
 const getSupplierName = (supplierId) => {
   const supplier = store.getters.getSupplierById(supplierId);
-  return supplier ? supplier.name : 'Неизвестный поставщик';
+  return supplier ? supplier.name : "Неизвестный поставщик";
 };
 </script>
 

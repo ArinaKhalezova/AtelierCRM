@@ -1,9 +1,9 @@
 <template>
   <DataTable
-    title="Статусы заказа"
-    :headers="['status_id', 'status']"
-    :rows="statuses"
-    keyField="status_id"
+    title="Сотрудники"
+    :headers="['employee_id', 'position_name', 'fullname', 'phone_number', 'email']"
+    :rows="employees"
+    keyField="employee_id"
   />
 </template>
 
@@ -16,5 +16,5 @@ import DataTable from "./DataTable.vue";
 const store = useStore();
 
 // Получаем данные клиентов из Vuex
-const statuses = computed(() => store.state.statuses.statuses);
+const employees = computed(() => store.state.employees.employees);
 </script>
