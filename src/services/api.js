@@ -66,4 +66,15 @@ export default {
   deletePaymentMethod(id) {
     return apiClient.delete(`/payment-methods/${id}`);
   },
+
+  // Методы для работы с поставщиками
+  getSuppliers() {
+    return apiClient.get("/suppliers");
+  },
+  addSupplier(supplier) {
+    return apiClient.post("/suppliers", supplier);
+  },
+  deleteSupplier(id) {
+    return apiClient.delete(`/suppliers/${id}`);
+  },
 };

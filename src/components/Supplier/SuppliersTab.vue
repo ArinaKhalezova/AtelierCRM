@@ -6,12 +6,17 @@
     </button>
 
     <div class="supplier-list">
-      <div v-for="supplier in suppliers" :key="supplier.id" class="supplier-item">
-        <p><strong>Название:</strong> {{ supplier.name }}</p>
-        <p><strong>Телефон:</strong> {{ supplier.phone }}</p>
+      <div v-if="error" class="error-message">{{ error }}</div>
+      <div
+        v-for="supplier in suppliers"
+        :key="supplier.supplier_id"
+        class="supplier-item"
+      >
+        <p><strong>Название:</strong> {{ supplier.org_name }}</p>
+        <p><strong>Телефон:</strong> {{ supplier.phone_number }}</p>
         <p><strong>Адрес:</strong> {{ supplier.address }}</p>
         <p><strong>ИНН:</strong> {{ supplier.inn }}</p>
-        <button @click="deleteSupplier(supplier.id)" class="delete-button">
+        <button @click="deleteSupplier(supplier.supplier_id)" class="delete-button">
           Удалить
         </button>
       </div>
@@ -23,11 +28,11 @@
       <form @submit.prevent="addSupplier">
         <div class="form-group">
           <label>Название организации:</label>
-          <input v-model="newSupplier.name" required />
+          <input v-model="newSupplier.org_name" required />
         </div>
         <div class="form-group">
           <label>Телефон:</label>
-          <input v-model="newSupplier.phone" required />
+          <input v-model="newSupplier.phone_number" required />
         </div>
         <div class="form-group">
           <label>Адрес:</label>
@@ -44,21 +49,13 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { useStore } from 'vuex';
-import Modal from './Modal.vue';
+import { ref, computed, onMounted } from "vue";
+import { useStore } from "vuex";
+import Modal from "./Modal.vue";
 
 const store = useStore();
 
 const isSupplierModalOpen = ref(false);
-const newSupplier = ref({
-  name: '',
-  phone: '',
-  address: '',
-  inn: '',
-});
-
-const suppliers = computed(() => store.getters.allSuppliers);
 
 const openSupplierModal = () => {
   isSupplierModalOpen.value = true;
@@ -68,17 +65,59 @@ const closeSupplierModal = () => {
   isSupplierModalOpen.value = false;
 };
 
-const addSupplier = () => {
-  store.dispatch('addSupplierAction', newSupplier.value);
-  newSupplier.value = { name: '', phone: '', address: '', inn: '' };
-  closeSupplierModal();
-};
+const newSupplier = ref({
+  org_name: "",
+  phone_number: "",
+  address: "",
+  inn: "",
+});
+const error = computed(() => store.state.suppliers.error);
 
-const deleteSupplier = (supplierId) => {
-  if (confirm('Вы уверены, что хотите удалить этого поставщика?')) {
-    store.dispatch('deleteSupplierAction', supplierId);
+const suppliers = computed(() => store.state.suppliers.suppliers);
+
+const addSupplier = async () => {
+  if (
+    newSupplier.value.org_name.trim() &&
+    newSupplier.value.phone_number.trim() &&
+    newSupplier.value.address.trim() &&
+    newSupplier.value.inn.trim()
+  ) {
+    try {
+      await store.dispatch("suppliers/addSupplierAction", {
+        org_name: newSupplier.value.org_name,
+        phone_number: newSupplier.value.phone_number,
+        address: newSupplier.value.address,
+        inn: newSupplier.value.inn,
+      });
+      newSupplier.value = { org_name: "", phone_number: "", address: "", inn: "" }; // Сброс формы
+      error.value = ""; // Очистка ошибки
+      closeSupplierModal(); // Закрытие модального окна
+    } catch (err) {
+      error.value = "Ошибка при добавлении поставщика";
+    }
+  } else {
+    error.value = "Все поля обязательны для заполнения";
   }
 };
+
+const deleteSupplier = async (id) => {
+  if (confirm("Вы уверены, что хотите удалить эту должность?")) {
+    try {
+      await store.dispatch("suppliers/deleteSupplierAction", id);
+      error.value = "";
+    } catch (err) {
+      error.value = "Ошибка при удалении должности";
+    }
+  }
+};
+
+onMounted(async () => {
+  try {
+    await store.dispatch("suppliers/fetchSuppliers");
+  } catch (err) {
+    error.value = "Ошибка при загрузке поставщиков";
+  }
+});
 </script>
 
 <style scoped>

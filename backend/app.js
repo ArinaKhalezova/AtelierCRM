@@ -9,6 +9,8 @@ const statusesRouter = require("./routes/statuses");
 const materialTypesRouter = require("./routes/materialTypes");
 const statesRouter = require("./routes/machineStates");
 const paymentMethodsRouter = require("./routes/paymentMethods");
+const suppliersRouter = require("./routes/suppliers");
+
 
 app.use(cors());
 app.use(express.json());
@@ -19,5 +21,6 @@ app.use("/statuses", statusesRouter);
 app.use("/material-types", materialTypesRouter);
 app.use("/states", statesRouter);
 app.use("/payment-methods", paymentMethodsRouter);
+app.use("/suppliers", suppliersRouter);
 
 module.exports = app;
