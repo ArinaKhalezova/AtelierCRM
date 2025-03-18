@@ -1,3 +1,20 @@
+// import { createStore } from 'vuex';
+// import api from '@/services/api';
+
+// import jobPositions from './modules/jobPositions';
+// import statuses from './modules/statuses';
+// // ...импорт остальных модулей
+
+// export default createStore({
+//   modules: {
+//     jobPositions,
+//     statuses,
+//     materialTypes,
+//     machineStates,
+//     paymentMethods
+//   }
+// });
+
 import { createStore } from "vuex";
 import api from "@/services/api";
 
@@ -7,6 +24,8 @@ const store = createStore({
     jobPositions: [],
     statuses: [],
     materialTypes: [],
+    machine_states: [],
+    paymentMethods: [],
 
     error: null,
   },
@@ -30,7 +49,7 @@ const store = createStore({
         (p) => p.job_position_id !== id
       );
     },
-    
+
     // статусы заказа
     SET_STATUSES(state, statuses) {
       state.statuses = statuses;
@@ -52,6 +71,32 @@ const store = createStore({
     DELETE_MATERIAL_TYPE(state, id) {
       state.materialTypes = state.materialTypes.filter(
         (p) => p.material_type_id !== id
+      );
+    },
+
+    // статусы станков
+    SET_STATES(state, machine_states) {
+      state.machine_states = machine_states;
+    },
+    ADD_STATE(state, machine_state) {
+      state.machine_states.push(machine_state);
+    },
+    DELETE_STATE(state, id) {
+      state.machine_states = state.machine_states.filter(
+        (p) => p.machine_state_id !== id
+      );
+    },
+
+    // методы оплаты
+    SET_PAYMENT_METHODS(state, paymentMethods) {
+      state.paymentMethods = paymentMethods;
+    },
+    ADD_PAYMENT_METHOD(state, paymentMethod) {
+      state.paymentMethods.push(paymentMethod);
+    },
+    DELETE_PAYMENT_METHOD(state, id) {
+      state.paymentMethods = state.paymentMethods.filter(
+        (p) => p.payment_method_id !== id
       );
     },
 
@@ -155,11 +200,77 @@ const store = createStore({
         console.error("Error deleting material type:", error);
       }
     },
+
+    // статусы станков
+    async fetchStates({ commit }) {
+      try {
+        const response = await api.getStates();
+        commit("SET_STATES", response.data);
+        commit("SET_ERROR", null);
+      } catch (error) {
+        commit("SET_ERROR", "Ошибка при загрузке статусов");
+        console.error("Error fetching statuses:", error);
+      }
+    },
+    async addStateAction({ commit }, state) {
+      try {
+        const response = await api.addState(state);
+        commit("ADD_STATE", response.data);
+        commit("SET_ERROR", null);
+      } catch (error) {
+        commit("SET_ERROR", "Ошибка при добавлении статуса");
+        console.error("Error adding status:", error);
+      }
+    },
+    async deleteStateAction({ commit }, id) {
+      try {
+        await api.deleteState(id);
+        commit("DELETE_STATE", id);
+        commit("SET_ERROR", null);
+      } catch (error) {
+        commit("SET_ERROR", "Ошибка при удалении статуса");
+        console.error("Error deleting status:", error);
+      }
+    },
+
+    // статусы станков
+    async fetchPaymentMethods({ commit }) {
+      try {
+        const response = await api.getPaymentMethods();
+        commit("SET_PAYMENT_METHODS", response.data);
+        commit("SET_ERROR", null);
+      } catch (error) {
+        commit("SET_ERROR", "Ошибка при загрузке способов оплаты");
+        console.error("Error fetching payment methods:", error);
+      }
+    },
+    async addPaymentMethodAction({ commit }, payment_method) {
+      try {
+        const response = await api.addPaymentMethod(payment_method);
+        commit("ADD_PAYMENT_METHOD", response.data);
+        commit("SET_ERROR", null);
+      } catch (error) {
+        commit("SET_ERROR", "Ошибка при добавлении способа оплаты");
+        console.error("Error adding payment method:", error);
+      }
+    },
+    async deletePaymentMethodAction({ commit }, id) {
+      try {
+        await api.deletePaymentMethod(id);
+        commit("DELETE_PAYMENT_METHOD", id);
+        commit("SET_ERROR", null);
+      } catch (error) {
+        commit("SET_ERROR", "Ошибка при удалении способа оплаты");
+        console.error("Error deleting payment method:", error);
+      }
+    },
   },
   getters: {
     jobPositions: (state) => state.jobPositions,
     statuses: (state) => state.statuses,
     materialTypes: (state) => state.materialTypes,
+    machine_states: (state) => state.machine_states,
+    paymentMethods: (state) => state.paymentMethods,
 
     error: (state) => state.error,
   },

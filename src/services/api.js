@@ -44,4 +44,26 @@ export default {
   deleteMaterialType(id) {
     return apiClient.delete(`/material-types/${id}`);
   },
+
+  // Методы для работы со статусами станков
+  getStates() {
+    return apiClient.get("/states");
+  },
+  addState(state) {
+    return apiClient.post("/states", state);
+  },
+  deleteState(id) {
+    return apiClient.delete(`/states/${id}`);
+  },
+
+  // Методы для работы с методами оплаты
+  getPaymentMethods() {
+    return apiClient.get("/paymentMethods");
+  },
+  addPaymentMethod(paymentMethod) {
+    return apiClient.post("/paymentMethods", paymentMethod);
+  },
+  deletePaymentMethod(id) {
+    return apiClient.delete(`/paymentMethods/${id}`);
+  },
 };
