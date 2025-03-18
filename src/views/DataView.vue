@@ -11,8 +11,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { computed, onMounted } from "vue";
 import api from "@/services/api";
+import { useStore } from "vuex";
 import ClientsTable from "@/components/DataView/ClientsTable.vue";
 import JobPositionsTable from "@/components/DataView/JobPositionsTable.vue";
 import StatusesTable from "@/components/DataView/StatusesTable.vue";
@@ -20,33 +21,22 @@ import MaterialTypesTable from "@/components/DataView/MaterialTypesTable.vue";
 import PaymentMethodsTable from "@/components/DataView/PaymentMethodsTable.vue";
 import StatesTable from "@/components/DataView/StatesTable.vue";
 
-const clients = ref([]);
-const jobPositions = ref([]);
-const statuses = ref([]);
-const materialTypes = ref([]);
-const states = ref([]);
-const paymentMethods = ref([]);
+const store = useStore();
+
+const clients = computed(() => store.state.clients);
+const jobPositions = computed(() => store.state.jobPositions);
+const statuses = computed(() => store.state.statuses);
+const materialTypes = computed(() => store.state.materialTypes);
+const paymentMethods = computed(() => store.state.paymentMethods);
+const states = computed(() => store.state.machineStates);
 
 onMounted(async () => {
   try {
-    const clientsResponse = await api.getClients();
-    clients.value = clientsResponse.data;
-
-    const positionsResponse = await api.getJobPositions();
-    jobPositions.value = positionsResponse.data;
-
-    const statusesResponse = await api.getStatuses();
-    statuses.value = statusesResponse.data;
-
-    const materialTypesResponse = await api.getMaterialTypes();
-
-    const statesResponse = await api.getStates();
-    states.value = statesResponse.data;
-
-    const paymentMethodsResponse = await api.getPaymentMethods();
-    paymentMethods.value = paymentMethodsResponse.data;
-
-    materialTypes.value = materialTypesResponse.data;
+    await store.dispatch("jobPositions/fetchJobPositions");
+    await store.dispatch("statuses/fetchStatuses");
+    await store.dispatch("materialTypes/fetchMaterialTypes");
+    await store.dispatch("paymentMethods/fetchPaymentMethods");
+    await store.dispatch("machineStates/fetchStates");
   } catch (error) {
     console.error("Ошибка при загрузке данных:", error);
   }

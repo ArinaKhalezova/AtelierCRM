@@ -8,9 +8,13 @@
 </template>
 
 <script setup>
+import { computed } from "vue";
+import { useStore } from "vuex";
 import DataTable from "./DataTable.vue";
 
-defineProps({
-  materialTypes: Array,
-});
+// Получаем доступ к хранилищу Vuex
+const store = useStore();
+
+// Получаем данные клиентов из Vuex
+const materialTypes = computed(() => store.state.materialTypes.materialTypes);
 </script>

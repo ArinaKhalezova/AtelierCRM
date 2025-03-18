@@ -29,12 +29,12 @@ const store = useStore();
 const newMaterialTypes = ref("");
 const error = ref("");
 
-const materialTypes = computed(() => store.getters.materialTypes);
+const materialTypes = computed(() => store.state.materialTypes.materialTypes);
 
 const addMaterialType = async () => {
   if (newMaterialTypes.value.trim()) {
     try {
-      await store.dispatch("addMaterialTypeAction", {
+      await store.dispatch("materialTypes/addMaterialTypeAction", {
         type_name: newMaterialTypes.value,
       });
       newMaterialTypes.value = "";
@@ -50,7 +50,7 @@ const addMaterialType = async () => {
 const deleteMaterialType = async (id) => {
   if (confirm("Вы уверены, что хотите удалить этот тип?")) {
     try {
-      await store.dispatch("deleteMaterialTypeAction", id);
+      await store.dispatch("materialTypes/deleteMaterialTypeAction", id);
       error.value = "";
     } catch (err) {
       error.value = "Ошибка при удалении типа";

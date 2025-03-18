@@ -21,20 +21,20 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useStore } from "vuex";
 
 const store = useStore();
 
 const newJobPosition = ref("");
-const error = ref("");
+const error = computed(() => store.state.jobPositions.error);
 
-const jobPositions = computed(() => store.getters.jobPositions);
+const jobPositions = computed(() => store.state.jobPositions.jobPositions);
 
 const addJobPosition = async () => {
   if (newJobPosition.value.trim()) {
     try {
-      await store.dispatch("addJobPositionAction", {
+      await store.dispatch("jobPositions/addJobPositionAction", {
         position_name: newJobPosition.value,
       });
       newJobPosition.value = "";
@@ -50,7 +50,7 @@ const addJobPosition = async () => {
 const deleteJobPosition = async (id) => {
   if (confirm("Вы уверены, что хотите удалить эту должность?")) {
     try {
-      await store.dispatch("deleteJobPositionAction", id);
+      await store.dispatch("jobPositions/deleteJobPositionAction", id);
       error.value = "";
     } catch (err) {
       error.value = "Ошибка при удалении должности";

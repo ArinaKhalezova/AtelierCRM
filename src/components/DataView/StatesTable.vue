@@ -8,9 +8,13 @@
 </template>
 
 <script setup>
+import { computed } from "vue";
+import { useStore } from "vuex";
 import DataTable from "./DataTable.vue";
 
-defineProps({
-  states: Array,
-});
+// Получаем доступ к хранилищу Vuex
+const store = useStore();
+
+// Получаем данные клиентов из Vuex
+const states = computed(() => store.state.machineStates.machineStates);
 </script>

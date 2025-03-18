@@ -26,12 +26,12 @@ const store = useStore();
 const newStatus = ref("");
 const error = ref("");
 
-const statuses = computed(() => store.getters.statuses);
+const statuses = computed(() => store.state.statuses.statuses);
 
 const addStatus = async () => {
   if (newStatus.value.trim()) {
     try {
-      await store.dispatch("addStatusAction", {
+      await store.dispatch("statuses/addStatusAction", {
         status: newStatus.value,
       });
       newStatus.value = "";
@@ -47,7 +47,7 @@ const addStatus = async () => {
 const deleteStatus = async (id) => {
   if (confirm("Вы уверены, что хотите удалить этот статус?")) {
     try {
-      await store.dispatch("deleteStatusAction", id);
+      await store.dispatch("statuses/deleteStatusAction", id);
       error.value = "";
     } catch (err) {
       error.value = "Ошибка при удалении статуса";

@@ -29,12 +29,12 @@ const store = useStore();
 const newMethod = ref("");
 const error = ref("");
 
-const methods = computed(() => store.getters.paymentMethods);
+const methods = computed(() => store.state.paymentMethods.paymentMethods);
 
 const addPaymentMethod = async () => {
   if (newMethod.value.trim()) {
     try {
-      await store.dispatch("addPaymentMethodAction", {
+      await store.dispatch("paymentMethods/addPaymentMethodAction", {
         method_name: newMethod.value,
       });
       newMethod.value = "";
@@ -50,7 +50,7 @@ const addPaymentMethod = async () => {
 const deletePaymentMethod = async (id) => {
   if (confirm("Вы уверены, что хотите удалить этот способ оплаты?")) {
     try {
-      await store.dispatch("deletePaymentMethodAction", id);
+      await store.dispatch("paymentMethods/deletePaymentMethodAction", id);
       error.value = "";
     } catch (err) {
       error.value = "Ошибка при удалении способа оплаты";

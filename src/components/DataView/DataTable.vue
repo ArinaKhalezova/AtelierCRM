@@ -14,7 +14,7 @@
         <tr v-for="row in rows" :key="row[keyField]">
           <!-- Используем header.toLowerCase() для сопоставления с ключами данных -->
           <td v-for="header in headers" :key="header">
-            {{ row[header.toLowerCase()] }}
+            {{ row[header.toLowerCase()] || row[header] || "N/A" }}
           </td>
         </tr>
       </tbody>

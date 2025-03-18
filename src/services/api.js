@@ -58,12 +58,12 @@ export default {
 
   // Методы для работы с методами оплаты
   getPaymentMethods() {
-    return apiClient.get("/paymentMethods");
+    return apiClient.get("/payment-methods");
   },
   addPaymentMethod(paymentMethod) {
-    return apiClient.post("/paymentMethods", paymentMethod);
+    return apiClient.post("/payment-methods", paymentMethod);
   },
   deletePaymentMethod(id) {
-    return apiClient.delete(`/paymentMethods/${id}`);
+    return apiClient.delete(`/payment-methods/${id}`);
   },
 };
