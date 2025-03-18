@@ -2,11 +2,11 @@ import { createRouter, createWebHistory } from "vue-router";
 import HomeView from "../views/HomeView.vue";
 import OrdersView from "../views/OrdersView.vue";
 import MaterialsView from "../views/MaterialsView.vue";
-import EmployeesTab from "@/components/Employees/EmployeesTab.vue";
+import EmployeesView from "@/views/EmployeesView.vue";
 import OrderDetails from "../components/Order/OrderDetails.vue";
 import NewOrder from "../components/Order/NewOrder.vue";
 import NewMaterial from "../components/Materials/NewMaterial.vue";
-import SuppliesView from "@/views/SuppliesView.vue";
+import DeliveriesView from "@/views/DeliveriesView.vue";
 import SettingsView from "@/views/SettingsView.vue";
 import DataView from "@/views/DataView.vue";
 
@@ -44,12 +44,12 @@ const routes = [
   {
     path: "/employees",
     name: "employees",
-    component: EmployeesTab,
+    component: EmployeesView,
   },
   {
-    path: "/supplies",
-    name: "supplies",
-    component: SuppliesView,
+    path: "/deliveries",
+    name: "deliveries",
+    component: DeliveriesView,
   },
   {
     path: "/settings",

@@ -1,23 +1,17 @@
 <template>
   <div class="executors-view">
-    <div class="view-header">
-      <h1>Управление исполнителями</h1>
-      <router-link to="/executors/new" class="add-button">
-        + Новый исполнитель
-      </router-link>
-    </div>
-    <ExecutorList />
+    <EmployeesTab />
   </div>
 </template>
 
 <script>
-import ExecutorList from '@/components/Executor/ExecutorList.vue'
+import EmployeesTab from "@/components/Employees/EmployeesTab.vue";
 
 export default {
   components: {
-    ExecutorList
-  }
-}
+    EmployeesTab,
+  },
+};
 </script>
 
 <style scoped>

@@ -14,21 +14,29 @@
       >
         Поставщики
       </button>
+      <button
+        :class="{ active: activeTab === 'invoices' }"
+        @click="activeTab = 'invoices'"
+      >
+        Накладные
+      </button>
     </div>
 
     <div class="tab-content">
-      <SuppliesTab v-if="activeTab === 'supplies'" />
+      <DeliveriesTab v-if="activeTab === 'supplies'" />
       <SuppliersTab v-if="activeTab === 'suppliers'" />
+      <InvoicesTab v-if="activeTab === 'invoices'" />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref } from "vue";
+import DeliveriesTab from "@/components/Deliveries/DeliveriesTab.vue";
 import SuppliersTab from "@/components/Supplier/SuppliersTab.vue";
-import SuppliesTab from "@/components/Supply/SuppliesTab.vue";
+import InvoicesTab from "@/components/Invoices/InvoicesTab.vue";
 
-const activeTab = ref('supplies');
+const activeTab = ref("supplies");
 </script>
 
 <style scoped>

@@ -9,6 +9,7 @@
     <StatesTable :states="states" />
     <SuppliersTable :suppliers="suppliers" />
     <EmployeesTable :employees="employees" />
+    <InvoicesTable :invoices="invoices" />
   </div>
 </template>
 
@@ -23,6 +24,7 @@ import PaymentMethodsTable from "@/components/DataView/PaymentMethodsTable.vue";
 import StatesTable from "@/components/DataView/StatesTable.vue";
 import SuppliersTable from "@/components/DataView/SuppliersTable.vue";
 import EmployeesTable from "@/components/DataView/EmployeesTable.vue";
+import InvoicesTable from "@/components/DataView/InvoicesTable.vue";
 
 const store = useStore();
 
@@ -34,6 +36,7 @@ const paymentMethods = computed(() => store.state.paymentMethods);
 const states = computed(() => store.state.machineStates);
 const suppliers = computed(() => store.state.suppliers);
 const employees = computed(() => store.state.employees);
+const invoices = computed(() => store.state.invoices);
 
 onMounted(async () => {
   try {
@@ -44,6 +47,7 @@ onMounted(async () => {
     await store.dispatch("machineStates/fetchStates");
     await store.dispatch("suppliers/fetchSuppliers");
     await store.dispatch("employees/fetchEmployees");
+    await store.dispatch("invoices/fetchInvoices");
   } catch (error) {
     console.error("Ошибка при загрузке данных:", error);
   }

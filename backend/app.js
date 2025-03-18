@@ -11,6 +11,8 @@ const statesRouter = require("./routes/machineStates");
 const paymentMethodsRouter = require("./routes/paymentMethods");
 const suppliersRouter = require("./routes/suppliers");
 const employeesRouter = require("./routes/employees");
+const deliveriesRouter = require("./routes/deliveries");
+const invoicesRouter = require("./routes/invoices");
 
 app.use(cors());
 app.use(express.json());
@@ -23,5 +25,7 @@ app.use("/states", statesRouter);
 app.use("/payment-methods", paymentMethodsRouter);
 app.use("/suppliers", suppliersRouter);
 app.use("/employees", employeesRouter);
+app.use("/deliveries", deliveriesRouter);
+app.use("/invoices", invoicesRouter);
 
 module.exports = app;

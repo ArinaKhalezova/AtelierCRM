@@ -9,6 +9,8 @@ import paymentMethods from "./modules/paymentMethods";
 import materialTypes from "./modules/materialTypes";
 import suppliers from "./modules/suppliers";
 import employees from "./modules/employees";
+import deliveries from "./modules/deliveries";
+import invoices from "./modules/invoices";
 
 export default createStore({
   modules: {
@@ -19,6 +21,8 @@ export default createStore({
     machineStates,
     suppliers,
     employees,
+    deliveries,
+    invoices,
   },
 });
 

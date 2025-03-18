@@ -88,4 +88,26 @@ export default {
   deleteEmployee(id) {
     return apiClient.delete(`/employees/${id}`);
   },
+
+  // Методы для работы с поставками
+  getDeliveries() {
+    return apiClient.get("/deliveries");
+  },
+  addDelivery(delivery) {
+    return apiClient.post("/deliveries", delivery);
+  },
+  deleteDelivery(id) {
+    return apiClient.delete(`/deliveries/${id}`);
+  },
+
+  // Методы для работы с накладными
+  getInvoices() {
+    return apiClient.get("/invoices");
+  },
+  addInvoice(invoice) {
+    return apiClient.post("/invoices", invoice);
+  },
+  deleteInvoice(id) {
+    return apiClient.delete(`/invoices/${id}`);
+  },
 };
