@@ -14,28 +14,6 @@ router.get("/", async (req, res) => {
 
 router.post("/", async (req, res) => {
   const { position_name } = req.body;
-  // ...остальная логика
-});
-
-router.delete("/:id", async (req, res) => {
-  // ...логика удаления
-});
-
-module.exports = router;
-
-// Методы для должностей
-router.get("/job-positions", async (req, res) => {
-  try {
-    const { rows } = await pool.query("SELECT * FROM job_positions");
-    res.json(rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-router.post("/job-positions", async (req, res) => {
-  const { position_name } = req.body;
 
   if (!position_name) {
     return res.status(400).json({ error: "Position name is required" });
@@ -53,7 +31,7 @@ router.post("/job-positions", async (req, res) => {
   }
 });
 
-router.delete("/job-positions/:id", async (req, res) => {
+router.delete("/:id", async (req, res) => {
   const { id } = req.params;
 
   if (!id) {
@@ -70,3 +48,5 @@ router.delete("/job-positions/:id", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+
+module.exports = router;
