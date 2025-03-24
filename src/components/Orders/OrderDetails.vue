@@ -1,204 +1,306 @@
 <template>
   <div class="order-details">
-    <button @click="goBack" class="back-button">← Назад</button>
-    <div v-if="order">
-      <div v-if="!isEditing">
-        <h2>Детали заказа #{{ order.id }}</h2>
-        <p><strong>ФИО клиента:</strong> {{ order.clientName }}</p>
-        <p>
-          <strong>Дата приема:</strong> {{ formattedDate(order.receptionDate) }}
-        </p>
-        <p>
-          <strong>Срок выполнения:</strong>
-          {{ formattedDate(order.completionDate) }}
-        </p>
-        <p><strong>Стоимость:</strong> {{ order.cost }} руб.</p>
-        <p><strong>Статус:</strong> {{ order.status }}</p>
-
-        <div class="action-buttons">
-          <button @click="startEditing" class="edit-button">
-            Редактировать
-          </button>
-          <button @click="deleteOrder" class="delete-button">
-            Удалить заказ
-          </button>
+    <div v-if="isLoading" class="loading">Загрузка...</div>
+    <div v-else-if="error" class="error">{{ error }}</div>
+    <div v-else-if="order" class="content">
+      <div class="header">
+        <button @click="$router.push('/orders')" class="btn back">
+          ← Назад
+        </button>
+        <h2>Заказ № {{ order.tracking_number }}</h2>
+        <div class="status" :class="order.status.toLowerCase()">
+          {{ order.status }}
         </div>
       </div>
 
-      <form v-else @submit.prevent="saveChanges">
-        <div class="form-group">
-          <label>ФИО клиента:</label>
-          <input v-model="editedOrder.clientName" required />
+      <div class="section">
+        <h3>Основная информация</h3>
+        <div class="grid">
+          <div class="item">
+            <span class="label">Клиент:</span>
+            <span class="value">{{ order.client_name }}</span>
+          </div>
+          <div class="item">
+            <span class="label">Дата создания:</span>
+            <span class="value">{{ formatDate(order.created_at) }}</span>
+          </div>
+          <div class="item">
+            <span class="label">Дата примерки:</span>
+            <span class="value">{{
+              formatDate(order.fitting_date) || "—"
+            }}</span>
+          </div>
+          <div class="item">
+            <span class="label">Срок выполнения:</span>
+            <span class="value">{{ formatDate(order.deadline_date) }}</span>
+          </div>
+          <div class="item">
+            <span class="label">Стоимость:</span>
+            <span class="value">{{ order.total_cost }} ₽</span>
+          </div>
         </div>
+      </div>
 
-        <div class="form-group">
-          <label>Дата приема:</label>
-          <input type="date" v-model="editedOrder.receptionDate" required />
+      <div class="section">
+        <h3>Услуги</h3>
+        <div v-if="services.length > 0" class="items">
+          <div
+            v-for="service in services"
+            :key="service.order_service_id"
+            class="item"
+          >
+            <div class="info">
+              <span class="name">{{ service.service_name }}</span>
+              <span class="quantity"
+                >{{ service.quantity }} × {{ service.base_cost }} ₽</span
+              >
+              <span class="total"
+                >{{ service.quantity * service.base_cost }} ₽</span
+              >
+            </div>
+            <button
+              @click="removeService(service.order_service_id)"
+              class="btn danger"
+            >
+              Удалить
+            </button>
+          </div>
         </div>
+        <div v-else class="empty">Нет услуг</div>
+      </div>
 
-        <div class="form-group">
-          <label>Срок выполнения:</label>
-          <input type="date" v-model="editedOrder.completionDate" required />
+      <div class="section">
+        <h3>Материалы</h3>
+        <div v-if="materials.length > 0" class="items">
+          <div
+            v-for="material in materials"
+            :key="material.order_material_id"
+            class="item"
+          >
+            <div class="info">
+              <span class="name">{{ material.material_name }}</span>
+              <span class="quantity">
+                {{ material.quantity }} {{ material.unit }} ×
+                {{ material.cost_per_unit }} ₽
+              </span>
+              <span class="total"
+                >{{ material.quantity * material.cost_per_unit }} ₽</span
+              >
+            </div>
+            <button
+              @click="removeMaterial(material.order_material_id)"
+              class="btn danger"
+            >
+              Удалить
+            </button>
+          </div>
         </div>
+        <div v-else class="empty">Нет материалов</div>
+      </div>
 
-        <div class="form-group">
-          <label>Стоимость:</label>
-          <input type="number" v-model="editedOrder.cost" required />
-        </div>
+      <div v-if="order.comment" class="section">
+        <h3>Комментарий</h3>
+        <div class="comment">{{ order.comment }}</div>
+      </div>
 
-        <div class="form-group">
-          <label>Статус:</label>
-          <select v-model="editedOrder.status" required>
-            <option value="взять в работу">Взять в работу</option>
-            <option value="в процессе">В процессе</option>
-            <option value="готово">Готово</option>
-          </select>
-        </div>
-
-        <div class="action-buttons">
-          <button type="submit" class="save-button">Сохранить</button>
-          <button type="button" @click="cancelEditing" class="cancel-button">
-            Отмена
-          </button>
-        </div>
-      </form>
-    </div>
-    <div v-else>
-      <p>Заказ не найден</p>
+      <div class="actions">
+        <button @click="editOrder" class="btn primary">Редактировать</button>
+        <button @click="deleteOrder" class="btn danger">Удалить заказ</button>
+      </div>
     </div>
   </div>
 </template>
 
-<script>
-import { mapGetters, mapActions } from "vuex";
+<script setup>
+import { computed, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useStore } from "vuex";
 
-export default {
-  data() {
-    return {
-      isEditing: false,
-      editedOrder: null,
-    };
-  },
-  computed: {
-    ...mapGetters(["getOrderById"]),
-    order() {
-      return this.getOrderById(this.$route.params.id);
-    },
-  },
-  methods: {
-    ...mapActions(["updateOrderAction", "deleteOrderAction"]),
+const store = useStore();
+const route = useRoute();
+const router = useRouter();
 
-    goBack() {
-      this.$router.push("/orders");
-    },
+const orderId = route.params.id;
 
-    formattedDate(dateString) {
-      return new Date(dateString).toLocaleDateString();
-    },
+onMounted(() => {
+  store.dispatch("orders/fetchOrderDetails", orderId);
+});
 
-    startEditing() {
-      this.editedOrder = { ...this.order };
-      this.isEditing = true;
-    },
+const order = computed(() => store.getters["orders/currentOrder"]);
+const services = computed(() => store.getters["orders/orderServices"]);
+const materials = computed(() => store.getters["orders/orderMaterials"]);
+const isLoading = computed(() => store.getters["orders/isLoading"]);
+const error = computed(() => store.getters["orders/error"]);
 
-    cancelEditing() {
-      this.isEditing = false;
-      this.editedOrder = null;
-    },
+const formatDate = (dateString) => {
+  if (!dateString) return "";
+  return new Date(dateString).toLocaleDateString("ru-RU");
+};
 
-    saveChanges() {
-      this.updateOrderAction(this.editedOrder);
-      this.isEditing = false;
-    },
+const removeService = async (serviceId) => {
+  if (confirm("Удалить эту услугу из заказа?")) {
+    try {
+      await store.dispatch("orders/removeServiceFromOrder", {
+        orderId: orderId,
+        serviceId: serviceId,
+      });
+    } catch (error) {
+      console.error("Ошибка удаления:", error);
+    }
+  }
+};
 
-    deleteOrder() {
-      if (confirm("Вы уверены, что хотите удалить этот заказ?")) {
-        this.deleteOrderAction(this.order.id);
-        this.$router.push("/orders");
-      }
-    },
-  },
+const removeMaterial = async (orderMaterialId) => {
+  if (confirm("Удалить этот материал из заказа?")) {
+    try {
+      await store.dispatch("orders/removeMaterialFromOrder", {
+        orderId: orderId,
+        materialId: orderMaterialId,
+      });
+    } catch (error) {
+      console.error("Ошибка удаления:", error);
+    }
+  }
+};
+
+const editOrder = () => {
+  router.push(`/orders/${orderId}/edit`);
+};
+
+const deleteOrder = async () => {
+  if (confirm("Вы уверены, что хотите удалить этот заказ?")) {
+    try {
+      await store.dispatch("orders/deleteOrder", orderId);
+      router.push("/orders");
+    } catch (error) {
+      console.error("Ошибка удаления:", error);
+    }
+  }
 };
 </script>
 
 <style scoped>
 .order-details {
-  max-width: 600px;
+  max-width: 1000px;
   margin: 0 auto;
-  padding: 2rem;
-  background-color: white;
+  padding: 20px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.status {
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.status.new {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.status.in-progress {
+  background: #fff8e1;
+  color: #ff8f00;
+}
+
+.status.completed {
+  background: #e8f5e9;
+  color: #388e3c;
+}
+
+.section {
+  margin-bottom: 25px;
+  padding: 15px;
+  background: white;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.back-button {
-  background-color: var(--secondary-color);
-  color: white;
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-bottom: 1rem;
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
 }
 
-.back-button:hover {
-  background-color: var(--primary-color);
-}
-
-.form-group {
-  margin-bottom: 1rem;
-}
-
-label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-}
-
-input,
-select {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  margin-bottom: 1rem;
-}
-
-.action-buttons {
-  margin-top: 2rem;
+.item {
   display: flex;
-  gap: 1rem;
+  justify-content: space-between;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
 }
 
-button {
-  padding: 0.5rem 1rem;
-  border: none;
+.label {
+  font-weight: bold;
+  color: #555;
+}
+
+.items .item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.info {
+  display: grid;
+  gap: 5px;
+}
+
+.quantity,
+.total {
+  font-size: 0.9em;
+  color: #666;
+}
+
+.comment {
+  padding: 10px;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btn {
+  padding: 8px 16px;
   border-radius: 4px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  border: none;
 }
 
-.edit-button {
-  background-color: #4caf50;
+.btn.back {
+  background: transparent;
+  color: #1976d2;
+}
+
+.btn.primary {
+  background: #1976d2;
   color: white;
 }
 
-.delete-button {
-  background-color: #f44336;
+.btn.danger {
+  background: #d32f2f;
   color: white;
 }
 
-.save-button {
-  background-color: #2196f3;
-  color: white;
+.loading,
+.error,
+.empty {
+  text-align: center;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
 }
 
-.cancel-button {
-  background-color: #9e9e9e;
-  color: white;
-}
-
-button:hover {
-  opacity: 0.9;
+.error {
+  color: #d32f2f;
 }
 </style>

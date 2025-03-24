@@ -88,4 +88,40 @@ export default {
   deleteService(serviceId) {
     return apiClient.delete(`/services/${serviceId}`);
   },
+
+  // Методы для работы с заказами
+  getOrders() {
+    return apiClient.get("/orders");
+  },
+  getOrderDetails(id) {
+    return apiClient.get(`/orders/${id}`);
+  },
+  createOrder(order) {
+    return apiClient.post("/orders", order);
+  },
+  deleteOrder(id) {
+    return apiClient.delete(`/orders/${id}`);
+  },
+
+  // Методы для услуг в заказе
+  getOrderServices(orderId) {
+    return apiClient.get(`/orders/${orderId}/services`);
+  },
+  addOrderService(orderId, service) {
+    return apiClient.post(`/orders/${orderId}/services`, service);
+  },
+  deleteOrderService(orderId, serviceId) {
+    return apiClient.delete(`/orders/${orderId}/services/${serviceId}`);
+  },
+
+  // Методы для материалов в заказе
+  getOrderMaterials(orderId) {
+    return apiClient.get(`/orders/${orderId}/materials`);
+  },
+  addOrderMaterial(orderId, material) {
+    return apiClient.post(`/orders/${orderId}/materials`, material);
+  },
+  deleteOrderMaterial(orderId, orderMaterialId) {
+    return apiClient.delete(`/orders/${orderId}/materials/${orderMaterialId}`);
+  },
 };

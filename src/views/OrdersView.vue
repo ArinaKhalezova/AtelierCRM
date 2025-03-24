@@ -1,23 +1,11 @@
 <template>
   <div class="orders-view">
-    <div class="view-header">
-      <h1>Управление заказами</h1>
-      <router-link to="/orders/new" class="add-button">
-        + Новый заказ
-      </router-link>
-    </div>
     <OrderList />
   </div>
 </template>
 
-<script>
+<script setup>
 import OrderList from '@/components/Orders/OrderList.vue';
-
-export default {
-  components: {
-    OrderList,
-  },
-};
 </script>
 
 <style scoped>
