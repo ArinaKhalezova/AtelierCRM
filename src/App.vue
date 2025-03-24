@@ -7,11 +7,11 @@
       <div class="nav-links">
         <router-link to="/">Главная</router-link>
         <router-link to="/orders">Заказы</router-link>
-        <router-link to="/materials">Материалы</router-link>
+        <router-link to="/services">Услуги</router-link>
         <router-link to="/deliveries">Поставки</router-link>
+        <router-link to="/clients">Клиенты</router-link>
         <router-link to="/employees">Сотрудники</router-link>
-        <router-link to="/settings">Справочник</router-link>
-        <router-link to="/data">Данные</router-link>
+        <router-link to="/data">Справочник</router-link>
       </div>
     </div>
 

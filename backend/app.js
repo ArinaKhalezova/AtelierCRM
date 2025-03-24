@@ -4,28 +4,20 @@ const app = express();
 
 // Роуты
 const clientsRouter = require("./routes/clients");
-const jobPositionsRouter = require("./routes/jobPositions");
-const statusesRouter = require("./routes/statuses");
-const materialTypesRouter = require("./routes/materialTypes");
-const statesRouter = require("./routes/machineStates");
-const paymentMethodsRouter = require("./routes/paymentMethods");
 const suppliersRouter = require("./routes/suppliers");
 const employeesRouter = require("./routes/employees");
 const deliveriesRouter = require("./routes/deliveries");
-const invoicesRouter = require("./routes/invoices");
+const materialsRouter = require("./routes/materials");
+const servicesRouter = require("./routes/services");
 
 app.use(cors());
 app.use(express.json());
 
 app.use("/clients", clientsRouter);
-app.use("/job-positions", jobPositionsRouter);
-app.use("/statuses", statusesRouter);
-app.use("/material-types", materialTypesRouter);
-app.use("/states", statesRouter);
-app.use("/payment-methods", paymentMethodsRouter);
 app.use("/suppliers", suppliersRouter);
 app.use("/employees", employeesRouter);
 app.use("/deliveries", deliveriesRouter);
-app.use("/invoices", invoicesRouter);
+app.use("/materials", materialsRouter);
+app.use("/services", servicesRouter);
 
 module.exports = app;

@@ -1,23 +1,11 @@
 <template>
   <div class="materials-view">
-    <div class="view-header">
-      <h1>Управление материалами</h1>
-      <router-link to="/materials/new" class="add-button">
-        + Новый материал
-      </router-link>
-    </div>
-    <MaterialList />
+    <ServicesList />
   </div>
 </template>
 
-<script>
-import MaterialList from "@/components/Materials/MaterialList.vue";
-
-export default {
-  components: {
-    MaterialList,
-  },
-};
+<script setup>
+import ServicesList from '@/components/Services/ServicesList.vue';
 </script>
 
 <style scoped>

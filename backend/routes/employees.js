@@ -6,9 +6,9 @@ const pool = require("../config/db");
 router.get("/", async (req, res) => {
   try {
     const { rows } = await pool.query(`
-      SELECT e.*, jp.position_name 
+      SELECT e.employee_id, u.fullname, u.phone_number, u.email, e.position 
       FROM employees e
-      JOIN job_positions jp ON e.job_position_id = jp.job_position_id
+      JOIN users u ON e.user_id = u.user_id
     `);
     res.json(rows);
   } catch (err) {
@@ -17,23 +17,50 @@ router.get("/", async (req, res) => {
   }
 });
 
+// Получение списка должностей
+router.get("/job-positions", async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      "SELECT unnest(enum_range(NULL::job_position)) AS position"
+    );
+    res.json(rows.map((row) => row.position));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Ошибка сервера" });
+  }
+});
+
 // Добавление сотрудника
 router.post("/", async (req, res) => {
-  const { job_position_id, fullname, phone_number, email } = req.body;
+  const { fullname, phone_number, email, password, position } = req.body;
 
-  if (!job_position_id || !fullname || !phone_number) {
+  if (!fullname || !phone_number || !password || !position) {
     return res
       .status(400)
-      .json({ error: "Обязательные поля: должность, ФИО и телефон" });
+      .json({ error: "Обязательные поля: ФИО, телефон, пароль и должность" });
   }
 
   try {
-    const { rows } = await pool.query(
-      "INSERT INTO employees (job_position_id, fullname, phone_number, email) VALUES ($1, $2, $3, $4) RETURNING *",
-      [job_position_id, fullname, phone_number, email]
+    await pool.query("BEGIN");
+
+    // Создание пользователя
+    const userResult = await pool.query(
+      "INSERT INTO users (fullname, phone_number, email, password_hash, role) VALUES ($1, $2, $3, $4, 'Работник') RETURNING user_id",
+      [fullname, phone_number, email, password]
     );
-    res.status(201).json(rows[0]);
+
+    const userId = userResult.rows[0].user_id;
+
+    // Создание сотрудника
+    const employeeResult = await pool.query(
+      "INSERT INTO employees (user_id, position) VALUES ($1, $2) RETURNING *",
+      [userId, position]
+    );
+
+    await pool.query("COMMIT");
+    res.status(201).json(employeeResult.rows[0]);
   } catch (err) {
+    await pool.query("ROLLBACK");
     console.error(err);
     res.status(500).json({ error: "Ошибка сервера" });
   }

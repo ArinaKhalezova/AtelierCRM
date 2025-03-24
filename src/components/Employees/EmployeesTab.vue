@@ -8,7 +8,7 @@
     <div class="employee-list">
       <div v-for="employee in employees" :key="employee.employee_id" class="employee-item">
         <p><strong>ФИО:</strong> {{ employee.fullname }}</p>
-        <p><strong>Должность:</strong> {{ employee.position_name }}</p>
+        <p><strong>Должность:</strong> {{ employee.position }}</p>
         <p><strong>Телефон:</strong> {{ employee.phone_number }}</p>
         <p><strong>Email:</strong> {{ employee.email || "Не указан" }}</p>
         <button @click="deleteEmployee(employee.employee_id)" class="delete-button">
@@ -27,9 +27,9 @@
         </div>
         <div class="form-group">
           <label>Должность:</label>
-          <select v-model="newEmployee.job_position_id" required>
-            <option v-for="position in jobPositions" :key="position.job_position_id" :value="position.job_position_id">
-              {{ position.position_name }}
+          <select v-model="newEmployee.position" required>
+            <option v-for="position in jobPositions" :key="position" :value="position">
+              {{ position }}
             </option>
           </select>
         </div>
@@ -40,6 +40,10 @@
         <div class="form-group">
           <label>Email:</label>
           <input v-model="newEmployee.email" type="email" />
+        </div>
+        <div class="form-group">
+          <label>Пароль:</label>
+          <input v-model="newEmployee.password" type="password" required />
         </div>
         <button type="submit">Добавить сотрудника</button>
       </form>
@@ -57,19 +61,20 @@ const store = useStore();
 const isEmployeeModalOpen = ref(false);
 const newEmployee = ref({
   fullname: "",
-  job_position_id: null,
+  position: "",
   phone_number: "",
   email: "",
+  password: "",
 });
 
 const employees = computed(() => store.state.employees.employees);
-const jobPositions = computed(() => store.state.jobPositions.jobPositions);
+const jobPositions = computed(() => store.state.employees.jobPositions);
 const error = computed(() => store.state.employees.error);
 
 // Загрузка данных при монтировании компонента
 onMounted(async () => {
   await store.dispatch("employees/fetchEmployees");
-  await store.dispatch("jobPositions/fetchJobPositions");
+  await store.dispatch("employees/fetchJobPositions");
 });
 
 const openEmployeeModal = () => {
@@ -83,19 +88,20 @@ const closeEmployeeModal = () => {
 const addEmployee = async () => {
   if (
     newEmployee.value.fullname.trim() &&
-    newEmployee.value.job_position_id &&
-    newEmployee.value.phone_number.trim()
+    newEmployee.value.position &&
+    newEmployee.value.phone_number.trim() &&
+    newEmployee.value.password.trim()
   ) {
     try {
       await store.dispatch("employees/addEmployeeAction", newEmployee.value);
-      newEmployee.value = { fullname: "", job_position_id: null, phone_number: "", email: "" };
+      newEmployee.value = { fullname: "", position: "", phone_number: "", email: "", password: "" };
       error.value = "";
       closeEmployeeModal();
     } catch (err) {
       error.value = "Ошибка при добавлении сотрудника";
     }
   } else {
-    error.value = "Заполните обязательные поля: ФИО, должность и телефон";
+    error.value = "Заполните обязательные поля: ФИО, должность, телефон и пароль";
   }
 };
 

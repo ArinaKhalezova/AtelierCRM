@@ -3,6 +3,12 @@
     <h1>Управление поставками</h1>
     <div class="tabs">
       <button
+        :class="{ active: activeTab === 'materials' }"
+        @click="activeTab = 'materials'"
+      >
+        Материалы
+      </button>
+      <button
         :class="{ active: activeTab === 'supplies' }"
         @click="activeTab = 'supplies'"
       >
@@ -14,18 +20,12 @@
       >
         Поставщики
       </button>
-      <button
-        :class="{ active: activeTab === 'invoices' }"
-        @click="activeTab = 'invoices'"
-      >
-        Накладные
-      </button>
     </div>
 
     <div class="tab-content">
+      <MaterialsTab v-if="activeTab === 'materials'" />
       <DeliveriesTab v-if="activeTab === 'supplies'" />
       <SuppliersTab v-if="activeTab === 'suppliers'" />
-      <InvoicesTab v-if="activeTab === 'invoices'" />
     </div>
   </div>
 </template>
@@ -34,9 +34,9 @@
 import { ref } from "vue";
 import DeliveriesTab from "@/components/Deliveries/DeliveriesTab.vue";
 import SuppliersTab from "@/components/Supplier/SuppliersTab.vue";
-import InvoicesTab from "@/components/Invoices/InvoicesTab.vue";
+import MaterialsTab from "@/components/Materials/MaterialsTab.vue";
 
-const activeTab = ref("supplies");
+const activeTab = ref("materials");
 </script>
 
 <style scoped>

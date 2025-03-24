@@ -37,17 +37,26 @@ router.post("/", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
 
-  if (!id) {
-    return res.status(400).json({ error: "ID поставщика обязателен" });
-  }
-
   try {
+    // Проверяем существование связанных поставок
+    const deliveries = await pool.query(
+      "SELECT * FROM deliveries WHERE supplier_id = $1",
+      [id]
+    );
+    
+    if (deliveries.rows.length > 0) {
+      return res.status(400).json({
+        error: "Невозможно удалить поставщика с существующими поставками",
+      });
+    }
+
     await pool.query("DELETE FROM suppliers WHERE supplier_id = $1", [id]);
     res.status(204).send();
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Ошибка сервера" });
+    res.status(500).json({
+      error: err.message || "Ошибка при удалении поставщика",
+    });
   }
 });
-
 module.exports = router;

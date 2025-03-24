@@ -4,6 +4,7 @@ export default {
   namespaced: true,
   state: () => ({
     employees: [],
+    jobPositions: [],
     error: null,
   }),
   mutations: {
@@ -18,6 +19,9 @@ export default {
         (e) => e.employee_id !== employeeId
       );
     },
+    SET_JOB_POSITIONS(state, jobPositions) {
+      state.jobPositions = jobPositions;
+    },
     SET_ERROR(state, error) {
       state.error = error;
     },
@@ -31,6 +35,16 @@ export default {
       } catch (error) {
         commit("SET_ERROR", "Ошибка при загрузке сотрудников");
         console.error("Error fetching employees:", error);
+      }
+    },
+    async fetchJobPositions({ commit }) {
+      try {
+        const response = await api.getJobPositions();
+        commit("SET_JOB_POSITIONS", response.data);
+        commit("SET_ERROR", null);
+      } catch (error) {
+        commit("SET_ERROR", "Ошибка при загрузке должностей");
+        console.error("Error fetching job positions:", error);
       }
     },
     async addEmployeeAction({ commit }, employee) {
@@ -56,6 +70,7 @@ export default {
   },
   getters: {
     allEmployees: (state) => state.employees,
+    jobPositions: (state) => state.jobPositions,
     error: (state) => state.error,
   },
 };

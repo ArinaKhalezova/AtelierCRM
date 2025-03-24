@@ -10,47 +10,48 @@ export default {
     SET_CLIENTS(state, clients) {
       state.clients = clients;
     },
-    RESET_CLIENTS(state) {
-      state.clients = [];
+    ADD_CLIENT(state, client) {
+      state.clients.push(client);
+    },
+    DELETE_CLIENT(state, id) {
+      state.clients = state.clients.filter((c) => c.client_id !== id);
     },
     SET_ERROR(state, error) {
       state.error = error;
     },
   },
   actions: {
-    // async fetchJobPositions({ commit }) {
-    //   try {
-    //     const response = await api.getJobPositions();
-    //     commit("SET_JOB_POSITIONS", response.data);
-    //     commit("SET_ERROR", null);
-    //   } catch (error) {
-    //     commit("SET_ERROR", "Ошибка при загрузке должностей");
-    //     console.error("Error fetching job positions:", error);
-    //   }
-    // },
-    // async addJobPositionAction({ commit }, position) {
-    //   try {
-    //     const response = await api.addJobPosition(position);
-    //     commit("ADD_JOB_POSITION", response.data);
-    //     commit("SET_ERROR", null);
-    //   } catch (error) {
-    //     commit("SET_ERROR", "Ошибка при добавлении должности");
-    //     console.error("Error adding job position:", error);
-    //   }
-    // },
-    // async deleteJobPositionAction({ commit }, id) {
-    //   try {
-    //     await api.deleteJobPosition(id);
-    //     commit("DELETE_JOB_POSITION", id);
-    //     commit("SET_ERROR", null);
-    //   } catch (error) {
-    //     commit("SET_ERROR", "Ошибка при удалении должности");
-    //     console.error("Error deleting job position:", error);
-    //   }
-    // },
+    async fetchClients({ commit }) {
+      try {
+        const response = await api.getClients();
+        commit("SET_CLIENTS", response.data);
+      } catch (err) {
+        commit("SET_ERROR", "Ошибка загрузки клиентов");
+      }
+    },
+
+    async addClientAction({ commit }, client) {
+      try {
+        const response = await api.addClient(client);
+        commit("ADD_CLIENT", response.data);
+      } catch (err) {
+        commit("SET_ERROR", "Ошибка добавления");
+        throw err;
+      }
+    },
+
+    async deleteClientAction({ commit }, id) {
+      try {
+        await api.deleteClient(id);
+        commit("DELETE_CLIENT", id);
+      } catch (err) {
+        commit("SET_ERROR", "Ошибка удаления");
+        throw err;
+      }
+    },
   },
   getters: {
-    // jobPositions: (state) => state.jobPositions,
+    allClients: (state) => state.clients,
     error: (state) => state.error,
   },
 };

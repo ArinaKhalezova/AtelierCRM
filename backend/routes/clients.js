@@ -2,11 +2,10 @@ const express = require("express");
 const router = express.Router();
 const pool = require("../config/db");
 
+// получение всех клиентов
 router.get("/", async (req, res) => {
   try {
-    console.log("Запрос клиентов:", new Date().toISOString());
     const { rows } = await pool.query("SELECT * FROM clients");
-    console.log("Возвращено клиентов:", rows.length);
     res.json(rows);
   } catch (err) {
     console.error(err);
@@ -14,41 +13,37 @@ router.get("/", async (req, res) => {
   }
 });
 
-// router.post("/", async (req, res) => {
-//   const { position_name } = req.body;
+// создание клиента
+router.post("/", async (req, res) => {
+  const { fullname, phone_number, email } = req.body;
 
-//   if (!position_name) {
-//     return res.status(400).json({ error: "Position name is required" });
-//   }
+  if (!fullname || !phone_number) {
+    return res.status(400).json({ error: "Обязательные поля: ФИО и телефон" });
+  }
 
-//   try {
-//     const { rows } = await pool.query(
-//       "INSERT INTO job_positions (position_name) VALUES ($1) RETURNING *",
-//       [position_name]
-//     );
-//     res.status(201).json(rows[0]);
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ error: "Server error" });
-//   }
-// });
+  try {
+    const { rows } = await pool.query(
+      "INSERT INTO clients (fullname, phone_number, email) VALUES ($1, $2, $3) RETURNING *",
+      [fullname, phone_number, email]
+    );
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
-// router.delete("/:id", async (req, res) => {
-//   const { id } = req.params;
+// удаление клиета
+router.delete("/:id", async (req, res) => {
+  const { id } = req.params;
 
-//   if (!id) {
-//     return res.status(400).json({ error: "ID is required" });
-//   }
-
-//   try {
-//     await pool.query("DELETE FROM job_positions WHERE job_position_id = $1", [
-//       id,
-//     ]);
-//     res.status(204).send();
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ error: "Server error" });
-//   }
-// });
+  try {
+    await pool.query("DELETE FROM clients WHERE client_id = $1", [id]);
+    res.status(204).send();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
 module.exports = router;

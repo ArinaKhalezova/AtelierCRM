@@ -4,14 +4,8 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import EmployeesTab from "@/components/Employees/EmployeesTab.vue";
-
-export default {
-  components: {
-    EmployeesTab,
-  },
-};
 </script>
 
 <style scoped>
