@@ -9,24 +9,35 @@
 defineProps({
   comment: {
     type: String,
-    required: true
-  }
+    required: true,
+  },
 });
 </script>
 
 <style scoped>
 .section {
-  margin-bottom: 25px;
-  padding: 15px;
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+h3 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  color: var(--dark-teal);
+  font-size: 1.2rem;
 }
 
 .comment {
-  padding: 10px;
-  background: #f5f5f5;
-  border-radius: 4px;
+  padding: 1.25rem;
+  background-color: white;
+  border: 1px solid rgba(77, 72, 71, 0.1);
+  border-radius: var(--border-radius);
   white-space: pre-line;
+  color: var(--dark-teal);
+  line-height: 1.6;
+  font-size: 0.95rem;
 }
 </style>

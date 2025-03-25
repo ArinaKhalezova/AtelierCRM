@@ -38,53 +38,75 @@
 defineProps({
   measurements: {
     type: Object,
-    default: null
-  }
+    default: null,
+  },
 });
 </script>
 
 <style scoped>
 .measurements-view {
-  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 .measurements-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  margin-bottom: 15px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
 }
 
 .measurement-item {
   display: flex;
   justify-content: space-between;
-  padding: 8px;
-  background: #f5f5f5;
-  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  background-color: rgba(244, 255, 248, 0.3);
+  border-radius: var(--border-radius);
 }
 
 .measurement-item .label {
-  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--warm-gray);
 }
 
 .measurement-item .value {
-  font-weight: bold;
+  font-weight: 500;
+  color: var(--dark-teal);
 }
 
 .empty {
   text-align: center;
-  padding: 20px;
-  color: #666;
-  margin-bottom: 15px;
+  padding: 2rem;
+  color: var(--warm-gray);
+  font-size: 1rem;
+  background-color: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn.primary {
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  border: none;
-  font-size: 14px;
-  background: #1976d2;
+  align-self: flex-start;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius);
+  background-color: var(--teal);
   color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.btn.primary:hover {
+  background-color: #7a9b9e;
+}
+
+@media (max-width: 768px) {
+  .measurements-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .btn.primary {
+    width: 100%;
+  }
 }
 </style>

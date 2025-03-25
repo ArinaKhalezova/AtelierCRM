@@ -34,63 +34,88 @@ defineProps({
   materials: {
     type: Array,
     required: true,
-    default: () => []
-  }
+    default: () => [],
+  },
 });
 
-const emit = defineEmits(['remove-material']);
+const emit = defineEmits(["remove-material"]);
 
 const removeMaterial = (materialId) => {
-  emit('remove-material', materialId);
+  emit("remove-material", materialId);
 };
 </script>
 
 <style scoped>
 .section {
-  margin-bottom: 25px;
-  padding: 15px;
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1.5rem;
 }
 
-.items .item {
+h3 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  color: var(--dark-teal);
+  font-size: 1.2rem;
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px;
-  border-bottom: 1px solid #eee;
+  padding: 1rem;
+  background-color: rgba(244, 255, 248, 0.5);
+  border-radius: var(--border-radius);
 }
 
 .info {
-  display: grid;
-  gap: 5px;
-  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .name {
   font-weight: 500;
+  color: var(--dark-teal);
 }
 
-.quantity,
+.quantity {
+  font-size: 0.9rem;
+  color: var(--warm-gray);
+}
+
 .total {
-  font-size: 0.9em;
-  color: #666;
+  font-weight: 500;
+  color: var(--dark-teal);
 }
 
 .btn.danger {
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  border: none;
-  font-size: 14px;
-  background: #d32f2f;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  background-color: var(--danger);
   color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn.danger:hover {
+  background-color: #c82333;
 }
 
 .empty {
   text-align: center;
-  padding: 20px;
-  color: #666;
+  padding: 2rem;
+  color: var(--warm-gray);
+  font-size: 1rem;
 }
 </style>

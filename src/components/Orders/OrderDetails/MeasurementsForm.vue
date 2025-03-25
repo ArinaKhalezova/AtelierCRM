@@ -65,36 +65,38 @@
       <button @click="save" class="btn primary">
         {{ initialMeasurements ? "Обновить" : "Сохранить" }}
       </button>
-      <button @click="cancel" class="btn outline">
-        Отмена
-      </button>
+      <button @click="cancel" class="btn outline">Отмена</button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
-import { useStore } from 'vuex';
+import { ref, watch } from "vue";
+import { useStore } from "vuex";
 
 const props = defineProps({
   initialMeasurements: {
     type: Object,
-    default: () => ({})
+    default: () => ({}),
   },
   orderId: {
     type: [String, Number],
-    required: true
-  }
+    required: true,
+  },
 });
 
-const emit = defineEmits(['save', 'cancel']);
+const emit = defineEmits(["save", "cancel"]);
 
 const store = useStore();
 const formData = ref({ ...props.initialMeasurements });
 
-watch(() => props.initialMeasurements, (newVal) => {
-  formData.value = { ...newVal };
-}, { immediate: true });
+watch(
+  () => props.initialMeasurements,
+  (newVal) => {
+    formData.value = { ...newVal };
+  },
+  { immediate: true }
+);
 
 const save = async () => {
   try {
@@ -113,10 +115,18 @@ const save = async () => {
     // Подготовка данных
     const measurementsData = {
       size: formData.value.size || null,
-      chest_size: formData.value.chest_size ? Number(formData.value.chest_size) : null,
-      waist_size: formData.value.waist_size ? Number(formData.value.waist_size) : null,
-      hip_size: formData.value.hip_size ? Number(formData.value.hip_size) : null,
-      shoulders_width: formData.value.shoulders_width ? Number(formData.value.shoulders_width) : null,
+      chest_size: formData.value.chest_size
+        ? Number(formData.value.chest_size)
+        : null,
+      waist_size: formData.value.waist_size
+        ? Number(formData.value.waist_size)
+        : null,
+      hip_size: formData.value.hip_size
+        ? Number(formData.value.hip_size)
+        : null,
+      shoulders_width: formData.value.shoulders_width
+        ? Number(formData.value.shoulders_width)
+        : null,
       height: formData.value.height ? Number(formData.value.height) : null,
     };
 
@@ -125,7 +135,7 @@ const save = async () => {
       measurements: measurementsData,
     });
 
-    emit('save');
+    emit("save");
   } catch (error) {
     console.error("Ошибка сохранения мерок:", error);
     alert(error.message || "Не удалось сохранить мерки");
@@ -133,64 +143,102 @@ const save = async () => {
 };
 
 const cancel = () => {
-  emit('cancel');
+  emit("cancel");
 };
 </script>
 
 <style scoped>
 .measurements-form {
-  background: #f9f9f9;
-  padding: 15px;
-  border-radius: 8px;
-  margin-top: 15px;
+  background: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1.5rem;
 }
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 15px;
-  margin-bottom: 15px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
+  gap: 0.5rem;
 }
 
 .form-group label {
-  margin-bottom: 5px;
+  font-size: 0.9rem;
+  color: var(--warm-gray);
   font-weight: 500;
-  color: #555;
 }
 
 .form-group input {
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(77, 72, 71, 0.2);
+  border-radius: var(--border-radius);
+  background-color: white;
+  font-size: 0.95rem;
+  color: var(--dark-teal);
+  transition: all 0.2s ease;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--teal);
+  box-shadow: 0 0 0 2px rgba(139, 170, 173, 0.2);
 }
 
 .form-actions {
   display: flex;
-  gap: 10px;
-  margin-top: 10px;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
 }
 
 .btn {
-  padding: 8px 16px;
-  border-radius: 4px;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
 }
 
 .btn.primary {
-  background: #1976d2;
+  background-color: var(--teal);
   color: white;
   border: none;
 }
 
+.btn.primary:hover {
+  background-color: var(--dark-teal);
+}
+
 .btn.outline {
-  background: transparent;
-  border: 1px solid #1976d2;
-  color: #1976d2;
+  background-color: white;
+  border: 1px solid var(--teal);
+  color: var(--teal);
+}
+
+.btn.outline:hover {
+  background-color: rgba(139, 170, 173, 0.1);
+}
+
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+    text-align: center;
+  }
 }
 </style>

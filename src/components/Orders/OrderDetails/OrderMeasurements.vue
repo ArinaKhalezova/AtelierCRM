@@ -17,22 +17,22 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
-import MeasurementsForm from './MeasurementsForm.vue';
-import MeasurementsView from './MeasurementsView.vue';
+import { ref, watch } from "vue";
+import MeasurementsForm from "./MeasurementsForm.vue";
+import MeasurementsView from "./MeasurementsView.vue";
 
 const props = defineProps({
   measurements: {
     type: Object,
-    default: null
+    default: null,
   },
   orderId: {
     type: [String, Number],
-    required: true
-  }
+    required: true,
+  },
 });
 
-const emit = defineEmits(['saved']);
+const emit = defineEmits(["saved"]);
 
 const showForm = ref(false);
 const localMeasurements = ref({
@@ -44,33 +44,44 @@ const localMeasurements = ref({
   height: null,
 });
 
-watch(() => props.measurements, (newVal) => {
-  if (newVal) {
-    localMeasurements.value = { ...newVal };
-  } else {
-    localMeasurements.value = {
-      size: "",
-      chest_size: null,
-      waist_size: null,
-      hip_size: null,
-      shoulders_width: null,
-      height: null,
-    };
-  }
-}, { immediate: true });
+watch(
+  () => props.measurements,
+  (newVal) => {
+    if (newVal) {
+      localMeasurements.value = { ...newVal };
+    } else {
+      localMeasurements.value = {
+        size: "",
+        chest_size: null,
+        waist_size: null,
+        hip_size: null,
+        shoulders_width: null,
+        height: null,
+      };
+    }
+  },
+  { immediate: true }
+);
 
 const handleSave = () => {
   showForm.value = false;
-  emit('saved');
+  emit("saved");
 };
 </script>
 
 <style scoped>
 .section {
-  margin-bottom: 25px;
-  padding: 15px;
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+h3 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  color: var(--dark-teal);
+  font-size: 1.2rem;
 }
 </style>

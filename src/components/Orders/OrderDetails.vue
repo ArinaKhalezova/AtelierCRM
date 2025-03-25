@@ -4,31 +4,28 @@
     <div v-else-if="error" class="error">{{ error }}</div>
     <div v-else-if="order" class="content">
       <OrderHeader :order="order" />
-      
+
       <OrderMainInfo :order="order" />
-      
-      <OrderServices 
-        :services="services" 
-        @remove-service="removeService" 
+
+      <OrderServices :services="services" @remove-service="removeService" />
+
+      <OrderMaterials
+        :materials="materials"
+        @remove-material="removeMaterial"
       />
-      
-      <OrderMaterials 
-        :materials="materials" 
-        @remove-material="removeMaterial" 
-      />
-      
+
       <OrderComment v-if="order.comment" :comment="order.comment" />
-      
+
       <OrderMeasurements
         :measurements="measurements"
         :order-id="orderId"
         @saved="fetchMeasurements"
       />
-      
-      <OrderActions 
-        :order-id="orderId" 
-        @edit="editOrder" 
-        @delete="deleteOrder" 
+
+      <OrderActions
+        :order-id="orderId"
+        @edit="editOrder"
+        @delete="deleteOrder"
       />
     </div>
   </div>
@@ -122,20 +119,24 @@ const deleteOrder = async () => {
 
 <style scoped>
 .order-details {
-  max-width: 1000px;
+  padding: 2rem;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-.loading,
-.error {
+.loading {
+  padding: 3rem;
   text-align: center;
-  padding: 20px;
-  background: white;
-  border-radius: 8px;
 }
 
 .error {
-  color: #d32f2f;
+  padding: 1.5rem;
+  background-color: rgba(220, 53, 69, 0.1);
+  border-radius: var(--border-radius);
+  color: var(--danger);
+  text-align: center;
 }
 </style>

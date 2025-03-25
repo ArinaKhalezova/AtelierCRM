@@ -41,6 +41,7 @@
               @input="calculateTotal"
               :disabled="!selectedServices.includes(service.service_id)"
               class="quantity"
+              title="Количество"
             />
           </div>
         </div>
@@ -72,6 +73,11 @@
               @input="calculateTotal"
               :disabled="!selectedMaterials.includes(material.material_id)"
               class="quantity"
+              :class="{
+                error:
+                  materialQuantities[material.material_id] > material.quantity,
+              }"
+              title="Доступно: {{ material.quantity }}"
             />
             <span class="available">
               Доступно: {{ material.quantity }} {{ material.unit }}
@@ -140,10 +146,20 @@ const selectedMaterials = ref([]);
 const serviceQuantities = ref({});
 const materialQuantities = ref({});
 
+const initializeQuantities = () => {
+  availableServices.value.forEach((service) => {
+    serviceQuantities.value[service.service_id] = 1;
+  });
+  availableMaterials.value.forEach((material) => {
+    materialQuantities.value[material.material_id] = 1;
+  });
+};
+
 onMounted(async () => {
   await store.dispatch("clients/fetchClients");
   await store.dispatch("services/fetchServices");
   await store.dispatch("materials/fetchMaterials");
+  initializeQuantities();
 });
 
 const clients = computed(() => store.state.clients.clients);
@@ -167,7 +183,7 @@ const isValid = computed(() => {
 const calculateTotal = () => {
   let total = 0;
 
-  // Считаем услуги
+  // Услуги
   selectedServices.value.forEach((serviceId) => {
     const service = availableServices.value.find(
       (s) => s.service_id === serviceId
@@ -176,12 +192,19 @@ const calculateTotal = () => {
     total += service.base_cost * quantity;
   });
 
-  // Считаем материалы
+  // Материалы с проверкой доступности
   selectedMaterials.value.forEach((materialId) => {
     const material = availableMaterials.value.find(
       (m) => m.material_id === materialId
     );
-    const quantity = materialQuantities.value[materialId] || 1;
+    let quantity = materialQuantities.value[materialId] || 1;
+
+    // Проверяем, чтобы не превышало доступное количество
+    if (quantity > material.quantity) {
+      quantity = material.quantity;
+      materialQuantities.value[materialId] = quantity; // Обновляем значение
+    }
+
     total += material.cost_per_unit * quantity;
   });
 
@@ -236,104 +259,268 @@ const cancel = () => {
 
 <style scoped>
 .new-order {
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 2rem;
+}
+
+h2 {
+  color: var(--dark-teal);
+  margin-bottom: 2rem;
+  font-size: 1.75rem;
 }
 
 .form {
   background: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
 }
 
 .section {
-  margin-bottom: 25px;
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(77, 72, 71, 0.1);
+}
+
+.section:last-child {
+  border-bottom: none;
+}
+
+.section h3 {
+  color: var(--dark-teal);
+  margin-bottom: 1.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
 }
 
 .row {
   display: flex;
-  gap: 15px;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .group {
   flex: 1;
-  margin-bottom: 15px;
 }
 
 label {
   display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
+  margin-bottom: 0.75rem;
+  color: var(--warm-gray);
+  font-size: 0.95rem;
+  font-weight: 500;
 }
 
 .input,
-.textarea {
+.textarea,
+select {
   width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(77, 72, 71, 0.2);
+  border-radius: var(--border-radius);
+  background-color: white;
+  transition: all 0.2s ease;
+  font-size: 0.95rem;
+  color: var(--dark-teal);
+}
+
+.input:focus,
+.textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(139, 170, 173, 0.2);
 }
 
 .textarea {
-  min-height: 100px;
+  min-height: 120px;
   resize: vertical;
+  line-height: 1.5;
 }
 
 .services,
 .materials {
   display: grid;
-  gap: 10px;
+  gap: 1rem;
 }
 
-.service,
+.service {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background-color: white;
+  border: 1px solid rgba(77, 72, 71, 0.1);
+  border-radius: var(--border-radius);
+  transition: all 0.2s ease;
+}
+
+.service:hover {
+  border-color: rgba(139, 170, 173, 0.3);
+}
+
+.service label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0;
+  color: var(--dark-teal);
+  cursor: pointer;
+  flex-grow: 1;
+}
+
+.service input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--teal);
+}
+
 .material {
   display: flex;
   align-items: center;
-  gap: 15px;
-  padding: 10px;
-  border: 1px solid #eee;
-  border-radius: 4px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background-color: white;
+  border: 1px solid rgba(77, 72, 71, 0.1);
+  border-radius: var(--border-radius);
+  transition: all 0.2s ease;
+}
+
+.material:hover {
+  border-color: rgba(139, 170, 173, 0.3);
+}
+
+.material label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0;
+  color: var(--dark-teal);
+  cursor: pointer;
+  flex-grow: 1;
+}
+
+.material input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--teal);
 }
 
 .quantity {
-  width: 60px;
-  padding: 5px;
+  width: 80px;
+  padding: 0.65rem;
   text-align: center;
+  border: 1px solid rgba(77, 72, 71, 0.2);
+  border-radius: var(--border-radius);
+  background-color: white;
+  font-size: 0.95rem;
+}
+
+.quantity:disabled {
+  background-color: #f9f9f9;
+  opacity: 0.7;
 }
 
 .available {
-  font-size: 0.9em;
-  color: #666;
+  font-size: 0.85rem;
+  color: var(--warm-gray);
+  width: 100%;
+  margin-top: 0.5rem;
+  padding-left: 2rem;
 }
 
 .total {
-  margin: 20px 0;
-  padding: 15px;
-  background: #f5f5f5;
-  border-radius: 4px;
+  margin: 2.5rem 0;
+  padding: 1.5rem;
+  background-color: white;
+  border: 1px solid rgba(139, 170, 173, 0.3);
+  border-radius: var(--border-radius);
+  text-align: right;
+}
+
+.total h3 {
+  color: var(--dark-teal);
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
 }
 
 .actions {
   display: flex;
-  gap: 10px;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 2rem;
 }
 
 .btn {
-  padding: 10px 20px;
-  border-radius: 4px;
+  padding: 0.85rem 2rem;
+  border-radius: var(--border-radius);
   cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
   border: none;
 }
 
 .btn.primary {
-  background: #1976d2;
+  background-color: var(--teal);
   color: white;
 }
 
+.btn.primary:hover {
+  background-color: var(--dark-teal);
+}
+
 .btn.primary:disabled {
-  background: #ccc;
+  background-color: var(--warm-gray);
   cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.btn.secondary {
+  background-color: white;
+  border: 1px solid var(--teal);
+  color: var(--teal);
+}
+
+.btn.secondary:hover {
+  background-color: rgba(139, 170, 173, 0.1);
+}
+
+@media (max-width: 768px) {
+  .new-order {
+    padding: 1.5rem;
+  }
+
+  .form {
+    padding: 1.5rem;
+  }
+
+  .row {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .service,
+  .material {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .quantity {
+    width: 100%;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+  }
 }
 </style>
