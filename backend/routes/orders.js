@@ -330,4 +330,108 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+// Получение мерок клиента
+router.get("/:id/measurements", async (req, res) => {
+  try {
+    const orderResult = await pool.query(
+      "SELECT client_id FROM orders WHERE order_id = $1",
+      [req.params.id]
+    );
+
+    if (orderResult.rows.length === 0) {
+      return res.status(404).json({ error: "Заказ не найден" });
+    }
+
+    const clientId = orderResult.rows[0].client_id;
+    const result = await pool.query(
+      "SELECT * FROM measurements WHERE client_id = $1",
+      [clientId]
+    );
+
+    res.json(result.rows[0] || null);
+  } catch (err) {
+    console.error("Error in GET measurements:", err);
+    res.status(500).json({
+      error: "Database error",
+      details: err.message,
+    });
+  }
+});
+
+// Сохранение мерок клиента
+router.post("/:id/measurements", async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // 1. Получаем client_id из заказа
+    const orderResult = await client.query(
+      "SELECT client_id FROM orders WHERE order_id = $1",
+      [req.params.id]
+    );
+
+    if (orderResult.rows.length === 0) {
+      return res.status(404).json({ error: "Заказ не найден" });
+    }
+
+    const clientId = orderResult.rows[0].client_id;
+    const { size, chest_size, waist_size, hip_size, shoulders_width, height } =
+      req.body;
+
+    // 2. Проверяем существующие мерки
+    const existingResult = await client.query(
+      "SELECT measurement_id FROM measurements WHERE client_id = $1",
+      [clientId]
+    );
+
+    let result;
+    if (existingResult.rows.length > 0) {
+      // Обновляем существующие мерки
+      result = await client.query(
+        `UPDATE measurements SET
+         size = $1, chest_size = $2, waist_size = $3,
+         hip_size = $4, shoulders_width = $5, height = $6
+         WHERE client_id = $7 RETURNING *`,
+        [
+          size,
+          chest_size,
+          waist_size,
+          hip_size,
+          shoulders_width,
+          height,
+          clientId,
+        ]
+      );
+    } else {
+      // Создаем новые мерки
+      result = await client.query(
+        `INSERT INTO measurements 
+         (client_id, size, chest_size, waist_size, hip_size, shoulders_width, height)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [
+          clientId,
+          size,
+          chest_size,
+          waist_size,
+          hip_size,
+          shoulders_width,
+          height,
+        ]
+      );
+    }
+
+    await client.query("COMMIT");
+    res.json(result.rows[0]);
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("Error saving measurements:", err);
+    res.status(500).json({
+      error: "Ошибка сохранения мерок",
+      details: err.message,
+    });
+  } finally {
+    client.release();
+  }
+});
+
 module.exports = router;

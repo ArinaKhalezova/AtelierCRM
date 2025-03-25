@@ -124,4 +124,29 @@ export default {
   deleteOrderMaterial(orderId, orderMaterialId) {
     return apiClient.delete(`/orders/${orderId}/materials/${orderMaterialId}`);
   },
+
+  // Методы для мерок в заказе
+  getOrderMeasurements(orderId) {
+    return apiClient.get(`/orders/${orderId}/measurements`).catch((error) => {
+      if (error.response?.status === 404) {
+        // Если мерок нет - возвращаем null
+        return { data: null };
+      }
+      throw error;
+    });
+  },
+
+  saveOrderMeasurements(orderId, measurements) {
+    return apiClient
+      .post(`/orders/${orderId}/measurements`, measurements, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+      .then((response) => response.data)
+      .catch((error) => {
+        console.error("Error saving measurements:", error);
+        throw error;
+      });
+  },
 };

@@ -7,6 +7,7 @@ export default {
     currentOrder: null,
     orderServices: [],
     orderMaterials: [],
+    measurements: null,
     loading: false,
     error: null,
   }),
@@ -44,6 +45,9 @@ export default {
       state.orderMaterials = state.orderMaterials.filter(
         (m) => m.order_material_id !== materialId
       );
+    },
+    SET_MEASUREMENTS(state, measurements) {
+      state.measurements = measurements;
     },
     SET_LOADING(state, loading) {
       state.loading = loading;
@@ -157,12 +161,41 @@ export default {
         throw error;
       }
     },
+
+    async fetchMeasurements({ commit }, orderId) {
+      commit("SET_LOADING", true);
+      try {
+        const response = await api.getOrderMeasurements(orderId);
+        commit("SET_MEASUREMENTS", response.data);
+      } catch (error) {
+        if (error.response?.status !== 404) {
+          // Игнорируем 404 ошибку
+          commit("SET_ERROR", error.message);
+          console.error("Measurement fetch error:", error);
+        }
+      } finally {
+        commit("SET_LOADING", false);
+      }
+    },
+
+    async saveMeasurements({ commit }, { orderId, measurements }) {
+      try {
+        const response = await api.saveOrderMeasurements(orderId, measurements);
+        commit("SET_MEASUREMENTS", response);
+        return response;
+      } catch (error) {
+        commit("SET_ERROR", "Ошибка сохранения мерок: " + error.message);
+        console.error("Save measurements error:", error);
+        throw error;
+      }
+    },
   },
   getters: {
     allOrders: (state) => state.orders,
     currentOrder: (state) => state.currentOrder,
     orderServices: (state) => state.orderServices,
     orderMaterials: (state) => state.orderMaterials,
+    measurements: (state) => state.measurements,
     isLoading: (state) => state.loading,
     error: (state) => state.error,
   },
