@@ -7,6 +7,7 @@ export default {
     materialTypes: [],
     materialUnits: [],
     error: null,
+    loading: false,
   }),
   mutations: {
     SET_MATERIALS(state, materials) {
@@ -20,6 +21,9 @@ export default {
     },
     SET_ERROR(state, error) {
       state.error = error;
+    },
+    SET_LOADING(state, isLoading) {
+      state.loading = isLoading;
     },
   },
   actions: {
@@ -56,6 +60,23 @@ export default {
       commit("SET_LOADING", true);
       try {
         const response = await api.addMaterial(materialData);
+        return response.data;
+      } catch (error) {
+        commit("SET_ERROR", error.message);
+        throw error;
+      } finally {
+        commit("SET_LOADING", false);
+      }
+    },
+    async updateMaterial({ commit }, materialData) {
+      commit("SET_LOADING", true);
+      try {
+        const response = await api.updateMaterial(
+          materialData.material_id,
+          materialData
+        );
+        // Обновляем список материалов после успешного обновления
+        await this.dispatch("materials/fetchMaterials");
         return response.data;
       } catch (error) {
         commit("SET_ERROR", error.message);

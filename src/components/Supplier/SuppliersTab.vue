@@ -27,6 +27,9 @@
             <td>{{ supplier.address }}</td>
             <td>{{ supplier.inn }}</td>
             <td class="actions-column">
+              <button @click="openEditModal(supplier)" class="edit-button">
+                Редактировать
+              </button>
               <button
                 @click="deleteSupplier(supplier.supplier_id)"
                 class="delete-button"
@@ -49,7 +52,12 @@
           </div>
           <div class="form-group">
             <label>Телефон:</label>
-            <input v-model="newSupplier.phone_number" required />
+            <input
+              v-model="newSupplier.phone_number"
+              required
+              pattern="[\d\+][\d\s\-\(\)]*"
+              title="Введите корректный номер телефона"
+            />
           </div>
           <div class="form-group">
             <label>Адрес:</label>
@@ -57,9 +65,57 @@
           </div>
           <div class="form-group">
             <label>ИНН:</label>
-            <input v-model="newSupplier.inn" required />
+            <input
+              v-model="newSupplier.inn"
+              required
+              pattern="\d{10}|\d{12}"
+              title="ИНН должен содержать 10 или 12 цифр"
+              maxlength="12"
+            />
           </div>
           <button type="submit" class="submit-button">Добавить</button>
+        </form>
+      </div>
+    </Modal>
+
+    <Modal :isOpen="isSupplierModalOpen" @close="closeSupplierModal">
+      <div class="modal-form">
+        <h3>
+          {{
+            editingSupplier ? "Редактировать поставщика" : "Добавить поставщика"
+          }}
+        </h3>
+        <form @submit.prevent="saveSupplier">
+          <div class="form-group">
+            <label>Название:</label>
+            <input v-model="newSupplier.org_name" required />
+          </div>
+          <div class="form-group">
+            <label>Телефон:</label>
+            <input
+              v-model="newSupplier.phone_number"
+              required
+              pattern="[\d\+][\d\s\-\(\)]*"
+              title="Введите корректный номер телефона"
+            />
+          </div>
+          <div class="form-group">
+            <label>Адрес:</label>
+            <input v-model="newSupplier.address" required />
+          </div>
+          <div class="form-group">
+            <label>ИНН:</label>
+            <input
+              v-model="newSupplier.inn"
+              required
+              pattern="\d{10}|\d{12}"
+              title="ИНН должен содержать 10 или 12 цифр"
+              maxlength="12"
+            />
+          </div>
+          <button type="submit" class="submit-button">
+            {{ editingSupplier ? "Сохранить" : "Добавить" }}
+          </button>
         </form>
       </div>
     </Modal>
@@ -70,6 +126,20 @@
 import { ref, computed, onMounted } from "vue";
 import { useStore } from "vuex";
 import Modal from "../Modal.vue";
+
+const validatePhone = (phone) => {
+  // Простая валидация телефона (минимум 5 цифр)
+  const phoneRegex = /^[\d\+][\d\s\-\(\)]{4,}$/;
+  return phoneRegex.test(phone);
+};
+
+const validateINN = (inn) => {
+  // Валидация ИНН (10 или 12 цифр)
+  const innRegex = /^(\d{10}|\d{12})$/;
+  return innRegex.test(inn);
+};
+
+const editingSupplier = ref(null);
 
 const store = useStore();
 const isSupplierModalOpen = ref(false);
@@ -89,27 +159,131 @@ const openSupplierModal = () => {
   isSupplierModalOpen.value = true;
 };
 
+const openEditModal = (supplier) => {
+  editingSupplier.value = { ...supplier };
+  newSupplier.value = {
+    org_name: supplier.org_name,
+    phone_number: supplier.phone_number,
+    address: supplier.address,
+    inn: supplier.inn,
+  };
+  isSupplierModalOpen.value = true;
+};
+
 const closeSupplierModal = () => {
   isSupplierModalOpen.value = false;
+  editingSupplier.value = null;
+  newSupplier.value = { org_name: "", phone_number: "", address: "", inn: "" };
   store.commit("suppliers/SET_ERROR", null);
 };
 
-const addSupplier = async () => {
-  if (Object.values(newSupplier.value).every((field) => field.trim())) {
-    try {
-      await store.dispatch("suppliers/addSupplierAction", newSupplier.value);
-      newSupplier.value = {
-        org_name: "",
-        phone_number: "",
-        address: "",
-        inn: "",
-      };
-      closeSupplierModal();
-    } catch (err) {
-      console.error("Add supplier error:", err);
+const saveSupplier = async () => {
+  try {
+    // Общая валидация
+    if (!Object.values(newSupplier.value).every((field) => field.trim())) {
+      store.commit(
+        "suppliers/SET_ERROR",
+        "Все поля обязательны для заполнения"
+      );
+      return;
     }
-  } else {
-    store.commit("suppliers/SET_ERROR", "Все поля обязательны для заполнения");
+
+    if (!/^\d{10}$|^\d{12}$/.test(newSupplier.value.inn)) {
+      store.commit(
+        "suppliers/SET_ERROR",
+        "ИНН должен содержать 10 или 12 цифр"
+      );
+      return;
+    }
+
+    // Дополнительная проверка для редактирования
+    if (
+      editingSupplier.value &&
+      editingSupplier.value.inn !== newSupplier.value.inn
+    ) {
+      const innExists = suppliers.value.some(
+        (s) =>
+          s.inn === newSupplier.value.inn &&
+          s.supplier_id !== editingSupplier.value.supplier_id
+      );
+
+      if (innExists) {
+        store.commit(
+          "suppliers/SET_ERROR",
+          "Поставщик с таким ИНН уже существует"
+        );
+        return;
+      }
+    }
+
+    if (editingSupplier.value) {
+      // Редактирование существующего поставщика
+      await store.dispatch("suppliers/updateSupplierAction", {
+        id: editingSupplier.value.supplier_id,
+        supplierData: newSupplier.value,
+      });
+    } else {
+      // Добавление нового поставщика
+      await store.dispatch("suppliers/addSupplierAction", newSupplier.value);
+    }
+
+    // Общие действия после успешного сохранения
+    closeSupplierModal();
+    await store.dispatch("suppliers/fetchSuppliers");
+  } catch (err) {
+    console.error("Save supplier error:", err);
+  }
+};
+
+const addSupplier = async () => {
+  try {
+    // Валидация
+    if (!Object.values(newSupplier.value).every((field) => field.trim())) {
+      store.commit(
+        "suppliers/SET_ERROR",
+        "Все поля обязательны для заполнения"
+      );
+      return;
+    }
+
+    if (!/^\d{10}$|^\d{12}$/.test(newSupplier.value.inn)) {
+      store.commit(
+        "suppliers/SET_ERROR",
+        "ИНН должен содержать 10 или 12 цифр"
+      );
+      return;
+    }
+
+    // Отправка данных
+    await store.dispatch("suppliers/addSupplierAction", {
+      org_name: newSupplier.value.org_name.trim(),
+      phone_number: newSupplier.value.phone_number.trim(),
+      address: newSupplier.value.address.trim(),
+      inn: newSupplier.value.inn.trim(),
+    });
+
+    // Сброс формы
+    newSupplier.value = {
+      org_name: "",
+      phone_number: "",
+      address: "",
+      inn: "",
+    };
+    closeSupplierModal();
+
+    // Обновление списка
+    await store.dispatch("suppliers/fetchSuppliers");
+  } catch (err) {
+    console.error("Add supplier error:", err);
+
+    let errorMessage = "Ошибка при добавлении поставщика";
+    if (err.response?.data?.error) {
+      errorMessage = err.response.data.error;
+    } else if (err.message.includes("409")) {
+      errorMessage = "Поставщик с таким ИНН уже существует";
+    }
+
+    store.commit("suppliers/SET_ERROR", errorMessage);
   }
 };
 
@@ -118,12 +292,20 @@ const deleteSupplier = async (id) => {
 
   try {
     await store.dispatch("suppliers/deleteSupplierAction", id);
+    await store.dispatch("suppliers/fetchSuppliers"); // Обновляем список
   } catch (err) {
     console.error("Delete supplier error:", err);
-    store.commit(
-      "suppliers/SET_ERROR",
-      "Не удалось удалить поставщика. Возможно, существуют связанные поставки."
-    );
+
+    let errorMessage = "Ошибка при удалении поставщика";
+    if (err.response?.status === 400) {
+      errorMessage =
+        err.response.data.error ||
+        "Нельзя удалить поставщика с существующими поставками";
+    } else if (err.response?.status === 404) {
+      errorMessage = "Поставщик не найден";
+    }
+
+    store.commit("suppliers/SET_ERROR", errorMessage);
   }
 };
 
@@ -201,6 +383,21 @@ onMounted(async () => {
 
 .suppliers-table tr:hover {
   background-color: rgba(139, 170, 173, 0.05);
+}
+
+.edit-button {
+  background-color: var(--teal);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  margin-right: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.edit-button:hover {
+  background-color: #7a9b9e;
 }
 
 .delete-button {

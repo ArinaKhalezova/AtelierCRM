@@ -37,6 +37,9 @@ export default {
   addEmployee(employee) {
     return apiClient.post("/employees", employee);
   },
+  updateSupplier(id, supplier) {
+    return apiClient.put(`/suppliers/${id}`, supplier);
+  },
   deleteEmployee(id) {
     return apiClient.delete(`/employees/${id}`);
   },

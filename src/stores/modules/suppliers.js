@@ -13,8 +13,16 @@ export default {
     ADD_SUPPLIER(state, supplier) {
       state.suppliers.push(supplier);
     },
+    UPDATE_SUPPLIER(state, updatedSupplier) {
+      const index = state.suppliers.findIndex(
+        (s) => s.supplier_id === updatedSupplier.supplier_id
+      );
+      if (index !== -1) {
+        state.suppliers.splice(index, 1, updatedSupplier);
+      }
+    },
     DELETE_SUPPLIER(state, id) {
-      state.suppliers = state.suppliers.filter((p) => p.supplier_id !== id);
+      state.suppliers = state.suppliers.filter((s) => s.supplier_id !== id);
     },
     SET_ERROR(state, error) {
       state.error = error;
@@ -31,14 +39,32 @@ export default {
         console.error("Error fetching suppliers:", error);
       }
     },
-    async addSupplierAction({ commit }, supplier) {
+    async addSupplierAction({ commit }, supplierData) {
       try {
-        const response = await api.addSupplier(supplier);
+        const response = await api.addSupplier(supplierData);
         commit("ADD_SUPPLIER", response.data);
         commit("SET_ERROR", null);
-      } catch (error) {
-        commit("SET_ERROR", "Ошибка при добавлении поставщика");
-        console.error("Error adding supplier:", error);
+        return response.data;
+      } catch (err) {
+        commit(
+          "SET_ERROR",
+          err.response?.data?.error || "Ошибка при добавлении поставщика"
+        );
+        throw err;
+      }
+    },
+    async updateSupplierAction({ commit }, { id, supplierData }) {
+      try {
+        const response = await api.updateSupplier(id, supplierData);
+        commit("UPDATE_SUPPLIER", response.data);
+        commit("SET_ERROR", null);
+        return response.data;
+      } catch (err) {
+        commit(
+          "SET_ERROR",
+          err.response?.data?.error || "Ошибка при обновлении поставщика"
+        );
+        throw err;
       }
     },
     async deleteSupplierAction({ commit }, id) {
@@ -46,9 +72,13 @@ export default {
         await api.deleteSupplier(id);
         commit("DELETE_SUPPLIER", id);
         commit("SET_ERROR", null);
-      } catch (error) {
-        commit("SET_ERROR", "Ошибка при удалении поставщика");
-        console.error("Error deleting supplier:", error);
+      } catch (err) {
+        commit(
+          "SET_ERROR",
+          err.response?.data?.error ||
+            "Ошибка при удалении поставщика. Возможно, есть связанные поставки."
+        );
+        throw err;
       }
     },
   },

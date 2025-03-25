@@ -127,14 +127,16 @@ const addEmployee = async () => {
         email: "",
         password: "",
       };
-      error.value = "";
+      store.commit("employees/SET_ERROR", ""); // Используем мутацию вместо прямого присваивания
       closeEmployeeModal();
     } catch (err) {
-      error.value = "Ошибка при добавлении сотрудника";
+      store.commit("employees/SET_ERROR", "Ошибка при добавлении сотрудника"); // Используем мутацию
     }
   } else {
-    error.value =
-      "Заполните обязательные поля: ФИО, должность, телефон и пароль";
+    store.commit(
+      "employees/SET_ERROR",
+      "Заполните обязательные поля: ФИО, должность, телефон и пароль"
+    ); // Используем мутацию
   }
 };
 
@@ -142,9 +144,9 @@ const deleteEmployee = async (employeeId) => {
   if (confirm("Вы уверены, что хотите удалить этого сотрудника?")) {
     try {
       await store.dispatch("employees/deleteEmployeeAction", employeeId);
-      error.value = "";
+      store.commit("employees/SET_ERROR", ""); // Используем мутацию
     } catch (err) {
-      error.value = "Ошибка при удалении сотрудника";
+      store.commit("employees/SET_ERROR", "Ошибка при удалении сотрудника"); // Используем мутацию
     }
   }
 };

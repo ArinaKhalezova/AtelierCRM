@@ -101,6 +101,7 @@ import Modal from "../Modal.vue";
 
 const store = useStore();
 
+const isSubmitting = ref(false);
 const isServiceModalOpen = ref(false);
 const newService = ref({
   category: "",
@@ -140,6 +141,7 @@ const closeServiceModal = () => {
 };
 
 const addService = async () => {
+  isSubmitting.value = true; // Устанавливаем в true перед началом отправки
   try {
     const serviceData = {
       category: newService.value.category,
@@ -152,15 +154,20 @@ const addService = async () => {
     closeServiceModal();
   } catch (err) {
     console.error("Ошибка при добавлении услуги:", err);
+  } finally {
+    isSubmitting.value = false; // Всегда сбрасываем обратно в false
   }
 };
 
 const deleteService = async (serviceId) => {
   if (confirm("Вы уверены, что хотите удалить эту услугу?")) {
+    isSubmitting.value = true;
     try {
       await store.dispatch("services/deleteService", serviceId);
     } catch (err) {
       console.error("Ошибка при удалении услуги:", err);
+    } finally {
+      isSubmitting.value = false;
     }
   }
 };

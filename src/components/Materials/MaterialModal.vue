@@ -1,8 +1,8 @@
 <template>
   <div class="modal-overlay" @click.self="close">
     <div class="modal-content">
-      <h2>{{ material ? 'Редактировать материал' : 'Добавить материал' }}</h2>
-      
+      <h2>{{ material ? "Редактировать материал" : "Добавить материал" }}</h2>
+
       <form @submit.prevent="submitForm">
         <div class="form-group">
           <label for="material_name">Название материала:</label>
@@ -16,16 +16,8 @@
 
         <div class="form-group">
           <label for="type">Тип материала:</label>
-          <select
-            id="type"
-            v-model="formData.type"
-            required
-          >
-            <option
-              v-for="type in materialTypes"
-              :key="type"
-              :value="type"
-            >
+          <select id="type" v-model="formData.type" required>
+            <option v-for="type in materialTypes" :key="type" :value="type">
               {{ type }}
             </option>
           </select>
@@ -33,16 +25,8 @@
 
         <div class="form-group">
           <label for="unit">Единица измерения:</label>
-          <select
-            id="unit"
-            v-model="formData.unit"
-            required
-          >
-            <option
-              v-for="unit in materialUnits"
-              :key="unit"
-              :value="unit"
-            >
+          <select id="unit" v-model="formData.unit" required>
+            <option v-for="unit in materialUnits" :key="unit" :value="unit">
               {{ unit }}
             </option>
           </select>
@@ -77,7 +61,7 @@
             Отмена
           </button>
           <button type="submit" class="submit-button">
-            {{ material ? 'Сохранить' : 'Добавить' }}
+            {{ material ? "Сохранить" : "Добавить" }}
           </button>
         </div>
       </form>
@@ -86,8 +70,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { useStore } from 'vuex';
+import { ref, computed, onMounted } from "vue";
+import { useStore } from "vuex";
 
 const props = defineProps({
   material: {
@@ -96,14 +80,14 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['close', 'save']);
+const emit = defineEmits(["close", "save"]);
 
 const store = useStore();
 
 const formData = ref({
-  material_name: '',
-  type: '',
-  unit: '',
+  material_name: "",
+  type: "",
+  unit: "",
   quantity: 0,
   cost_per_unit: 0,
 });
@@ -111,10 +95,10 @@ const formData = ref({
 onMounted(() => {
   // Загружаем типы и единицы измерения, если они еще не загружены
   if (materialTypes.value.length === 0) {
-    store.dispatch('materials/fetchMaterialTypes');
+    store.dispatch("materials/fetchMaterialTypes");
   }
   if (materialUnits.value.length === 0) {
-    store.dispatch('materials/fetchMaterialUnits');
+    store.dispatch("materials/fetchMaterialUnits");
   }
 
   // Если передан материал для редактирования, заполняем форму
@@ -123,15 +107,20 @@ onMounted(() => {
   }
 });
 
-const materialTypes = computed(() => store.getters['materials/materialTypes']);
-const materialUnits = computed(() => store.getters['materials/materialUnits']);
+const materialTypes = computed(() => store.getters["materials/materialTypes"]);
+const materialUnits = computed(() => store.getters["materials/materialUnits"]);
 
 const close = () => {
-  emit('close');
+  emit("close");
 };
-
 const submitForm = () => {
-  emit('save', { ...formData.value });
+  // Преобразуем числовые поля перед отправкой
+  const dataToSend = {
+    ...formData.value,
+    quantity: Number(formData.value.quantity),
+    cost_per_unit: Number(formData.value.cost_per_unit),
+  };
+  emit("save", dataToSend);
   close();
 };
 </script>

@@ -47,14 +47,17 @@ export default {
         console.error("Error fetching job positions:", error);
       }
     },
-    async addEmployeeAction({ commit }, employee) {
+    async addEmployeeAction({ commit, dispatch }, employee) {
       try {
         const response = await api.addEmployee(employee);
-        commit("ADD_EMPLOYEE", response.data);
+        // После успешного добавления обновляем список сотрудников
+        await dispatch("fetchEmployees");
         commit("SET_ERROR", null);
+        return response.data;
       } catch (error) {
         commit("SET_ERROR", "Ошибка при добавлении сотрудника");
         console.error("Error adding employee:", error);
+        throw error;
       }
     },
     async deleteEmployeeAction({ commit }, id) {

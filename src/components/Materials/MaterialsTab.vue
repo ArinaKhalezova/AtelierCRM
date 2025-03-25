@@ -88,10 +88,13 @@ const handleSave = async (materialData) => {
       await store.dispatch("materials/updateMaterial", materialData);
     } else {
       await store.dispatch("materials/addMaterial", materialData);
+      // После добавления нового материала обновляем список
+      await store.dispatch("materials/fetchMaterials");
     }
     closeModal();
   } catch (error) {
     console.error("Ошибка сохранения:", error);
+    store.commit("materials/SET_ERROR", error.message);
   }
 };
 
