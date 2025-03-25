@@ -9,9 +9,10 @@ import ClientsList from '@/components/Clients/ClientsList.vue';
 </script>
 
 <style scoped>
-.settings-view {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+.clients-view {
+  background-color: var(--surface);
+  border-radius: var(--border-radius);
+  padding: 2rem;
+  box-shadow: var(--shadow-sm);
 }
 </style>

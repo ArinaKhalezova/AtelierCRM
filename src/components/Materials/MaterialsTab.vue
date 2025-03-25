@@ -1,56 +1,49 @@
 <template>
   <div class="materials-tab">
-    <div class="header-section">
-      <h2>Управление материалами</h2>
+    <div class="header">
+      <h2>Материалы</h2>
       <button @click="showAddModal = true" class="add-button">
-        + Добавить материал
+        <span class="plus-icon">+</span> Добавить материал
       </button>
     </div>
 
     <div v-if="error" class="error-message">{{ error }}</div>
 
-    <div class="materials-grid">
-      <div
-        v-for="material in materials"
-        :key="material.material_id"
-        class="material-card"
-      >
-        <div class="card-content">
-          <h3>{{ material.material_name }}</h3>
-          <div class="material-properties">
-            <div class="property">
-              <span class="label">Тип:</span>
-              <span class="value">{{ material.type }}</span>
-            </div>
-            <div class="property">
-              <span class="label">Ед. измерения:</span>
-              <span class="value">{{ material.unit }}</span>
-            </div>
-            <div class="property">
-              <span class="label">Количество:</span>
-              <span class="value">{{ material.quantity }}</span>
-            </div>
-            <div class="property">
-              <span class="label">Цена за ед.:</span>
-              <span class="value">{{ material.cost_per_unit }} ₽</span>
-            </div>
-          </div>
-        </div>
-        <div class="card-actions">
-          <button @click="openEditModal(material)" class="edit-button">
-            Редактировать
-          </button>
-          <button
-            @click="deleteMaterial(material.material_id)"
-            class="delete-button"
-          >
-            Удалить
-          </button>
-        </div>
-      </div>
+    <div class="table-wrapper">
+      <table class="materials-table">
+        <thead>
+          <tr>
+            <th>Название</th>
+            <th>Тип</th>
+            <th>Ед. измерения</th>
+            <th>Количество</th>
+            <th>Цена за ед.</th>
+            <th class="actions-column">Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="material in materials" :key="material.material_id">
+            <td>{{ material.material_name }}</td>
+            <td>{{ material.type }}</td>
+            <td>{{ material.unit }}</td>
+            <td>{{ material.quantity }}</td>
+            <td>{{ material.cost_per_unit }} ₽</td>
+            <td class="actions-column">
+              <button @click="openEditModal(material)" class="edit-button">
+                Редактировать
+              </button>
+              <button
+                @click="deleteMaterial(material.material_id)"
+                class="delete-button"
+              >
+                Удалить
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
-    <!-- Модальное окно добавления/редактирования -->
     <MaterialModal
       v-if="showAddModal || selectedMaterial"
       :material="selectedMaterial"
@@ -121,103 +114,141 @@ const deleteMaterial = async (id) => {
 
 <style scoped>
 .materials-tab {
-  padding: 20px;
-}
-
-.header-section {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-}
-
-.add-button {
-  background-color: #42b983;
-  color: white;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-.add-button:hover {
-  background-color: #3aa876;
-}
-
-.materials-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  flex-direction: column;
   gap: 1.5rem;
 }
 
-.material-card {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.card-content {
-  padding: 1.5rem;
-}
-
-.material-properties {
-  margin-top: 1rem;
-}
-
-.property {
+.header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 0.5rem;
-  padding: 0.3rem 0;
-  border-bottom: 1px solid #eee;
+  align-items: center;
 }
 
-.label {
-  color: #666;
+.add-button {
+  background-color: var(--dark-teal);
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.add-button:hover {
+  background-color: #244a4b;
+  opacity: 0.95;
+}
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.materials-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.materials-table th,
+.materials-table td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: var(--border);
+}
+
+.materials-table th {
+  background-color: var(--dark-teal);
+  color: white;
+  position: sticky;
+  top: 0;
   font-weight: 500;
 }
 
-.value {
-  color: #333;
+.actions-column {
+  white-space: nowrap;
+  width: 1%;
 }
 
-.card-actions {
-  display: flex;
-  gap: 0.5rem;
-  padding: 1rem;
-  background: #f8f9fa;
-  margin-top: auto;
+.materials-table tr:hover {
+  background-color: rgba(139, 170, 173, 0.05);
 }
 
 .edit-button {
-  background-color: #f0ad4e;
+  background-color: var(--teal);
   color: white;
-  padding: 8px 16px;
   border: none;
-  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
   cursor: pointer;
-  flex: 1;
+  margin-right: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.edit-button:hover {
+  background-color: #7a9b9e;
 }
 
 .delete-button {
-  background-color: #d9534f;
+  background-color: var(--danger);
   color: white;
-  padding: 8px 16px;
   border: none;
-  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
   cursor: pointer;
-  flex: 1;
+  transition: all 0.2s ease;
+}
+
+.delete-button:hover {
+  background-color: #c82333;
+  opacity: 0.95;
 }
 
 .error-message {
-  color: #d9534f;
-  padding: 1rem;
-  background: #f8d7da;
-  border-radius: 4px;
-  margin-bottom: 1rem;
+  color: var(--danger);
+  padding: 0.75rem;
+  background-color: rgba(220, 53, 69, 0.1);
+  border-radius: var(--border-radius);
+}
+
+@media (max-width: 768px) {
+  .materials-table {
+    display: block;
+    width: 100%;
+  }
+
+  .materials-table thead {
+    display: none;
+  }
+
+  .materials-table tr {
+    display: block;
+    margin-bottom: 1rem;
+    border-bottom: var(--border);
+    padding: 0.5rem;
+  }
+
+  .materials-table td {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem;
+    border-bottom: none;
+  }
+
+  .materials-table td::before {
+    content: attr(data-label);
+    font-weight: bold;
+    margin-right: 1rem;
+    color: var(--dark-teal);
+  }
+
+  .actions-column {
+    justify-content: flex-end;
+  }
 }
 </style>

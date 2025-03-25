@@ -1,67 +1,95 @@
 <template>
   <div class="services-tab">
-    <h2>Услуги</h2>
-    <button @click="openServiceModal" class="add-service-button">
-      Добавить услугу
-    </button>
+    <div class="header">
+      <h2>Услуги</h2>
+      <button @click="openServiceModal" class="add-button">
+        <span class="plus-icon">+</span> Добавить услугу
+      </button>
+    </div>
 
-    <div class="service-list">
-      <div
-        v-for="service in services"
-        :key="service.service_id"
-        class="service-item"
-      >
-        <p><strong>Категория:</strong> {{ service.category }}</p>
-        <p><strong>Название:</strong> {{ service.name }}</p>
-        <p><strong>Описание:</strong> {{ service.description || "—" }}</p>
-        <p><strong>Стоимость:</strong> {{ service.base_cost }} ₽</p>
-        <button
-          @click="deleteService(service.service_id)"
-          class="delete-button"
-        >
-          Удалить
-        </button>
-      </div>
+    <div class="table-wrapper">
+      <table class="services-table">
+        <thead>
+          <tr>
+            <th>Категория</th>
+            <th>Название</th>
+            <th>Описание</th>
+            <th>Стоимость</th>
+            <th class="actions-column">Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="service in services" :key="service.service_id">
+            <td>{{ service.category }}</td>
+            <td>{{ service.name }}</td>
+            <td>{{ service.description || "—" }}</td>
+            <td>{{ service.base_cost }} ₽</td>
+            <td class="actions-column">
+              <button
+                @click="deleteService(service.service_id)"
+                class="delete-button"
+              >
+                Удалить
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <Modal :isOpen="isServiceModalOpen" @close="closeServiceModal">
-      <h3>Добавить новую услугу</h3>
-      <form @submit.prevent="addService">
-        <div class="form-group">
-          <label>Категория:</label>
-          <select v-model="newService.category" required>
-            <option value="" disabled>Выберите категорию</option>
-            <option
-              v-for="category in serviceCategories"
-              :key="category"
-              :value="category"
+      <div class="modal-form">
+        <h3>Добавить услугу</h3>
+        <form @submit.prevent="addService" class="form-grid">
+          <div class="form-group">
+            <label>Категория</label>
+            <select v-model="newService.category" required>
+              <option value="" disabled>Выберите категорию</option>
+              <option
+                v-for="category in serviceCategories"
+                :key="category"
+                :value="category"
+              >
+                {{ category }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Название</label>
+            <input v-model="newService.name" required minlength="2" />
+          </div>
+          <div class="form-group">
+            <label>Описание</label>
+            <textarea v-model="newService.description" rows="3" />
+          </div>
+          <div class="form-group">
+            <label>Стоимость (₽)</label>
+            <input
+              v-model.number="newService.base_cost"
+              type="number"
+              min="0"
+              step="0.01"
+              required
+            />
+          </div>
+          <div class="form-actions">
+            <button
+              type="button"
+              @click="closeServiceModal"
+              class="cancel-button"
             >
-              {{ category }}
-            </option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Название:</label>
-          <input v-model="newService.name" required minlength="2" />
-        </div>
-        <div class="form-group">
-          <label>Описание:</label>
-          <textarea v-model="newService.description" />
-        </div>
-        <div class="form-group">
-          <label>Базовая стоимость:</label>
-          <input
-            v-model.number="newService.base_cost"
-            type="number"
-            min="0"
-            step="0.01"
-            required
-          />
-        </div>
-        <button type="submit" :disabled="isSubmitting">
-          {{ isSubmitting ? "Добавление..." : "Добавить услугу" }}
-        </button>
-      </form>
+              Отмена
+            </button>
+            <button
+              type="submit"
+              :disabled="isSubmitting"
+              class="submit-button"
+            >
+              {{ isSubmitting ? "Добавление..." : "Добавить" }}
+            </button>
+          </div>
+        </form>
+      </div>
     </Modal>
   </div>
 </template>
@@ -140,76 +168,216 @@ const deleteService = async (serviceId) => {
 
 <style scoped>
 .services-tab {
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-.add-service-button {
-  background: #4caf50;
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.add-button {
+  background-color: var(--dark-teal);
   color: white;
-  padding: 10px 20px;
   border: none;
-  border-radius: 4px;
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--border-radius);
   cursor: pointer;
-  margin-bottom: 20px;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.service-list {
-  display: grid;
-  gap: 15px;
+.add-button:hover {
+  background-color: #244a4b;
+  opacity: 0.95;
 }
 
-.service-item {
-  background: #f5f5f5;
-  padding: 15px;
-  border-radius: 4px;
-  position: relative;
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.services-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.services-table th,
+.services-table td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: var(--border);
+}
+
+.services-table th {
+  background-color: var(--dark-teal);
+  color: white;
+  position: sticky;
+  top: 0;
+  font-weight: 500;
+}
+
+.services-table td {
+  vertical-align: top;
+}
+
+.actions-column {
+  white-space: nowrap;
+  width: 1%;
+}
+
+.services-table tr:hover {
+  background-color: rgba(139, 170, 173, 0.05);
 }
 
 .delete-button {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: #ff4444;
+  background-color: var(--danger);
   color: white;
   border: none;
-  padding: 5px 10px;
-  border-radius: 3px;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-button:hover {
+  background-color: #c82333;
+  opacity: 0.95;
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
 }
 
 .form-group {
-  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .form-group label {
-  display: block;
-  margin-bottom: 5px;
+  font-weight: 500;
+  color: var(--dark-teal);
+  font-size: 0.9rem;
 }
 
 .form-group input,
 .form-group select,
 .form-group textarea {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 0.75rem;
+  border: var(--border);
+  border-radius: var(--border-radius);
+  font-size: 1rem;
 }
 
 .form-group textarea {
-  height: 80px;
   resize: vertical;
+  min-height: 100px;
 }
 
-.error-message {
-  color: #ff4444;
-  margin-bottom: 15px;
-  padding: 10px;
-  background: #ffeeee;
-  border-radius: 4px;
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--teal);
+  box-shadow: 0 0 0 2px rgba(139, 170, 173, 0.2);
 }
 
-button:disabled {
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  grid-column: 1 / -1;
+}
+
+.cancel-button {
+  background-color: var(--warm-gray);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-button:hover {
+  background-color: #5e5756;
+  opacity: 0.95;
+}
+
+.submit-button {
+  background-color: var(--dark-teal);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.submit-button:hover:not(:disabled) {
+  background-color: #244a4b;
+  opacity: 0.95;
+}
+
+.submit-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .services-table {
+    display: block;
+    width: 100%;
+  }
+
+  .services-table thead {
+    display: none;
+  }
+
+  .services-table tr {
+    display: block;
+    margin-bottom: 1rem;
+    border-bottom: var(--border);
+    padding: 0.5rem;
+  }
+
+  .services-table td {
+    display: flex;
+    flex-direction: column;
+    padding: 0.5rem;
+    border-bottom: none;
+  }
+
+  .services-table td::before {
+    content: attr(data-label);
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+    color: var(--dark-teal);
+  }
+
+  .actions-column {
+    justify-content: flex-start;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

@@ -4,153 +4,186 @@
       {{ errorMessage }}
     </div>
 
-    <!-- Основные поля поставки -->
-    <div class="form-group">
-      <label>Поставщик:</label>
-      <select v-model="formData.supplier_id" required>
-        <option value="" disabled>Выберите поставщика</option>
-        <option
-          v-for="supplier in suppliers"
-          :key="supplier.supplier_id"
-          :value="supplier.supplier_id"
-        >
-          {{ supplier.org_name }}
-        </option>
-      </select>
+    <div class="form-section">
+      <h3>Основные данные</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Поставщик</label>
+          <select v-model="formData.supplier_id" required>
+            <option value="" disabled>Выберите поставщика</option>
+            <option
+              v-for="supplier in suppliers"
+              :key="supplier.supplier_id"
+              :value="supplier.supplier_id"
+            >
+              {{ supplier.org_name }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Дата поставки</label>
+          <input v-model="formData.delivery_date" type="date" required />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Путь к документу</label>
+        <input
+          v-model="formData.document_path"
+          type="text"
+          placeholder="/documents/delivery_123.pdf"
+        />
+      </div>
     </div>
 
-    <div class="form-group">
-      <label>Дата поставки:</label>
-      <input v-model="formData.delivery_date" type="date" required />
-    </div>
-
-    <div class="form-group">
-      <label>Путь к документу:</label>
-      <input
-        v-model="formData.document_path"
-        type="text"
-        placeholder="Например: /documents/delivery_123.pdf"
-      />
-    </div>
-
-    <!-- Секция материалов -->
-    <div class="materials-section">
+    <div class="form-section">
       <div class="section-header">
         <h3>Материалы в поставке</h3>
-        <button type="button" @click="openMaterialModal" class="add-btn">
-          + Добавить материал
+        <button type="button" @click="openMaterialModal" class="add-button">
+          <span class="plus-icon">+</span> Добавить материал
         </button>
       </div>
 
-      <!-- Список добавленных материалов -->
-      <div v-if="formData.materials.length > 0" class="materials-list">
+      <div v-if="formData.materials.length > 0" class="materials-table">
+        <div class="table-header">
+          <div>Название</div>
+          <div>Тип</div>
+          <div>Кол-во</div>
+          <div>Цена</div>
+          <div class="actions-column"></div>
+        </div>
         <div
           v-for="(material, index) in formData.materials"
           :key="index"
-          class="material-item"
+          class="table-row"
         >
-          <div class="material-info">
-            <template v-if="material.material_id">
-              <strong>{{ getMaterialName(material.material_id) }}</strong>
-            </template>
-            <template v-else>
-              <strong>Новый материал:</strong> {{ material.material_name }} ({{
-                material.type
-              }})
-            </template>
-            <div class="material-details">
-              <span>Кол-во: {{ material.quantity }} {{ material.unit }}</span>
-              <span>Цена: {{ material.cost_per_unit }} ₽/ед.</span>
-            </div>
+          <div>
+            {{
+              material.material_name || getMaterialName(material.material_id)
+            }}
           </div>
-          <button
-            @click="removeMaterial(index)"
-            type="button"
-            class="remove-btn"
-            title="Удалить"
-          >
-            ×
-          </button>
+          <div>{{ material.type }}</div>
+          <div>{{ material.quantity }} {{ material.unit }}</div>
+          <div>{{ material.cost_per_unit }} ₽</div>
+          <div class="actions-column">
+            <button
+              @click="removeMaterial(index)"
+              type="button"
+              class="delete-button"
+            >
+              Удалить
+            </button>
+          </div>
         </div>
       </div>
-      <div v-else class="empty-materials">
+      <div v-else class="empty-state">
         <p>Нет добавленных материалов</p>
       </div>
     </div>
 
-    <!-- Кнопки формы -->
     <div class="form-actions">
-      <button type="button" @click="cancel" class="cancel-btn">Отмена</button>
-      <button type="submit" :disabled="isSubmitting || !canSubmit">
+      <button type="button" @click="cancel" class="cancel-button">
+        Отмена
+      </button>
+      <button
+        type="submit"
+        :disabled="isSubmitting || !canSubmit"
+        class="submit-button"
+      >
         {{ isSubmitting ? "Сохранение..." : "Создать поставку" }}
       </button>
     </div>
 
-    <!-- Модальное окно добавления материала -->
-    <div
-      v-if="showMaterialModal"
-      class="modal-overlay"
-      @click.self="closeMaterialModal"
-    >
-      <div class="modal-content">
-        <h3>Добавить материал</h3>
-        <div class="form-group">
-          <label>Название:</label>
-          <input v-model="newMaterial.material_name" type="text" />
+    <Modal :isOpen="showMaterialModal" @close="closeMaterialModal">
+      <div class="modal-container">
+        <div class="modal-header">
+          <h3>Добавить материал</h3>
         </div>
-        <div class="form-group">
-          <label>Тип:</label>
-          <select v-model="newMaterial.type">
-            <option value="" disabled>Выберите тип</option>
-            <option v-for="type in materialTypes" :key="type" :value="type">
-              {{ type }}
-            </option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Ед. измерения:</label>
-          <select v-model="newMaterial.unit">
-            <option value="" disabled>Выберите единицу</option>
-            <option v-for="unit in materialUnits" :key="unit" :value="unit">
-              {{ unit }}
-            </option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Количество:</label>
-          <input
-            v-model.number="newMaterial.quantity"
-            type="number"
-            min="1"
-            required
-          />
-        </div>
-        <div class="form-group">
-          <label>Цена за ед. (₽):</label>
-          <input
-            v-model.number="newMaterial.cost_per_unit"
-            type="number"
-            min="0.01"
-            step="0.01"
-            required
-          />
+        <div class="modal-scrollable-content">
+          <div class="modal-form-content">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Название</label>
+                <input
+                  v-model="newMaterial.material_name"
+                  type="text"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label>Тип</label>
+                <select v-model="newMaterial.type" required>
+                  <option value="" disabled>Выберите тип</option>
+                  <option
+                    v-for="type in materialTypes"
+                    :key="type"
+                    :value="type"
+                  >
+                    {{ type }}
+                  </option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Ед. измерения</label>
+                <select v-model="newMaterial.unit" required>
+                  <option value="" disabled>Выберите единицу</option>
+                  <option
+                    v-for="unit in materialUnits"
+                    :key="unit"
+                    :value="unit"
+                  >
+                    {{ unit }}
+                  </option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Количество</label>
+                <input
+                  v-model.number="newMaterial.quantity"
+                  type="number"
+                  min="1"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label>Цена за ед. (₽)</label>
+                <input
+                  v-model.number="newMaterial.cost_per_unit"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  required
+                />
+              </div>
+            </div>
+          </div>
         </div>
         <div class="modal-actions">
-          <button type="button" @click="closeMaterialModal" class="cancel-btn">
+          <button
+            type="button"
+            @click="closeMaterialModal"
+            class="cancel-button"
+          >
             Отмена
           </button>
-          <button type="button" @click="confirmAddMaterial" class="confirm-btn">
+          <button
+            type="button"
+            @click="confirmAddMaterial"
+            class="submit-button"
+          >
             Добавить
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   </form>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { useStore } from "vuex";
+import Modal from "@/components/Modal.vue";
 
 const store = useStore();
 const emit = defineEmits(["submit", "cancel"]);
@@ -226,7 +259,6 @@ const closeMaterialModal = () => {
 };
 
 const confirmAddMaterial = () => {
-  // Проверяем, что все поля заполнены
   if (!newMaterial.value.material_name?.trim()) {
     errorMessage.value = "Введите название материала";
     return;
@@ -251,14 +283,13 @@ const confirmAddMaterial = () => {
     return;
   }
 
-  // Добавляем материал с явным указанием всех полей
   formData.value.materials.push({
     material_name: newMaterial.value.material_name.trim(),
     type: newMaterial.value.type,
     unit: newMaterial.value.unit,
     quantity: Number(newMaterial.value.quantity),
     cost_per_unit: Number(newMaterial.value.cost_per_unit),
-    is_new: true, // Явно указываем, что это новый материал
+    is_new: true,
   });
 
   // Сброс формы
@@ -293,7 +324,6 @@ const handleSubmit = async () => {
   isSubmitting.value = true;
   errorMessage.value = "";
 
-  // Дополнительная проверка материалов перед отправкой
   const hasInvalidMaterials = formData.value.materials.some((material) => {
     return (
       !material.material_name?.trim() ||
@@ -313,7 +343,6 @@ const handleSubmit = async () => {
   }
 
   try {
-    // Подготавливаем данные для отправки
     const deliveryData = {
       supplier_id: formData.value.supplier_id,
       delivery_date: formData.value.delivery_date,
@@ -324,7 +353,6 @@ const handleSubmit = async () => {
         unit: m.unit,
         quantity: m.quantity,
         cost_per_unit: m.cost_per_unit,
-        // Если material_id есть - используем его, иначе указываем, что материал новый
         ...(m.material_id ? { material_id: m.material_id } : { is_new: true }),
       })),
     };
@@ -353,150 +381,290 @@ const handleSubmit = async () => {
 
 <style scoped>
 .delivery-form {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.form-group {
-  margin-bottom: 1rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-}
-
-.form-group input,
-.form-group select {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-.materials-section {
-  margin: 2rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
   padding: 1rem;
-  border: 1px solid #eee;
-  border-radius: 8px;
+}
+
+.form-section {
+  background: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1.5rem;
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
-.materials-list {
-  margin-top: 1rem;
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
-.material-item {
+.form-group {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  margin-bottom: 0.5rem;
-  background: #f8f9fa;
-  border-radius: 4px;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.material-info {
-  flex-grow: 1;
-}
-
-.material-details {
-  display: flex;
-  gap: 1rem;
-  margin-top: 0.5rem;
+.form-group label {
+  font-weight: 500;
+  color: var(--dark-teal);
   font-size: 0.9rem;
-  color: #666;
 }
 
-.remove-btn {
-  background: none;
+.form-group input,
+.form-group select {
+  padding: 0.75rem;
+  border: var(--border);
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--teal);
+  box-shadow: 0 0 0 2px rgba(139, 170, 173, 0.2);
+}
+
+.add-button {
+  background-color: var(--dark-teal);
+  color: white;
   border: none;
-  color: #dc3545;
-  font-size: 1.2rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--border-radius);
   cursor: pointer;
-  padding: 0 0.5rem;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.empty-materials {
+.add-button:hover {
+  background-color: #244a4b;
+  opacity: 0.95;
+}
+
+.materials-table {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr auto;
+  border: var(--border);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.table-header {
+  display: contents;
+}
+
+.table-header > div {
+  background-color: var(--dark-teal);
+  color: white;
   padding: 1rem;
+  font-weight: 500;
+}
+
+.table-row {
+  display: contents;
+}
+
+.table-row > div {
+  padding: 1rem;
+  border-bottom: var(--border);
+  display: flex;
+  align-items: center;
+}
+
+.actions-column {
+  justify-content: flex-end;
+}
+
+.delete-button {
+  background-color: var(--danger);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-button:hover {
+  background-color: #c82333;
+  opacity: 0.95;
+}
+
+.empty-state {
+  padding: 2rem;
   text-align: center;
-  color: #999;
+  color: var(--warm-gray);
+  border: 1px dashed var(--warm-gray);
+  border-radius: var(--border-radius);
 }
 
 .form-actions {
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  margin-top: 2rem;
 }
 
-.form-actions button {
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
+.cancel-button {
+  background-color: var(--warm-gray);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius);
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.cancel-btn {
-  background: #f8f9fa;
-  border: 1px solid #ddd;
+.cancel-button:hover {
+  background-color: #5e5756;
+  opacity: 0.95;
 }
 
-.add-btn,
-.confirm-btn {
-  background: #007bff;
+.submit-button {
+  background-color: var(--dark-teal);
   color: white;
   border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-button[type="submit"] {
-  background: #28a745;
-  color: white;
-  border: none;
+.submit-button:hover:not(:disabled) {
+  background-color: #244a4b;
+  opacity: 0.95;
+}
+
+.submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .error-message {
-  color: #dc3545;
+  color: var(--danger);
   padding: 0.75rem;
-  margin-bottom: 1rem;
-  background-color: #f8d7da;
-  border: 1px solid #f5c6cb;
-  border-radius: 4px;
+  background-color: rgba(220, 53, 69, 0.1);
+  border-radius: var(--border-radius);
 }
 
-/* Стили модального окна */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+/* Стили для модального окна */
+.modal-container {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
+  flex-direction: column;
+  max-height: 90vh;
+  width: 600px;
+  max-width: 95vw;
+  background: white;
+  border-radius: var(--border-radius);
+  overflow: hidden;
 }
 
-.modal-content {
-  background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  width: 500px;
-  max-width: 90%;
+.modal-scrollable-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 1.5rem;
+}
+
+.modal-form-content {
+  min-height: min-content;
+  padding: 1rem 0;
+}
+
+.modal-header {
+  padding: 1.5rem;
+  border-bottom: var(--border);
+}
+
+.modal-scrollable {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 1.5rem;
+}
+
+.modal-form {
+  padding: 1rem 0;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  padding-bottom: 1rem;
 }
 
 .modal-actions {
+  padding: 1.5rem;
+  border-top: var(--border);
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  margin-top: 1.5rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .materials-table {
+    grid-template-columns: 1fr;
+  }
+
+  .table-header {
+    display: none;
+  }
+
+  .table-row {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 1rem;
+    border-bottom: var(--border);
+  }
+
+  .table-row > div {
+    flex: 1 1 50%;
+    padding: 0.5rem;
+    border-bottom: none;
+  }
+
+  .table-row > div::before {
+    content: attr(data-label);
+    font-weight: 500;
+    color: var(--dark-teal);
+    margin-right: 0.5rem;
+  }
+
+  .actions-column {
+    justify-content: flex-start;
+    flex-basis: 100%;
+    margin-top: 0.5rem;
+  }
+
+  .modal-container {
+    width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .modal-scrollable-content {
+    padding: 0 1rem;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
