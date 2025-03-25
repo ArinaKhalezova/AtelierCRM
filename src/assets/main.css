@@ -49,6 +49,7 @@ body {
   color: var(--text);
   background-color: var(--bg);
 }
+
 /* 
 @media (hover: hover) {
   a:hover {

@@ -41,6 +41,28 @@ export default {
         (s) => s.order_service_id !== serviceId
       );
     },
+    UPDATE_ORDER_STATUS(state, { orderId, status }) {
+      const order = state.orders.find((o) => o.order_id === orderId);
+      if (order) {
+        order.status = status;
+      }
+      if (state.currentOrder && state.currentOrder.order_id === orderId) {
+        state.currentOrder.status = status;
+      }
+    },
+
+    UPDATE_ORDER_SERVICE_STATUS(state, { serviceId, status }) {
+      const service = state.orderServices.find(
+        (s) => s.order_service_id === serviceId
+      );
+      if (service) {
+        service.status = status;
+      }
+    },
+
+    SET_ORDERS_COUNT(state, counts) {
+      state.ordersCount = counts;
+    },
     REMOVE_ORDER_MATERIAL(state, materialId) {
       state.orderMaterials = state.orderMaterials.filter(
         (m) => m.order_material_id !== materialId
@@ -140,7 +162,41 @@ export default {
         throw error;
       }
     },
-
+    async updateOrderStatus({ commit }, { orderId, status }) {
+      try {
+        const response = await api.updateOrderStatus(orderId, status);
+        commit("UPDATE_ORDER_STATUS", {
+          orderId,
+          status: response.data.status,
+        });
+        return true;
+      } catch (error) {
+        commit("SET_ERROR", error.message);
+        return false;
+      }
+    },
+    async updateOrderServiceStatus({ commit }, { serviceId, status }) {
+      try {
+        const response = await api.updateOrderServiceStatus(serviceId, status);
+        commit("UPDATE_ORDER_SERVICE_STATUS", {
+          serviceId,
+          status: response.data.status,
+        });
+        return true;
+      } catch (error) {
+        commit("SET_ERROR", error.message);
+        return false;
+      }
+    },
+    async fetchOrdersCountByStatus({ commit }) {
+      try {
+        const response = await api.getOrdersCountByStatus();
+        commit("SET_ORDERS_COUNT", response.data);
+      } catch (error) {
+        commit("SET_ERROR", error.message);
+        console.error("Error fetching orders count:", error);
+      }
+    },
     async addMaterialToOrder({ commit }, { orderId, material }) {
       try {
         const response = await api.addOrderMaterial(orderId, material);
@@ -194,6 +250,19 @@ export default {
     allOrders: (state) => state.orders,
     currentOrder: (state) => state.currentOrder,
     orderServices: (state) => state.orderServices,
+    activeOrdersCount: (state) => {
+      const activeStatuses = ["Принят", "В работе"];
+      return state.orders.filter((o) => activeStatuses.includes(o.status))
+        .length;
+    },
+
+    notStartedOrdersCount: (state) => {
+      return state.orders.filter((o) => o.status === "Новый").length;
+    },
+
+    ordersByStatus: (state) => (status) => {
+      return state.orders.filter((o) => o.status === status);
+    },
     orderMaterials: (state) => state.orderMaterials,
     measurements: (state) => state.measurements,
     isLoading: (state) => state.loading,

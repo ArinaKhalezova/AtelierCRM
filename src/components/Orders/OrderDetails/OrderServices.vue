@@ -9,7 +9,11 @@
       >
         <div class="info">
           <span class="name">{{ service.service_name }}</span>
-          <span class="status">{{ service.status }}</span>
+          <ServiceStatusChanger
+            :service-id="Number(service.order_service_id)"
+            :current-status="service.status"
+            @status-updated="handleServiceStatusUpdate"
+          />
           <span class="quantity"
             >{{ service.quantity }} × {{ service.base_cost }} ₽</span
           >
@@ -30,6 +34,8 @@
 </template>
 
 <script setup>
+import ServiceStatusChanger from "../ServiceStatusChanger.vue";
+
 defineProps({
   services: {
     type: Array,
@@ -38,6 +44,10 @@ defineProps({
 });
 
 const emit = defineEmits(["remove-service"]);
+
+const handleServiceStatusUpdate = ({ serviceId, newStatus }) => {
+  console.log(`Service ${serviceId} updated to ${newStatus}`);
+};
 
 const removeService = (serviceId) => {
   emit("remove-service", serviceId);
@@ -132,6 +142,47 @@ h3 {
   padding: 2rem;
   color: var(--warm-gray);
   font-size: 1rem;
+}
+
+.status-новый {
+  background-color: rgba(139, 170, 173, 0.2);
+  color: var(--dark-teal);
+}
+.status-создание-эскиза {
+  background-color: rgba(100, 181, 246, 0.2);
+  color: #0d47a1;
+}
+.status-изготовление-выкройки {
+  background-color: rgba(77, 182, 172, 0.2);
+  color: #00695c;
+}
+.status-на-кройке {
+  background-color: rgba(255, 213, 79, 0.2);
+  color: #ff8f00;
+}
+.status-на-пошиве {
+  background-color: rgba(255, 138, 101, 0.2);
+  color: #e65100;
+}
+.status-на-примерке {
+  background-color: rgba(186, 104, 200, 0.2);
+  color: #6a1b9a;
+}
+.status-доработка-и-отделка {
+  background-color: rgba(129, 199, 132, 0.2);
+  color: #2e7d32;
+}
+.status-исправляется {
+  background-color: rgba(239, 154, 154, 0.2);
+  color: #c62828;
+}
+.status-в-работе {
+  background-color: rgba(255, 160, 0, 0.2);
+  color: #ff8f00;
+}
+.status-готов {
+  background-color: rgba(76, 175, 80, 0.2);
+  color: #2e7d32;
 }
 
 @media (max-width: 768px) {

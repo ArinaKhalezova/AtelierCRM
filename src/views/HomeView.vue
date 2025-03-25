@@ -10,8 +10,17 @@
         <div class="metric-content">
           <div class="metric-icon in-progress">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2"/>
-              <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path
+                d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
+                stroke="currentColor"
+                stroke-width="2"
+              />
+              <path
+                d="M12 6V12L16 14"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
             </svg>
           </div>
           <div class="metric-info">
@@ -19,16 +28,33 @@
             <p class="metric-value">{{ activeOrdersCount }}</p>
           </div>
         </div>
-        <router-link to="/orders?status=в работе" class="metric-link">Посмотреть все →</router-link>
+        <router-link to="/orders?status=в работе" class="metric-link"
+          >Посмотреть все →</router-link
+        >
       </div>
 
       <div class="metric-card">
         <div class="metric-content">
           <div class="metric-icon waiting">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2"/>
-              <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <path d="M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="cross-line"/>
+              <path
+                d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
+                stroke="currentColor"
+                stroke-width="2"
+              />
+              <path
+                d="M12 6V12L16 14"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+              <path
+                d="M18 6L6 18"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                class="cross-line"
+              />
             </svg>
           </div>
           <div class="metric-info">
@@ -36,26 +62,37 @@
             <p class="metric-value">{{ notStartedOrdersCount }}</p>
           </div>
         </div>
-        <router-link to="/orders?status=ожидает" class="metric-link">Посмотреть все →</router-link>
+        <router-link to="/orders?status=ожидает" class="metric-link"
+          >Посмотреть все →</router-link
+        >
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
-import { useStore } from 'vuex';
+import { computed, onMounted } from "vue";
+import { useStore } from "vuex";
 
 const store = useStore();
 
-const currentDate = new Date().toLocaleDateString('ru-RU', {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric'
+const currentDate = new Date().toLocaleDateString("ru-RU", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
 });
 
-const activeOrdersCount = computed(() => store.getters.activeOrdersCount);
-const notStartedOrdersCount = computed(() => store.getters.notStartedOrdersCount);
+const activeOrdersCount = computed(
+  () => store.getters["orders/activeOrdersCount"]
+);
+const notStartedOrdersCount = computed(
+  () => store.getters["orders/notStartedOrdersCount"]
+);
+
+onMounted(() => {
+  store.dispatch("orders/fetchOrders");
+  store.dispatch("orders/fetchOrdersCountByStatus");
+});
 </script>
 
 <style scoped>
@@ -163,20 +200,20 @@ const notStartedOrdersCount = computed(() => store.getters.notStartedOrdersCount
   .welcome-banner h1 {
     font-size: 2rem;
   }
-  
+
   .metrics-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .metric-content {
     gap: 1rem;
   }
-  
+
   .metric-icon {
     width: 50px;
     height: 50px;
   }
-  
+
   .metric-value {
     font-size: 2rem;
   }

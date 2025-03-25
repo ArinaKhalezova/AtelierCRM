@@ -2,13 +2,16 @@
   <div class="header">
     <button @click="$router.push('/orders')" class="btn back">← Назад</button>
     <h2>Заказ № {{ order.tracking_number }}</h2>
-    <div class="status" :class="order.status.toLowerCase().replace(' ', '-')">
-      {{ order.status }}
-    </div>
+    <OrderStatusChanger
+      :order-id="order.order_id"
+      :current-status="order.status"
+    />
   </div>
 </template>
 
 <script setup>
+import OrderStatusChanger from '../OrderStatusChanger.vue';
+
 defineProps({
   order: {
     type: Object,

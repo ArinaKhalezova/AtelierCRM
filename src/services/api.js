@@ -117,6 +117,21 @@ export default {
     return apiClient.delete(`/orders/${orderId}/services/${serviceId}`);
   },
 
+  // Методы для обновления статусов
+  updateOrderStatus(orderId, status) {
+    return apiClient.patch(`/orders/${orderId}/status`, { status });
+  },
+
+  updateOrderServiceStatus(orderServiceId, status) {
+    return apiClient.patch(`/orders/services/${orderServiceId}/status`, {
+      status,
+    });
+  },
+
+  getOrdersCountByStatus() {
+    return apiClient.get("/orders/status-counts");
+  },
+
   // Методы для материалов в заказе
   getOrderMaterials(orderId) {
     return apiClient.get(`/orders/${orderId}/materials`);

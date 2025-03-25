@@ -330,6 +330,73 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+// Обновление статуса заказа
+router.patch("/:id/status", async (req, res) => {
+  try {
+    const { status } = req.body;
+    const { rows } = await pool.query(
+      "UPDATE orders SET status = $1 WHERE order_id = $2 RETURNING *",
+      [status, req.params.id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Получение количества заказов по статусам
+router.get("/status-counts", async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT 
+        status,
+        COUNT(*) as count
+      FROM orders
+      GROUP BY status
+      ORDER BY count DESC
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error("Error in GET /orders/status-counts:", err);
+    res.status(500).json({
+      error: "Database error",
+      details: err.message,
+    });
+  }
+});
+
+// Обновление статуса услуги в заказе
+router.patch("/services/:id/status", async (req, res) => {
+  try {
+    const { status } = req.body;
+    const { rows } = await pool.query(
+      `UPDATE order_services 
+       SET status = $1 
+       WHERE order_service_id = $2 
+       RETURNING *`,
+      [status, req.params.id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Order service not found" });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Error updating service status:", err);
+    res.status(500).json({
+      error: "Server error",
+      details: err.message,
+    });
+  }
+});
+
 // Получение мерок клиента
 router.get("/:id/measurements", async (req, res) => {
   try {
