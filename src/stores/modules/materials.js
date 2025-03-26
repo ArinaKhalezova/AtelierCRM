@@ -1,4 +1,4 @@
-import api from "@/services/api"; // Убедитесь, что этот импорт есть
+import api from "@/services/api/materials"; 
 
 export default {
   namespaced: true,

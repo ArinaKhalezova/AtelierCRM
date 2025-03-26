@@ -181,57 +181,33 @@ const saveSupplier = async () => {
   try {
     // Общая валидация
     if (!Object.values(newSupplier.value).every((field) => field.trim())) {
-      store.commit(
-        "suppliers/SET_ERROR",
-        "Все поля обязательны для заполнения"
-      );
+      alert("Все поля обязательны для заполнения");
       return;
     }
 
     if (!/^\d{10}$|^\d{12}$/.test(newSupplier.value.inn)) {
-      store.commit(
-        "suppliers/SET_ERROR",
-        "ИНН должен содержать 10 или 12 цифр"
-      );
+      alert("ИНН должен содержать 10 или 12 цифр");
       return;
     }
 
-    // Дополнительная проверка для редактирования
-    if (
-      editingSupplier.value &&
-      editingSupplier.value.inn !== newSupplier.value.inn
-    ) {
-      const innExists = suppliers.value.some(
-        (s) =>
-          s.inn === newSupplier.value.inn &&
-          s.supplier_id !== editingSupplier.value.supplier_id
-      );
-
-      if (innExists) {
-        store.commit(
-          "suppliers/SET_ERROR",
-          "Поставщик с таким ИНН уже существует"
-        );
-        return;
-      }
-    }
-
     if (editingSupplier.value) {
-      // Редактирование существующего поставщика
       await store.dispatch("suppliers/updateSupplierAction", {
         id: editingSupplier.value.supplier_id,
         supplierData: newSupplier.value,
       });
     } else {
-      // Добавление нового поставщика
       await store.dispatch("suppliers/addSupplierAction", newSupplier.value);
     }
 
-    // Общие действия после успешного сохранения
     closeSupplierModal();
     await store.dispatch("suppliers/fetchSuppliers");
   } catch (err) {
     console.error("Save supplier error:", err);
+    if (err.response?.status === 409) {
+      alert("Поставщик с таким ИНН уже существует");
+    } else {
+      alert("Ошибка при сохранении поставщика");
+    }
   }
 };
 
@@ -239,18 +215,12 @@ const addSupplier = async () => {
   try {
     // Валидация
     if (!Object.values(newSupplier.value).every((field) => field.trim())) {
-      store.commit(
-        "suppliers/SET_ERROR",
-        "Все поля обязательны для заполнения"
-      );
+      alert("Все поля обязательны для заполнения");
       return;
     }
 
     if (!/^\d{10}$|^\d{12}$/.test(newSupplier.value.inn)) {
-      store.commit(
-        "suppliers/SET_ERROR",
-        "ИНН должен содержать 10 или 12 цифр"
-      );
+      alert("ИНН должен содержать 10 или 12 цифр");
       return;
     }
 
@@ -275,15 +245,11 @@ const addSupplier = async () => {
     await store.dispatch("suppliers/fetchSuppliers");
   } catch (err) {
     console.error("Add supplier error:", err);
-
-    let errorMessage = "Ошибка при добавлении поставщика";
-    if (err.response?.data?.error) {
-      errorMessage = err.response.data.error;
-    } else if (err.message.includes("409")) {
-      errorMessage = "Поставщик с таким ИНН уже существует";
+    if (err.response?.status === 409) {
+      alert("Поставщик с таким ИНН уже существует");
+    } else {
+      alert("Ошибка при добавлении поставщика");
     }
-
-    store.commit("suppliers/SET_ERROR", errorMessage);
   }
 };
 

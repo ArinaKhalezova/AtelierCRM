@@ -8,6 +8,7 @@ import deliveries from "./modules/deliveries";
 import materials from "./modules/materials";
 import services from "./modules/services";
 import orders from "./modules/orders";
+import orderDetails from "./modules/orderDetails";
 
 export default createStore({
   modules: {
@@ -19,5 +20,6 @@ export default createStore({
     materials,
     services,
     orders,
+    orderDetails,
   },
 });

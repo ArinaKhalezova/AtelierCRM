@@ -32,9 +32,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useStore } from "vuex";
+
 import OrderHeader from "./OrderDetails/OrderHeader.vue";
 import OrderMainInfo from "./OrderDetails/OrderMainInfo.vue";
 import OrderServices from "./OrderDetails/OrderServices.vue";
@@ -51,39 +52,46 @@ const orderId = route.params.id;
 // Загрузка данных
 onMounted(async () => {
   try {
-    await store.dispatch("orders/fetchOrderDetails", orderId);
-    await fetchMeasurements();
+    await store.dispatch("orderDetails/fetchFullOrderDetails", orderId);
   } catch (error) {
-    console.error("Ошибка загрузки данных:", error);
+    console.error("Ошибка загрузки данных:", {
+      message: error.message,
+      response: error.response?.data,
+    });
+    store.commit(
+      "orderDetails/SET_ERROR",
+      error.response?.data?.message || "Ошибка загрузки данных заказа"
+    );
   }
 });
 
 const fetchMeasurements = async () => {
   try {
-    await store.dispatch("orders/fetchMeasurements", orderId);
+    await store.dispatch("orderDetails/fetchMeasurements", orderId);
   } catch (error) {
     console.error("Ошибка загрузки мерок:", error);
   }
 };
 
 // Геттеры
-const order = computed(() => store.getters["orders/currentOrder"]);
-const services = computed(() => store.getters["orders/orderServices"]);
-const materials = computed(() => store.getters["orders/orderMaterials"]);
-const measurements = computed(() => store.getters["orders/measurements"]);
-const isLoading = computed(() => store.getters["orders/isLoading"]);
-const error = computed(() => store.getters["orders/error"]);
+const order = computed(() => store.getters["orderDetails/currentOrder"]);
+const services = computed(() => store.getters["orderDetails/orderServices"]);
+const materials = computed(() => store.getters["orderDetails/orderMaterials"]);
+const measurements = computed(() => store.getters["orderDetails/measurements"]);
+const isLoading = computed(() => store.getters["orderDetails/isLoading"]);
+const error = computed(() => store.getters["orderDetails/error"]);
 
 // Методы
 const removeService = async (serviceId) => {
   if (confirm("Удалить эту услугу из заказа?")) {
     try {
-      await store.dispatch("orders/removeServiceFromOrder", {
+      await store.dispatch("orderDetails/removeServiceFromOrder", {
         orderId: orderId,
         serviceId: serviceId,
       });
     } catch (error) {
-      console.error("Ошибка удаления:", error);
+      console.error("Ошибка удаления услуги:", error);
+      store.commit("orderDetails/SET_ERROR", "Ошибка удаления услуги");
     }
   }
 };
@@ -91,12 +99,13 @@ const removeService = async (serviceId) => {
 const removeMaterial = async (materialId) => {
   if (confirm("Удалить этот материал из заказа?")) {
     try {
-      await store.dispatch("orders/removeMaterialFromOrder", {
+      await store.dispatch("orderDetails/removeMaterialFromOrder", {
         orderId: orderId,
         materialId: materialId,
       });
     } catch (error) {
-      console.error("Ошибка удаления:", error);
+      console.error("Ошибка удаления материала:", error);
+      store.commit("orderDetails/SET_ERROR", "Ошибка удаления материала");
     }
   }
 };
@@ -108,11 +117,25 @@ const editOrder = () => {
 const deleteOrder = async () => {
   if (confirm("Вы уверены, что хотите удалить этот заказ?")) {
     try {
-      await store.dispatch("orders/deleteOrder", orderId);
-      router.push("/orders");
+      const success = await store.dispatch("orders/deleteOrder", props.orderId);
+      if (success) {
+        router.push("/orders"); // Переходим к списку после удаления
+      }
     } catch (error) {
-      console.error("Ошибка удаления:", error);
+      console.error("Delete error:", error);
     }
+  }
+};
+
+const updateServiceStatus = async (serviceId, status) => {
+  try {
+    await store.dispatch("orderDetails/updateOrderServiceStatus", {
+      serviceId,
+      status,
+    });
+  } catch (error) {
+    console.error("Ошибка обновления статуса услуги:", error);
+    store.commit("orderDetails/SET_ERROR", "Ошибка обновления статуса услуги");
   }
 };
 </script>

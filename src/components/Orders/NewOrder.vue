@@ -213,38 +213,38 @@ const calculateTotal = () => {
 
 const createOrder = async () => {
   try {
-    // Создаем заказ
+    // 1. Создаем заказ
     const createdOrder = await store.dispatch(
       "orders/createOrder",
       order.value
     );
 
-    // Добавляем услуги
-    await Promise.all(
-      selectedServices.value.map((serviceId) => {
-        return store.dispatch("orders/addServiceToOrder", {
+    // 2. Добавляем услуги и материалы
+    await Promise.all([
+      ...selectedServices.value.map((serviceId) => {
+        return store.dispatch("orderDetails/addServiceToOrder", {
           orderId: createdOrder.order_id,
           service: {
             service_id: serviceId,
             quantity: serviceQuantities.value[serviceId] || 1,
           },
         });
-      })
-    );
-
-    // Добавляем материалы
-    await Promise.all(
-      selectedMaterials.value.map((materialId) => {
-        return store.dispatch("orders/addMaterialToOrder", {
+      }),
+      ...selectedMaterials.value.map((materialId) => {
+        return store.dispatch("orderDetails/addMaterialToOrder", {
           orderId: createdOrder.order_id,
           material: {
             material_id: materialId,
             quantity: materialQuantities.value[materialId] || 1,
           },
         });
-      })
-    );
+      }),
+    ]);
 
+    // 3. Загружаем полные данные заказа перед переходом
+    await store.dispatch("orderDetails/fetchFullOrderDetails", createdOrder.order_id);
+    
+    // 4. Переходим на страницу заказа
     router.push(`/orders/${createdOrder.order_id}`);
   } catch (error) {
     console.error("Ошибка создания заказа:", error);

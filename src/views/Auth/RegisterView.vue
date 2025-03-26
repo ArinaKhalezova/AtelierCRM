@@ -96,7 +96,7 @@ export default {
           role: 'Работник' // По умолчанию регистрируем как работника
         };
 
-        const response = await api.register(userData);
+        const response = await api.auth.register(userData);
         
         success.value = 'Регистрация успешна! Вы будете перенаправлены на страницу входа...';
         error.value = '';

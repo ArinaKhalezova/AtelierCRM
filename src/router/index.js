@@ -13,8 +13,6 @@ import DeliveriesView from "@/views/DeliveriesView.vue";
 import ClientsView from "@/views/ClientsView.vue";
 import DataView from "@/views/DataView.vue";
 
-import api from "@/services/api";
-
 const routes = [
   {
     path: "/login",
@@ -51,7 +49,7 @@ const routes = [
     name: "order-details",
     component: OrderDetails,
     meta: { title: "Детали заказа" },
-    props: true, // Передаем параметр id как prop
+    props: true, 
   },
   {
     path: "/services",

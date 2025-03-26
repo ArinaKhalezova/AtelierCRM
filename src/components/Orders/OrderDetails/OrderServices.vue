@@ -10,7 +10,7 @@
         <div class="info">
           <span class="name">{{ service.service_name }}</span>
           <ServiceStatusChanger
-            :service-id="Number(service.order_service_id)"
+            :service-id="service.order_service_id"
             :current-status="service.status"
             @status-updated="handleServiceStatusUpdate"
           />
@@ -34,19 +34,19 @@
 </template>
 
 <script setup>
-import ServiceStatusChanger from "../ServiceStatusChanger.vue";
+import ServiceStatusChanger from '../ServiceStatusChanger.vue';
 
-defineProps({
+const props = defineProps({
   services: {
     type: Array,
     required: true,
   },
 });
 
-const emit = defineEmits(["remove-service"]);
+const emit = defineEmits(["remove-service", "service-status-updated"]);
 
 const handleServiceStatusUpdate = ({ serviceId, newStatus }) => {
-  console.log(`Service ${serviceId} updated to ${newStatus}`);
+  emit("service-status-updated", { serviceId, newStatus });
 };
 
 const removeService = (serviceId) => {

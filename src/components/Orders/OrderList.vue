@@ -95,17 +95,16 @@ const clearError = () => {
 };
 
 const deleteOrder = async (id) => {
-  if (confirm("Вы уверены, что хотите удалить этот заказ?")) {
-    try {
-      await store.dispatch("orders/deleteOrder", id);
-      // После успешного удаления обновляем список
-      await store.dispatch("orders/fetchOrders");
-    } catch (error) {
-      store.commit(
-        "orders/SET_ERROR",
-        error.message || "Не удалось удалить заказ"
-      );
+  if (!confirm("Вы уверены, что хотите удалить этот заказ?")) return;
+
+  try {
+    const success = await store.dispatch("orders/deleteOrder", id);
+    if (success) {
+      await store.dispatch("orders/fetchOrders"); // Обновляем список только при успехе
     }
+  } catch (error) {
+    console.error("Delete error:", error);
+    // Ошибка уже обработана в хранилище
   }
 };
 </script>

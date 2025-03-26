@@ -1,78 +1,136 @@
 <template>
   <div class="status-changer">
-    <label for="order-status">Статус заказа:</label>
-    <select 
-      id="order-status" 
-      v-model="selectedStatus" 
+    <select
+      v-model="selectedStatus"
       @change="updateStatus"
-      :disabled="loading"
+      class="status-select"
+      :class="`status-${selectedStatus.toLowerCase().replace(' ', '-')}`"
     >
-      <option v-for="status in orderStatuses" :key="status" :value="status">
+      <option
+        v-for="status in availableStatuses"
+        :key="status"
+        :value="status"
+        :class="`status-${status.toLowerCase().replace(' ', '-')}`"
+      >
         {{ status }}
       </option>
     </select>
-    <span v-if="loading" class="loading">Обновление...</span>
+    <span v-if="isLoading" class="loading-indicator"></span>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { useStore } from 'vuex';
+import { ref, onMounted } from "vue";
+import { useStore } from "vuex";
 
 const props = defineProps({
   orderId: {
-    type: Number,
-    required: true
+    type: [String, Number],
+    required: true,
   },
   currentStatus: {
     type: String,
-    required: true
-  }
+    required: true,
+  },
 });
+
+const emit = defineEmits(["status-updated"]);
 
 const store = useStore();
-const loading = ref(false);
+const isLoading = ref(false);
 const selectedStatus = ref(props.currentStatus);
 
-const orderStatuses = computed(() => {
-  return store.state.orders.orderStatusOptions || [
-    'Новый',
-    'Принят',
-    'В работе',
-    'Готов',
-    'Выполнен',
-    'Отменен'
-  ];
-});
+const availableStatuses = ["Новый", "В работе", "Готов", "Выполнен", "Отменен"];
 
 const updateStatus = async () => {
-  loading.value = true;
   try {
-    await store.dispatch('orders/updateOrderStatus', {
+    isLoading.value = true;
+    await store.dispatch("orders/updateOrderStatus", {
       orderId: props.orderId,
-      status: selectedStatus.value
+      status: selectedStatus.value, 
     });
+    emit("status-updated", {
+      orderId: props.orderId,
+      newStatus: selectedStatus.value,
+    });
+  } catch (error) {
+    console.error("Ошибка обновления статуса:", error);
+    selectedStatus.value = props.currentStatus;
   } finally {
-    loading.value = false;
+    isLoading.value = false;
   }
 };
 </script>
 
 <style scoped>
 .status-changer {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
 }
 
-select {
-  padding: 0.5rem;
-  border-radius: var(--border-radius);
-  border: 1px solid var(--light-gray);
+.status-select {
+  padding: 0.5rem 1rem;
+  border-radius: 1rem;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  appearance: none;
+  padding-right: 2rem;
+  background-color: rgba(139, 170, 173, 0.2);
+  color: var(--dark-teal);
+  transition: all 0.2s ease;
 }
 
-.loading {
-  font-size: 0.8rem;
-  color: var(--warm-gray);
+.status-select:hover {
+  opacity: 0.9;
+}
+
+.status-select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(139, 170, 173, 0.3);
+}
+
+.loading-indicator {
+  position: absolute;
+  right: 0.75rem;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  border-top: 2px solid var(--teal);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Status colors */
+.status-новый {
+  background-color: rgba(139, 170, 173, 0.2);
+  color: var(--dark-teal);
+}
+.status-в-работе {
+  background-color: rgba(255, 160, 0, 0.2);
+  color: #ff8f00;
+}
+.status-готов {
+  background-color: rgba(76, 175, 80, 0.2);
+  color: #2e7d32;
+}
+.status-выполнен {
+  background-color: rgba(46, 125, 50, 0.2);
+  color: #1b5e20;
+}
+.status-отменен {
+  background-color: rgba(220, 53, 69, 0.2);
+  color: var(--danger);
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 </style>

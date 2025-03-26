@@ -80,9 +80,9 @@ h3 {
   border-bottom: 1px solid rgba(77, 72, 71, 0.1);
 }
 
-.info-table td {
+/* .info-table td {
   padding: 0.75rem 0;
-}
+} */
 
 .label {
   font-size: 0.9rem;
