@@ -67,6 +67,7 @@ export default {
     },
   },
   getters: {
+    isAdmin: (state) => state.user?.role === "Администратор",
     isAuthenticated: (state) => !!state.token,
     currentUser: (state) => state.user,
     error: (state) => state.error,

@@ -57,31 +57,34 @@ const routes = [
     path: "/services",
     name: "services",
     component: ServicesView,
-    meta: { title: "Услуги" },
+    meta: { title: "Услуги", requiresAdmin: true },
   },
   {
     path: "/deliveries",
     name: "deliveries",
     component: DeliveriesView,
-    meta: { title: "Поставки" },
+    meta: { title: "Поставки", requiresAdmin: true },
   },
   {
     path: "/clients",
     name: "clients",
     component: ClientsView,
-    meta: { title: "Клиенты" },
+    meta: { title: "Клиенты", requiresAdmin: true },
   },
   {
     path: "/employees",
     name: "employees",
     component: EmployeesView,
-    meta: { title: "Сотрудники" },
+    meta: {
+      title: "Сотрудники",
+      requiresAdmin: true,
+    },
   },
   {
     path: "/data",
     name: "data",
     component: DataView,
-    meta: { title: "Данные" },
+    meta: { title: "Данные", requiresAdmin: true },
   },
   // Добавим редирект для несуществующих страниц
   {
@@ -107,15 +110,20 @@ router.beforeEach(async (to, from, next) => {
   const store = useStore();
   const isAuthRoute = to.name === "login" || to.name === "register";
 
-  // Проверяем авторизацию через Vuex
+  // Проверяем авторизацию
   const isAuthenticated = await store.dispatch("auth/checkAuth");
 
   if (!isAuthenticated && !isAuthRoute) {
     return next("/login");
   }
 
-  if (isAuthenticated && isAuthRoute) {
-    return next("/");
+  // Проверяем права доступа
+  if (
+    isAuthenticated &&
+    to.meta.requiresAdmin &&
+    !store.getters["auth/isAdmin"]
+  ) {
+    return next("/"); // Или /access-denied
   }
 
   next();

@@ -12,11 +12,13 @@
         <nav class="nav-links">
           <router-link to="/">Главная</router-link>
           <router-link to="/orders">Заказы</router-link>
-          <router-link to="/services">Услуги</router-link>
-          <router-link to="/deliveries">Поставки</router-link>
-          <router-link to="/clients">Клиенты</router-link>
-          <router-link to="/employees">Сотрудники</router-link>
-          <router-link to="/data">Справочник</router-link>
+          <template v-if="isAdmin">
+            <router-link to="/services">Услуги</router-link>
+            <router-link to="/deliveries">Поставки</router-link>
+            <router-link to="/clients">Клиенты</router-link>
+            <router-link to="/employees">Сотрудники</router-link>
+            <router-link to="/data">Справочник</router-link></template
+          >
         </nav>
         <button @click="handleLogout" class="logout-btn">Выйти</button>
       </aside>
@@ -40,6 +42,7 @@ export default {
   setup() {
     const router = useRouter();
     const store = useStore();
+    const isAdmin = computed(() => store.getters["auth/isAdmin"]);
 
     const isAuthenticated = computed(
       () => store.getters["auth/isAuthenticated"]
@@ -55,7 +58,7 @@ export default {
       await store.dispatch("auth/checkAuth");
     });
 
-    return { isAuthenticated, handleLogout };
+    return { isAuthenticated, handleLogout, isAdmin };
   },
 };
 </script>
