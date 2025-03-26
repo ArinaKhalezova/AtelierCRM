@@ -1,4 +1,8 @@
 import { createRouter, createWebHistory } from "vue-router";
+import { useStore } from "vuex";
+import LoginView from "@/views/Auth/LoginView.vue";
+import RegisterView from "@/views/Auth/RegisterView.vue";
+
 import HomeView from "../views/HomeView.vue";
 import OrdersView from "@/views/OrdersView.vue";
 import NewOrder from "@/components/Orders/NewOrder.vue";
@@ -9,7 +13,21 @@ import DeliveriesView from "@/views/DeliveriesView.vue";
 import ClientsView from "@/views/ClientsView.vue";
 import DataView from "@/views/DataView.vue";
 
+import api from "@/services/api";
+
 const routes = [
+  {
+    path: "/login",
+    name: "login",
+    component: LoginView,
+    meta: { title: "Вход в систему" },
+  },
+  {
+    path: "/register",
+    name: "register",
+    component: RegisterView,
+    meta: { title: "Регистрация" },
+  },
   {
     path: "/",
     name: "home",
@@ -85,9 +103,21 @@ const router = createRouter({
   },
 });
 
-// Динамическое изменение title страницы
-router.beforeEach((to, from, next) => {
-  document.title = to.meta.title ? `${to.meta.title} | Ателье` : "Ателье";
+router.beforeEach(async (to, from, next) => {
+  const store = useStore();
+  const isAuthRoute = to.name === "login" || to.name === "register";
+
+  // Проверяем авторизацию через Vuex
+  const isAuthenticated = await store.dispatch("auth/checkAuth");
+
+  if (!isAuthenticated && !isAuthRoute) {
+    return next("/login");
+  }
+
+  if (isAuthenticated && isAuthRoute) {
+    return next("/");
+  }
+
   next();
 });
 

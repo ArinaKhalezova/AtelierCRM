@@ -1,5 +1,6 @@
 import { createStore } from "vuex";
 
+import auth from "./modules/auth";
 import clients from "./modules/clients";
 import suppliers from "./modules/suppliers";
 import employees from "./modules/employees";
@@ -10,6 +11,7 @@ import orders from "./modules/orders";
 
 export default createStore({
   modules: {
+    auth,
     clients,
     suppliers,
     employees,

@@ -41,6 +41,22 @@ router.get("/", async (req, res) => {
   }
 });
 
+// Получение количества заказов по статусам
+router.get("/status-counts", async (req, res) => {
+  try {
+    const query = `
+      SELECT status, COUNT(*) as count 
+      FROM orders 
+      GROUP BY status
+    `;
+    const result = await pool.query(query);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error fetching order status counts:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // Получение деталей заказа
 router.get("/:id", async (req, res) => {
   try {

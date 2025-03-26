@@ -1,31 +1,82 @@
 <template>
-  <div class="app">
-    <aside class="main-nav">
-      <router-link to="/" class="nav-logo">
-        <img src="./assets/img/logo.jpg" alt="atelier" style="width: 100%; max-width: 130px" />
-      </router-link>
-      <nav class="nav-links">
-        <router-link to="/">Главная</router-link>
-        <router-link to="/orders">Заказы</router-link>
-        <router-link to="/services">Услуги</router-link>
-        <router-link to="/deliveries">Поставки</router-link>
-        <router-link to="/clients">Клиенты</router-link>
-        <router-link to="/employees">Сотрудники</router-link>
-        <router-link to="/data">Справочник</router-link>
-      </nav>
-    </aside>
+  <div class="app-container">
+    <div v-if="isAuthenticated" class="app">
+      <aside class="main-nav">
+        <router-link to="/" class="nav-logo">
+          <img
+            src="./assets/img/logo.jpg"
+            alt="atelier"
+            style="width: 100%; max-width: 130px"
+          />
+        </router-link>
+        <nav class="nav-links">
+          <router-link to="/">Главная</router-link>
+          <router-link to="/orders">Заказы</router-link>
+          <router-link to="/services">Услуги</router-link>
+          <router-link to="/deliveries">Поставки</router-link>
+          <router-link to="/clients">Клиенты</router-link>
+          <router-link to="/employees">Сотрудники</router-link>
+          <router-link to="/data">Справочник</router-link>
+        </nav>
+        <button @click="handleLogout" class="logout-btn">Выйти</button>
+      </aside>
 
-    <main class="main-content">
+      <main class="main-content">
+        <router-view></router-view>
+      </main>
+    </div>
+    <div v-else class="auth-pages">
       <router-view></router-view>
-    </main>
+    </div>
   </div>
 </template>
 
+<script>
+import { computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { useStore } from "vuex";
+
+export default {
+  setup() {
+    const router = useRouter();
+    const store = useStore();
+
+    const isAuthenticated = computed(
+      () => store.getters["auth/isAuthenticated"]
+    );
+
+    const handleLogout = () => {
+      store.dispatch("auth/logout");
+      router.push("/login");
+    };
+
+    // Проверяем авторизацию при загрузке
+    onMounted(async () => {
+      await store.dispatch("auth/checkAuth");
+    });
+
+    return { isAuthenticated, handleLogout };
+  },
+};
+</script>
+
 <style scoped>
+.app-container {
+  min-height: 100vh;
+}
+
 .app {
   min-height: 100vh;
   display: flex;
   background-color: var(--bg);
+}
+
+.auth-pages {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f5f5f5;
 }
 
 .main-nav {
@@ -82,5 +133,19 @@
   width: 100%;
   padding: 2rem;
   min-height: 100vh;
+}
+
+.logout-btn {
+  margin-top: auto;
+  padding: 0.5rem;
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.logout-btn:hover {
+  background: #c0392b;
 }
 </style>

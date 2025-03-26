@@ -7,7 +7,40 @@ const apiClient = axios.create({
   },
 });
 
+// Добавляем интерсептор для авторизации
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem("authToken");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 export default {
+  // Аутентификация
+  login(credentials) {
+    return apiClient
+      .post("/auth/login", credentials)
+      .then((response) => {
+        console.log("API Login response:", response); // Логирование
+        return response;
+      })
+      .catch((error) => {
+        console.error("API Login error:", error); // Логирование
+        throw error;
+      });
+  },
+  register(userData) {
+    return apiClient.post("/auth/register", userData);
+  },
+  checkAuth() {
+    return apiClient.get("/auth/me");
+  },
+  logout() {
+    localStorage.removeItem("authToken");
+    // Можно добавить запрос на бэкенд для инвалидации токена
+  },
+
   // Методы для работы с клиентами
   getClients() {
     return apiClient.get("/clients");
@@ -115,6 +148,16 @@ export default {
   },
   deleteOrderService(orderId, serviceId) {
     return apiClient.delete(`/orders/${orderId}/services/${serviceId}`);
+  },
+
+  getOrdersCountByStatus() {
+    return apiClient
+      .get("/orders/status-counts")
+      .then((response) => response.data)
+      .catch((error) => {
+        console.error("Error fetching order counts:", error);
+        throw error;
+      });
   },
 
   // Методы для обновления статусов
