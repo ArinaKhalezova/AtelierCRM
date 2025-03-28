@@ -84,7 +84,7 @@ const routes = [
     component: DataView,
     meta: { title: "Данные", requiresAdmin: true },
   },
-  // Добавим редирект для несуществующих страниц
+  //редирект для несуществующих страниц
   {
     path: "/:pathMatch(.*)*",
     redirect: "/",

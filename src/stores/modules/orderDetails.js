@@ -163,10 +163,11 @@ export default {
       }
     },
 
-    async saveMeasurements({ commit }, { orderId, measurements }) {
+    async saveMeasurements({ commit, dispatch }, { orderId, measurements }) {
       try {
         const response = await api.saveOrderMeasurements(orderId, measurements);
-        commit("SET_MEASUREMENTS", response);
+        // После сохранения обновляем мерки
+        await dispatch("fetchMeasurements", orderId);
         return response;
       } catch (error) {
         commit("SET_ERROR", "Ошибка сохранения мерок: " + error.message);

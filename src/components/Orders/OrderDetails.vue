@@ -126,18 +126,6 @@ const deleteOrder = async () => {
     }
   }
 };
-
-const updateServiceStatus = async (serviceId, status) => {
-  try {
-    await store.dispatch("orderDetails/updateOrderServiceStatus", {
-      serviceId,
-      status,
-    });
-  } catch (error) {
-    console.error("Ошибка обновления статуса услуги:", error);
-    store.commit("orderDetails/SET_ERROR", "Ошибка обновления статуса услуги");
-  }
-};
 </script>
 
 <style scoped>

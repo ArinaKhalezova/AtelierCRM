@@ -66,6 +66,7 @@ watch(
 const handleSave = () => {
   showForm.value = false;
   emit("saved");
+  alert("Мерки успешно сохранены!");
 };
 </script>
 

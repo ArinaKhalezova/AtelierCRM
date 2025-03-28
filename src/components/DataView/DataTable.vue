@@ -1,86 +1,67 @@
 <template>
   <div class="data-table">
-    <div class="table-header" @click="toggleVisibility">
-      <h2>{{ title }}</h2>
-      <span class="toggle-icon">{{ isVisible ? "▼" : "▶" }}</span>
-    </div>
-    <table v-if="isVisible">
+    <table>
       <thead>
         <tr>
-          <th v-for="header in headers" :key="header">{{ header }}</th>
+          <th v-for="col in columns" :key="col.key">{{ col.label }}</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="row in rows" :key="row[keyField]">
-          <!-- Используем header.toLowerCase() для сопоставления с ключами данных -->
-          <td v-for="header in headers" :key="header">
-            {{ row[header.toLowerCase()] || row[header] || "N/A" }}
+        <tr v-for="(item, index) in data" :key="index">
+          <td v-for="col in columns" :key="col.key">
+            {{ item[col.key] }}
           </td>
         </tr>
       </tbody>
     </table>
+    <div v-if="data.length === 0" class="empty-message">
+      Нет данных для отображения
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
-
-const props = defineProps({
-  title: String,
-  headers: Array,
-  rows: Array,
-  keyField: String,
+defineProps({
+  data: {
+    type: Array,
+    required: true,
+    default: () => []
+  },
+  columns: {
+    type: Array,
+    required: true
+  }
 });
-
-const isVisible = ref(false);
-
-const toggleVisibility = () => {
-  isVisible.value = !isVisible.value;
-};
 </script>
 
 <style scoped>
 .data-table {
-  margin-bottom: 2rem;
-}
-
-.table-header {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-}
-
-h2 {
-  margin-bottom: 1rem;
-  color: var(--primary-color);
-  margin-right: 0.5rem;
-}
-
-.toggle-icon {
-  font-size: 1.2rem;
-  color: var(--primary-color);
+  overflow-x: auto;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  background-color: white;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-th,
-td {
-  padding: 1rem;
+th, td {
+  padding: 12px 15px;
   text-align: left;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 th {
-  background-color: var(--primary-color);
-  color: white;
+  background-color: #f5f5f5;
+  font-weight: 600;
 }
 
 tr:hover {
-  background-color: #f5f5f5;
+  background-color: #f9f9f9;
+}
+
+.empty-message {
+  padding: 1rem;
+  text-align: center;
+  color: #666;
 }
 </style>

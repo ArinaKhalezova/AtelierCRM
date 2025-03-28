@@ -54,76 +54,79 @@ router.get("/:id/measurements", async (req, res) => {
 router.post("/:id/measurements", async (req, res) => {
   const client = await pool.connect();
   try {
-    await client.query("BEGIN");
+    const { id: orderId } = req.params;
+    const measurements = req.body;
 
     // 1. Получаем client_id из заказа
     const orderQuery = await client.query(
       "SELECT client_id FROM orders WHERE order_id = $1",
-      [req.params.id]
+      [orderId]
     );
 
     if (orderQuery.rows.length === 0) {
       return res.status(404).json({
         error: "Заказ не найден",
-        details: `Order with id ${req.params.id} not found`,
+        details: `Order with id ${orderId} not found`,
       });
     }
 
     const clientId = orderQuery.rows[0].client_id;
-    const { size, chest_size, waist_size, hip_size, shoulders_width, height } =
-      req.body;
 
     // 2. Проверяем существующие мерки
-    const existingQuery = await client.query(
-      "SELECT measurement_id FROM measurements WHERE client_id = $1",
+    const existingMeasurements = await client.query(
+      "SELECT * FROM measurements WHERE client_id = $1",
       [clientId]
     );
 
+    // 3. Сохраняем или обновляем мерки
     let result;
-    if (existingQuery.rows.length > 0) {
+    if (existingMeasurements.rows.length > 0) {
       // Обновляем существующие мерки
       result = await client.query(
         `UPDATE measurements SET
-         size = $1, chest_size = $2, waist_size = $3,
-         hip_size = $4, shoulders_width = $5, height = $6,
-         updated_at = NOW()
-         WHERE client_id = $7 RETURNING *`,
+          size = $2,
+          chest_size = $3,
+          waist_size = $4,
+          hip_size = $5,
+          shoulders_width = $6,
+          height = $7
+         WHERE client_id = $1
+         RETURNING *`,
         [
-          size,
-          chest_size,
-          waist_size,
-          hip_size,
-          shoulders_width,
-          height,
           clientId,
+          measurements.size,
+          measurements.chest_size,
+          measurements.waist_size,
+          measurements.hip_size,
+          measurements.shoulders_width,
+          measurements.height,
         ]
       );
     } else {
       // Создаем новые мерки
       result = await client.query(
         `INSERT INTO measurements 
-         (client_id, size, chest_size, waist_size, 
-          hip_size, shoulders_width, height)
-         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+         (client_id, size, chest_size, waist_size, hip_size, shoulders_width, height)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING *`,
         [
           clientId,
-          size,
-          chest_size,
-          waist_size,
-          hip_size,
-          shoulders_width,
-          height,
+          measurements.size,
+          measurements.chest_size,
+          measurements.waist_size,
+          measurements.hip_size,
+          measurements.shoulders_width,
+          measurements.height,
         ]
       );
     }
 
-    await client.query("COMMIT");
-    res.status(200).json(result.rows[0]);
+    res.json(result.rows[0]);
   } catch (err) {
-    await client.query("ROLLBACK");
     console.error("Error saving measurements:", {
       error: err.message,
       stack: err.stack,
+      orderId: req.params.id,
       body: req.body,
     });
     res.status(500).json({

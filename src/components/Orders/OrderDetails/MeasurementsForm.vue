@@ -130,7 +130,7 @@ const save = async () => {
       height: formData.value.height ? Number(formData.value.height) : null,
     };
 
-    await store.dispatch("orders/saveMeasurements", {
+    await store.dispatch("orderDetails/saveMeasurements", {
       orderId: props.orderId,
       measurements: measurementsData,
     });
@@ -138,7 +138,8 @@ const save = async () => {
     emit("save");
   } catch (error) {
     console.error("Ошибка сохранения мерок:", error);
-    alert(error.message || "Не удалось сохранить мерки");
+    store.commit("orderDetails/SET_ERROR", error.message);
+    // Можно добавить более красивое уведомление для пользователя
   }
 };
 

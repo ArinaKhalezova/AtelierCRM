@@ -1,8 +1,8 @@
 <template>
   <div class="actions">
-    <button @click="$emit('edit')" class="btn primary">
+    <!-- <button @click="$emit('edit')" class="btn primary">
       Редактировать заказ
-    </button>
+    </button> -->
     <button @click="confirmDelete" class="btn danger">Удалить заказ</button>
   </div>
 </template>
