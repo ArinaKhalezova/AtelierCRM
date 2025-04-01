@@ -90,8 +90,16 @@
         <h3>Информация о заказе</h3>
         <div class="row">
           <div class="group">
-            <label>Дата примерки</label>
-            <input type="date" v-model="order.fitting_date" class="input" />
+            <label>Дата примерки (необязательно)</label>
+            <input
+              type="date"
+              v-model="order.fitting_date"
+              class="input"
+              :min="new Date().toISOString().split('T')[0]"
+            />
+            <span v-if="errors.fitting_date" class="error-message">
+              {{ errors.fitting_date }}
+            </span>
           </div>
           <div class="group">
             <label>Срок выполнения *</label>
@@ -100,12 +108,16 @@
               v-model="order.deadline_date"
               required
               class="input"
+              :class="{ 'input-error': errors.deadline_date }"
               :min="minDeadlineDate"
             />
+            <span v-if="errors.deadline_date" class="error-message">
+              {{ errors.deadline_date }}
+            </span>
           </div>
         </div>
         <div class="group">
-          <label>Комментарий</label>
+          <label>Комментарий (необязательно)</label>
           <textarea v-model="order.comment" class="textarea"></textarea>
         </div>
       </div>
@@ -125,7 +137,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 
@@ -139,6 +151,12 @@ const order = ref({
   comment: "",
   status: "Новый",
   total_cost: 0,
+  created_at: new Date().toISOString().split("T")[0],
+});
+
+const errors = ref({
+  deadline_date: "",
+  fitting_date: "",
 });
 
 const selectedServices = ref([]);
@@ -173,12 +191,57 @@ const minDeadlineDate = computed(() => {
 });
 
 const isValid = computed(() => {
+  const hasServicesOrMaterials =
+    selectedServices.value.length > 0 || selectedMaterials.value.length > 0;
+  const hasNoDateErrors =
+    !errors.value.deadline_date && !errors.value.fitting_date;
+
   return (
     order.value.client_id &&
     order.value.deadline_date &&
-    (selectedServices.value.length > 0 || selectedMaterials.value.length > 0)
+    hasServicesOrMaterials &&
+    hasNoDateErrors
   );
 });
+
+// Функция валидации дат
+const validateDates = () => {
+  errors.value.deadline_date = "";
+  errors.value.fitting_date = "";
+
+  if (!order.value.deadline_date) {
+    errors.value.deadline_date = "Срок выполнения обязателен";
+    return;
+  }
+
+  if (order.value.fitting_date && order.value.deadline_date) {
+    const fittingDate = new Date(order.value.fitting_date);
+    const deadlineDate = new Date(order.value.deadline_date);
+
+    if (deadlineDate < fittingDate) {
+      errors.value.deadline_date =
+        "Срок выполнения не может быть раньше примерки";
+    }
+  }
+
+  // Проверка что срок выполнения не раньше сегодняшнего дня
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const deadlineDate = new Date(order.value.deadline_date);
+
+  if (deadlineDate < today) {
+    errors.value.deadline_date = "Срок выполнения не может быть в прошлом";
+  }
+};
+
+watch(
+  () => [order.value.fitting_date, order.value.deadline_date],
+  () => {
+    validateDates();
+    calculateTotal();
+  },
+  { deep: true }
+);
 
 const calculateTotal = () => {
   let total = 0;
@@ -213,42 +276,65 @@ const calculateTotal = () => {
 
 const createOrder = async () => {
   try {
+    // Подготовка данных заказа
+    const orderData = {
+      client_id: order.value.client_id,
+      fitting_date: order.value.fitting_date || null,
+      deadline_date: order.value.deadline_date,
+      comment: order.value.comment || null,
+      total_cost: order.value.total_cost,
+      status: "Новый", // Явно указываем статус
+    };
+
     // 1. Создаем заказ
-    const createdOrder = await store.dispatch(
-      "orders/createOrder",
-      order.value
-    );
+    const createdOrder = await store.dispatch("orders/createOrder", orderData);
 
     // 2. Добавляем услуги и материалы
-    await Promise.all([
-      ...selectedServices.value.map((serviceId) => {
-        return store.dispatch("orderDetails/addServiceToOrder", {
-          orderId: createdOrder.order_id,
-          service: {
-            service_id: serviceId,
-            quantity: serviceQuantities.value[serviceId] || 1,
-          },
-        });
-      }),
-      ...selectedMaterials.value.map((materialId) => {
-        return store.dispatch("orderDetails/addMaterialToOrder", {
-          orderId: createdOrder.order_id,
-          material: {
-            material_id: materialId,
-            quantity: materialQuantities.value[materialId] || 1,
-          },
-        });
-      }),
-    ]);
+    const promises = [];
 
-    // 3. Загружаем полные данные заказа перед переходом
-    await store.dispatch("orderDetails/fetchFullOrderDetails", createdOrder.order_id);
-    
-    // 4. Переходим на страницу заказа
+    if (selectedServices.value.length > 0) {
+      selectedServices.value.forEach((serviceId) => {
+        promises.push(
+          store.dispatch("orderDetails/addServiceToOrder", {
+            orderId: createdOrder.order_id,
+            service: {
+              service_id: serviceId,
+              quantity: serviceQuantities.value[serviceId] || 1,
+            },
+          })
+        );
+      });
+    }
+
+    if (selectedMaterials.value.length > 0) {
+      selectedMaterials.value.forEach((materialId) => {
+        promises.push(
+          store.dispatch("orderDetails/addMaterialToOrder", {
+            orderId: createdOrder.order_id,
+            material: {
+              material_id: materialId,
+              quantity: materialQuantities.value[materialId] || 1,
+            },
+          })
+        );
+      });
+    }
+
+    await Promise.all(promises);
+
+    // 3. Переходим на страницу заказа
     router.push(`/orders/${createdOrder.order_id}`);
   } catch (error) {
     console.error("Ошибка создания заказа:", error);
-    alert("Не удалось создать заказ");
+    let errorMessage = "Не удалось создать заказ";
+
+    if (error.response?.data?.details) {
+      errorMessage += `: ${error.response.data.details}`;
+    } else if (error.message) {
+      errorMessage += `: ${error.message}`;
+    }
+
+    alert(errorMessage);
   }
 };
 
@@ -258,6 +344,16 @@ const cancel = () => {
 </script>
 
 <style scoped>
+.error-message {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--danger);
+  font-size: 0.85rem;
+}
+
+.input-error {
+  border-color: var(--danger) !important;
+}
 .new-order {
   max-width: 1200px;
   margin: 0 auto;

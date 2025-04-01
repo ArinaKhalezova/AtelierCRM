@@ -56,12 +56,12 @@
                 >
                   Подробнее
                 </router-link>
-                <button
+                <!-- <button
                   @click="deleteOrder(order.order_id)"
                   class="delete-button"
                 >
                   Удалить
-                </button>
+                </button> -->
               </td>
             </tr>
           </tbody>

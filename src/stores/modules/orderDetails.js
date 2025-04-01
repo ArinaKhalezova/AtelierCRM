@@ -1,5 +1,5 @@
 import api from "@/services/api/orderDetails";
-import ordersApi from "@/services/api/orders";
+import ordersApi from "@/services/api/orders"
 
 export default {
   namespaced: true,

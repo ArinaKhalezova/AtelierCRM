@@ -44,6 +44,36 @@ router.post("/:id/services", async (req, res) => {
   }
 });
 
+// Редактирование заказа
+router.put("/:id", async (req, res) => {
+  const { id } = req.params;
+  const { deadline_date, comment } = req.body; 
+
+  try {
+    const { rows } = await pool.query(
+      `UPDATE orders 
+       SET 
+         deadline_date = $1,
+         comment = $2
+       WHERE order_id = $3
+       RETURNING *`,
+      [deadline_date, comment, id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Заказ не найден" });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Error updating order:", err);
+    res.status(500).json({
+      error: "Ошибка при обновлении заказа",
+      details: err.message,
+    });
+  }
+});
+
 // Удаление услуги из заказа
 router.delete("/:orderId/services/:serviceId", async (req, res) => {
   try {

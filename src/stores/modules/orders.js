@@ -22,6 +22,14 @@ export default {
       const order = state.orders.find((o) => o.order_id === orderId);
       if (order) order.status = status;
     },
+    UPDATE_ORDER(state, updatedOrder) {
+      const index = state.orders.findIndex(
+        (o) => o.order_id === updatedOrder.order_id
+      );
+      if (index !== -1) {
+        state.orders.splice(index, 1, updatedOrder);
+      }
+    },
     SET_ORDERS_COUNT(state, counts) {
       state.ordersCount = counts;
     },
@@ -63,21 +71,48 @@ export default {
       }
     },
 
-    async deleteOrder({ commit }, orderId) {
+    async editOrder({ commit, dispatch }, { orderId, orderData }) {
+      commit("SET_LOADING", true);
+      try {
+        const response = await api.updateOrder(orderId, orderData);
+        commit("UPDATE_ORDER", response.data);
+        await dispatch("fetchOrders");
+        return true;
+      } catch (error) {
+        const errorMsg = error.response?.data?.error || error.message;
+        commit("SET_ERROR", errorMsg);
+        return false;
+      } finally {
+        commit("SET_LOADING", false);
+      }
+    },
+
+    async deleteOrder({ commit, dispatch }, orderId) {
+      commit("SET_LOADING", true);
       try {
         await api.deleteOrder(orderId);
         commit("DELETE_ORDER", orderId);
-        return true; // Успешное удаление
+        await dispatch("fetchOrders");
+        return true;
       } catch (error) {
         let errorMessage = error.message;
-        if (error.response?.status === 404) {
+
+        // Специальная обработка ошибки о статусе заказа
+        if (
+          error.response?.status === 400 &&
+          error.response?.data?.error?.includes(
+            "Нельзя удалить заказ в статусе"
+          )
+        ) {
+          errorMessage = error.response.data.error;
+        } else if (error.response?.status === 404) {
           errorMessage = "Заказ не найден";
-        } else if (error.response?.status === 400) {
-          errorMessage =
-            error.response.data.error || "Нельзя удалить этот заказ";
         }
+
         commit("SET_ERROR", errorMessage);
-        return false; // Ошибка удаления
+        throw error; // Пробрасываем ошибку дальше в компонент
+      } finally {
+        commit("SET_LOADING", false);
       }
     },
 

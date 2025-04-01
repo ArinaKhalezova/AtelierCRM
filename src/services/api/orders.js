@@ -4,8 +4,8 @@ export default {
   getOrders() {
     return apiClient.get("/orders");
   },
-  getOrderDetails(id) {
-    return apiClient.get(`/orders/${id}`);
+  getOrderDetails(orderId) {
+    return apiClient.get(`/orders/${orderId}`);
   },
   createOrder(order) {
     return apiClient.post("/orders", order);
@@ -15,6 +15,9 @@ export default {
   },
   updateOrderStatus(orderId, status) {
     return apiClient.patch(`/orders/${orderId}/status`, { status });
+  },
+  updateOrder(orderId, orderData) {
+    return apiClient.put(`/orders/${orderId}`, orderData);
   },
   getOrdersCountByStatus() {
     return apiClient.get("/orders/status-counts");

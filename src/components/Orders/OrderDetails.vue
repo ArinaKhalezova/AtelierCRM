@@ -22,17 +22,28 @@
         @saved="fetchMeasurements"
       />
 
-      <OrderActions
-        :order-id="orderId"
-        @edit="editOrder"
-        @delete="deleteOrder"
+      <div class="actions">
+        <button @click="editOrder(order.order_id)" class="btn primary">
+          Редактировать заказ
+        </button>
+        <button @click="deleteOrder(order.order_id)" class="btn danger">
+          Удалить заказ
+        </button>
+      </div>
+
+      <EditOrderModal
+        v-if="isEditModalOpen"
+        :is-open="isEditModalOpen"
+        :order="order"
+        @close="closeEditModal"
+        @success="handleEditSuccess"
       />
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useStore } from "vuex";
 
@@ -42,28 +53,13 @@ import OrderServices from "./OrderDetails/OrderServices.vue";
 import OrderMaterials from "./OrderDetails/OrderMaterials.vue";
 import OrderComment from "./OrderDetails/OrderComment.vue";
 import OrderMeasurements from "./OrderDetails/OrderMeasurements.vue";
-import OrderActions from "./OrderDetails/OrderActions.vue";
+import EditOrderModal from "./OrderDetails/EditOrderModal.vue";
 
 const store = useStore();
 const route = useRoute();
 const router = useRouter();
 const orderId = route.params.id;
-
-// Загрузка данных
-onMounted(async () => {
-  try {
-    await store.dispatch("orderDetails/fetchFullOrderDetails", orderId);
-  } catch (error) {
-    console.error("Ошибка загрузки данных:", {
-      message: error.message,
-      response: error.response?.data,
-    });
-    store.commit(
-      "orderDetails/SET_ERROR",
-      error.response?.data?.message || "Ошибка загрузки данных заказа"
-    );
-  }
-});
+const isEditModalOpen = ref(false);
 
 const fetchMeasurements = async () => {
   try {
@@ -110,22 +106,60 @@ const removeMaterial = async (materialId) => {
   }
 };
 
-const editOrder = () => {
-  router.push(`/orders/${orderId}/edit`);
+const editOrder = (id) => {
+  isEditModalOpen.value = true;
 };
 
-const deleteOrder = async () => {
-  if (confirm("Вы уверены, что хотите удалить этот заказ?")) {
-    try {
-      const success = await store.dispatch("orders/deleteOrder", props.orderId);
-      if (success) {
-        router.push("/orders"); // Переходим к списку после удаления
-      }
-    } catch (error) {
-      console.error("Delete error:", error);
+const closeEditModal = () => {
+  isEditModalOpen.value = false;
+};
+
+const handleEditSuccess = () => {
+  store.dispatch("orderDetails/fetchFullOrderDetails", orderId);
+};
+
+const deleteOrder = async (id) => {
+  if (!confirm("Вы уверены, что хотите удалить этот заказ?")) return;
+
+  try {
+    const success = await store.dispatch("orders/deleteOrder", id);
+    if (success) {
+      router.push("/orders");
+    }
+  } catch (error) {
+    console.error("Delete error:", error);
+
+    // Специальная обработка ошибки "Нельзя удалить заказ в статусе..."
+    if (
+      error.response?.status === 400 &&
+      error.response?.data?.error?.includes("Нельзя удалить заказ в статусе")
+    ) {
+      alert(error.response.data.error);
+    } else {
+      alert(
+        error.response?.data?.error ||
+          error.message ||
+          "Ошибка при удалении заказа"
+      );
     }
   }
 };
+
+// Загрузка данных
+onMounted(async () => {
+  try {
+    await store.dispatch("orderDetails/fetchFullOrderDetails", orderId);
+  } catch (error) {
+    console.error("Ошибка загрузки данных:", {
+      message: error.message,
+      response: error.response?.data,
+    });
+    store.commit(
+      "orderDetails/SET_ERROR",
+      error.response?.data?.message || "Ошибка загрузки данных заказа"
+    );
+  }
+});
 </script>
 
 <style scoped>
@@ -149,5 +183,41 @@ const deleteOrder = async () => {
   border-radius: var(--border-radius);
   color: var(--danger);
   text-align: center;
+}
+.actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  justify-content: flex-end;
+}
+
+.btn {
+  padding: 0.85rem 1.75rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.btn.primary {
+  background-color: var(--teal);
+  color: white;
+}
+
+.btn.primary:hover {
+  background-color: var(--dark-teal);
+}
+
+.btn.danger {
+  background-color: white;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+}
+
+.btn.danger:hover {
+  background-color: var(--danger);
+  color: white;
 }
 </style>
