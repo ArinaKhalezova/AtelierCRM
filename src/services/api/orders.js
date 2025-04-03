@@ -34,4 +34,15 @@ export default {
   assignOrderToEmployee(orderId) {
     return apiClient.post(`/orders/${orderId}/assign`);
   },
+  assignEmployeeToOrder(orderId, employeeId) {
+    return apiClient.post(`/orders/${orderId}/assign-employee`, {
+      employee_id: employeeId,
+    });
+  },
+  removeEmployeeFromOrder(orderId, employeeId) {
+    return apiClient.delete(`/orders/${orderId}/employees/${employeeId}`);
+  },
+  getOrderEmployees(orderId) {
+    return apiClient.get(`/orders/${orderId}/employees`);
+  },
 };

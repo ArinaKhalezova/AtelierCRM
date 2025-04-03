@@ -7,6 +7,13 @@
 
       <OrderMainInfo :order="order" />
 
+      <OrderEmployees
+        :order-id="orderId"
+        v-if="
+          order && order.status !== 'Выполнен' && order.status !== 'Отменен'
+        "
+      />
+
       <OrderServices :services="services" @remove-service="removeService" />
 
       <OrderMaterials
@@ -49,6 +56,7 @@ import { useStore } from "vuex";
 
 import OrderHeader from "./OrderDetails/OrderHeader.vue";
 import OrderMainInfo from "./OrderDetails/OrderMainInfo.vue";
+import OrderEmployees from "./OrderDetails/OrderEmployees.vue";
 import OrderServices from "./OrderDetails/OrderServices.vue";
 import OrderMaterials from "./OrderDetails/OrderMaterials.vue";
 import OrderComment from "./OrderDetails/OrderComment.vue";

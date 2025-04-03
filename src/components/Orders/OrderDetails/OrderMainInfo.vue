@@ -61,6 +61,7 @@ const formattedTotalCost = computed(() => {
   background: white;
   border-radius: var(--border-radius);
   box-shadow: var(--shadow-sm);
+  margin-bottom: 1.5rem;
   padding: 1.5rem;
 }
 
@@ -102,21 +103,21 @@ h3 {
   .info-table {
     display: block;
   }
-  
+
   .info-table tbody {
     display: block;
   }
-  
+
   .info-table tr {
     display: block;
     padding: 0.75rem 0;
   }
-  
+
   .info-table td {
     display: block;
     padding: 0.25rem 0;
   }
-  
+
   .label {
     font-weight: 500;
     color: var(--dark-teal);

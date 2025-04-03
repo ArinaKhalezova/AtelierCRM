@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("../../config/db");
-const { v4: uuidv4 } = require("uuid");
 
 // Получение всех заказов
 router.get("/", async (req, res) => {
@@ -48,6 +47,32 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// Получение сотрудников, назначенных на заказ
+router.get("/:id/employees", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const { rows } = await pool.query(
+      `
+      SELECT 
+        e.employee_id,
+        u.fullname,
+        e.position
+      FROM order_employees oe
+      JOIN employees e ON oe.employee_id = e.employee_id
+      JOIN users u ON e.user_id = u.user_id
+      WHERE oe.order_id = $1
+    `,
+      [id]
+    );
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching order employees:", err);
+    res.status(500).json({ error: "Database error", details: err.message });
+  }
+});
+
 // Создание заказа
 router.post("/", async (req, res) => {
   const { client_id, fitting_date, deadline_date, comment, total_cost } =
@@ -91,6 +116,79 @@ router.post("/", async (req, res) => {
     });
   } finally {
     client.release();
+  }
+});
+
+// Назначение сотрудника на заказ
+router.post("/:id/assign-employee", async (req, res) => {
+  const { id } = req.params;
+  const { employee_id } = req.body;
+
+  if (!employee_id) {
+    return res.status(400).json({ error: "Employee ID is required" });
+  }
+
+  try {
+    // Проверяем, существует ли сотрудник
+    const employeeCheck = await pool.query(
+      "SELECT * FROM employees WHERE employee_id = $1",
+      [employee_id]
+    );
+    if (employeeCheck.rows.length === 0) {
+      return res.status(404).json({ error: "Employee not found" });
+    }
+
+    // Проверяем, существует ли заказ
+    const orderCheck = await pool.query(
+      "SELECT * FROM orders WHERE order_id = $1",
+      [id]
+    );
+    if (orderCheck.rows.length === 0) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    // Проверяем, не назначен ли уже этот сотрудник
+    const existingAssignment = await pool.query(
+      "SELECT * FROM order_employees WHERE order_id = $1 AND employee_id = $2",
+      [id, employee_id]
+    );
+    if (existingAssignment.rows.length > 0) {
+      return res
+        .status(400)
+        .json({ error: "Employee is already assigned to this order" });
+    }
+
+    // Назначаем сотрудника
+    const { rows } = await pool.query(
+      "INSERT INTO order_employees (order_id, employee_id) VALUES ($1, $2) RETURNING *",
+      [id, employee_id]
+    );
+
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error("Error assigning employee to order:", err);
+    res.status(500).json({ error: "Database error", details: err.message });
+  }
+});
+
+// Удаление сотрудника из заказа
+router.delete("/:orderId/employees/:employeeId", async (req, res) => {
+  const { orderId, employeeId } = req.params;
+
+  try {
+    const { rowCount } = await pool.query(
+      "DELETE FROM order_employees WHERE order_id = $1 AND employee_id = $2",
+      [orderId, employeeId]
+    );
+
+    if (rowCount === 0) {
+      return res.status(404).json({ error: "Assignment not found" });
+    }
+
+    res.status(204).send();
+  } catch (err) {
+    console.error("Error removing employee from order:", err);
+    res.status(500).json({ error: "Database error", details: err.message });
   }
 });
 

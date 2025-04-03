@@ -1,5 +1,5 @@
 import api from "@/services/api/orderDetails";
-import ordersApi from "@/services/api/orders"
+import ordersApi from "@/services/api/orders";
 
 export default {
   namespaced: true,
@@ -10,6 +10,9 @@ export default {
     measurements: null,
     loading: false,
     error: null,
+    assignedEmployees: [],
+    employeeAssignmentLoading: false,
+    employeeAssignmentError: null,
   }),
   mutations: {
     SET_CURRENT_ORDER(state, order) {
@@ -51,6 +54,23 @@ export default {
     },
     SET_ERROR(state, error) {
       state.error = error;
+    },
+    SET_ASSIGNED_EMPLOYEES(state, employees) {
+      state.assignedEmployees = employees;
+    },
+    ADD_ASSIGNED_EMPLOYEE(state, employee) {
+      state.assignedEmployees.push(employee);
+    },
+    REMOVE_ASSIGNED_EMPLYEE(state, employeeId) {
+      state.assignedEmployees = state.assignedEmployees.filter(
+        (e) => e.employee_id !== employeeId
+      );
+    },
+    SET_EMPLOYEE_ASSIGNMENT_LOADING(state, loading) {
+      state.employeeAssignmentLoading = loading;
+    },
+    SET_EMPLOYEE_ASSIGNMENT_ERROR(state, error) {
+      state.employeeAssignmentError = error;
     },
   },
   actions: {
@@ -174,6 +194,88 @@ export default {
         throw error;
       }
     },
+
+    async assignEmployeeToOrder({ commit }, { orderId, employeeId }) {
+      commit("SET_EMPLOYEE_ASSIGNMENT_LOADING", true);
+      try {
+        const response = await ordersApi.assignEmployeeToOrder(
+          orderId,
+          employeeId
+        );
+        commit("ADD_ASSIGNED_EMPLOYEE", response.data);
+        commit("SET_EMPLOYEE_ASSIGNMENT_ERROR", null);
+        return response.data;
+      } catch (error) {
+        commit("SET_EMPLOYEE_ASSIGNMENT_ERROR", error.message);
+        console.error("Error assigning employee to order:", error);
+        throw error;
+      } finally {
+        commit("SET_EMPLOYEE_ASSIGNMENT_LOADING", false);
+      }
+    },
+
+    async fetchOrderEmployees({ commit }, orderId) {
+      commit("SET_EMPLOYEE_ASSIGNMENT_LOADING", true);
+      try {
+        const response = await ordersApi.getOrderEmployees(orderId);
+        commit("SET_ASSIGNED_EMPLOYEES", response.data);
+        commit("SET_EMPLOYEE_ASSIGNMENT_ERROR", null);
+      } catch (error) {
+        commit("SET_EMPLOYEE_ASSIGNMENT_ERROR", error.message);
+        console.error("Error fetching order employees:", error);
+      } finally {
+        commit("SET_EMPLOYEE_ASSIGNMENT_LOADING", false);
+      }
+    },
+
+    async fetchOrderEmployees({ commit }, orderId) {
+      commit("SET_EMPLOYEE_ASSIGNMENT_LOADING", true);
+      try {
+        const response = await ordersApi.getOrderEmployees(orderId);
+        commit("SET_ASSIGNED_EMPLOYEES", response.data);
+        commit("SET_EMPLOYEE_ASSIGNMENT_ERROR", null);
+      } catch (error) {
+        commit("SET_EMPLOYEE_ASSIGNMENT_ERROR", error.message);
+        console.error("Error fetching order employees:", error);
+      } finally {
+        commit("SET_EMPLOYEE_ASSIGNMENT_LOADING", false);
+      }
+    },
+    async removeEmployeeFromOrder({ commit }, { orderId, employeeId }) {
+      commit("SET_EMPLOYEE_ASSIGNMENT_LOADING", true);
+      try {
+        await ordersApi.removeEmployeeFromOrder(orderId, employeeId);
+        commit("REMOVE_ASSIGNED_EMPLYEE", employeeId);
+        commit("SET_EMPLOYEE_ASSIGNMENT_ERROR", null);
+      } catch (error) {
+        commit("SET_EMPLOYEE_ASSIGNMENT_ERROR", error.message);
+        console.error("Error removing employee from order:", error);
+        throw error;
+      } finally {
+        commit("SET_EMPLOYEE_ASSIGNMENT_LOADING", false);
+      }
+    },
+    async fetchFullOrderDetails({ commit, dispatch }, orderId) {
+      commit("SET_LOADING", true);
+      try {
+        // Загружаем основную информацию о заказе
+        const orderResponse = await ordersApi.getOrderDetails(orderId);
+        commit("SET_CURRENT_ORDER", orderResponse.data);
+
+        // Параллельно загружаем связанные данные
+        await Promise.all([
+          dispatch("fetchOrderServices", orderId),
+          dispatch("fetchOrderMaterials", orderId),
+          dispatch("fetchMeasurements", orderId),
+          dispatch("fetchOrderEmployees", orderId), // Добавляем загрузку сотрудников
+        ]);
+      } catch (error) {
+        commit("SET_ERROR", error.message);
+        throw error;
+      } finally {
+        commit("SET_LOADING", false);
+      }
+    },
   },
   getters: {
     currentOrder: (state) => state.currentOrder,
@@ -182,5 +284,8 @@ export default {
     measurements: (state) => state.measurements,
     isLoading: (state) => state.loading,
     error: (state) => state.error,
+    assignedEmployees: (state) => state.assignedEmployees,
+    isEmployeeAssignmentLoading: (state) => state.employeeAssignmentLoading,
+    employeeAssignmentError: (state) => state.employeeAssignmentError,
   },
 };
