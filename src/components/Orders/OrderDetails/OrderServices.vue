@@ -34,7 +34,7 @@
 </template>
 
 <script setup>
-import ServiceStatusChanger from '../ServiceStatusChanger.vue';
+import ServiceStatusChanger from "../ServiceStatusChanger.vue";
 
 const props = defineProps({
   services: {

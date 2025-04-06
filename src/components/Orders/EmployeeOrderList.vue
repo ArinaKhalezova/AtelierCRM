@@ -1,10 +1,7 @@
 <template>
   <div class="orders-tab">
     <div class="header">
-      <h2>Заказы</h2>
-      <router-link to="/orders/new" class="add-button">
-        <span class="plus-icon">+</span> Новый заказ
-      </router-link>
+      <h2>Мои заказы</h2>
     </div>
 
     <div v-if="error" class="error-message">
@@ -15,7 +12,9 @@
     <div v-if="isLoading" class="loading-state">
       <div class="loader"></div>
     </div>
-    <div v-else-if="orders.length === 0" class="empty-state">Нет заказов</div>
+    <div v-else-if="orders.length === 0" class="empty-state">
+      Вам пока не назначены заказы
+    </div>
     <div v-else class="table-wrapper">
       <div class="table-container">
         <table class="orders-table">
@@ -56,12 +55,6 @@
                 >
                   Подробнее
                 </router-link>
-                <!-- <button
-                  @click="deleteOrder(order.order_id)"
-                  class="delete-button"
-                >
-                  Удалить
-                </button> -->
               </td>
             </tr>
           </tbody>
@@ -77,13 +70,9 @@ import { useStore } from "vuex";
 
 const store = useStore();
 
-const orders = computed(() => store.getters["orders/allOrders"]);
-const isLoading = computed(() => store.getters["orders/isLoading"]);
-const error = computed(() => store.getters["orders/error"]);
-
-onMounted(() => {
-  store.dispatch("orders/fetchOrders");
-});
+const orders = computed(() => store.state.employeeOrders?.orders || []);
+const isLoading = computed(() => store.state.employeeOrders?.loading || false);
+const error = computed(() => store.state.employeeOrders?.error || null);
 
 const formatDate = (dateString) => {
   if (!dateString) return "—";
@@ -91,9 +80,26 @@ const formatDate = (dateString) => {
 };
 
 const clearError = () => {
-  store.commit("orders/SET_ERROR", null);
+  store.commit("employeeOrders/SET_ERROR", null);
 };
 
+onMounted(async () => {
+  console.log("Fetching assigned orders...");
+  try {
+    await store.dispatch("employeeOrders/fetchOrders");
+    console.log("Orders fetched:", store.state.employeeOrders.orders);
+
+    // Добавим проверку данных
+    if (store.state.employeeOrders.orders.length === 0) {
+      console.warn("No orders found, but request was successful");
+    }
+  } catch (e) {
+    console.error("Failed to load orders:", {
+      message: e.message,
+      response: e.response?.data,
+    });
+  }
+});
 </script>
 
 <style scoped>

@@ -1,8 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
-import { useStore } from "vuex";
 import LoginView from "@/views/Auth/LoginView.vue";
 import RegisterView from "@/views/Auth/RegisterView.vue";
-
 import HomeView from "../views/HomeView.vue";
 import OrdersView from "@/views/OrdersView.vue";
 import NewOrder from "@/components/Orders/NewOrder.vue";
@@ -12,6 +10,7 @@ import OrderDetails from "@/components/Orders/OrderDetails.vue";
 import DeliveriesView from "@/views/DeliveriesView.vue";
 import ClientsView from "@/views/ClientsView.vue";
 import DataView from "@/views/DataView.vue";
+import EmployeeOrderList from "@/components/Orders/EmployeeOrderList.vue";
 
 const routes = [
   {
@@ -49,7 +48,7 @@ const routes = [
     name: "order-details",
     component: OrderDetails,
     meta: { title: "Детали заказа" },
-    props: true, 
+    props: true,
   },
   {
     path: "/services",
@@ -84,6 +83,15 @@ const routes = [
     component: DataView,
     meta: { title: "Данные", requiresAdmin: true },
   },
+  {
+    path: "/my-orders",
+    name: "MyOrders",
+    component: EmployeeOrderList,
+    meta: {
+      requiresAuth: true,
+      requiresEmployee: true,
+    },
+  },
   //редирект для несуществующих страниц
   {
     path: "/:pathMatch(.*)*",
@@ -94,7 +102,6 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
-  // Плавная прокрутка к началу страницы при переходе
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) {
       return savedPosition;
@@ -104,27 +111,40 @@ const router = createRouter({
   },
 });
 
-router.beforeEach(async (to, from, next) => {
-  const store = useStore();
-  const isAuthRoute = to.name === "login" || to.name === "register";
+// Создаем функцию для инициализации роутера с хранилищем
+export function setupRouter(app, store) {
+  router.beforeEach(async (to, from, next) => {
+    const isAuthRoute = to.name === "login" || to.name === "register";
 
-  // Проверяем авторизацию
-  const isAuthenticated = await store.dispatch("auth/checkAuth");
+    try {
+      // Проверяем авторизацию
+      const isAuthenticated = await store.dispatch("auth/checkAuth");
 
-  if (!isAuthenticated && !isAuthRoute) {
-    return next("/login");
-  }
+      if (!isAuthenticated && !isAuthRoute) {
+        return next("/login");
+      }
 
-  // Проверяем права доступа
-  if (
-    isAuthenticated &&
-    to.meta.requiresAdmin &&
-    !store.getters["auth/isAdmin"]
-  ) {
-    return next("/"); // Или /access-denied
-  }
+      // Проверяем права доступа
+      if (isAuthenticated) {
+        const isAdmin = store.getters["auth/isAdmin"];
+        const isEmployee = !isAdmin;
 
-  next();
-});
+        if (to.meta.requiresAdmin && !isAdmin) {
+          return next("/");
+        }
+        if (to.meta.requiresEmployee && !isEmployee) {
+          return next("/orders");
+        }
+      }
+
+      next();
+    } catch (error) {
+      console.error("Router error:", error);
+      next("/login");
+    }
+  });
+
+  return router;
+}
 
 export default router;

@@ -29,7 +29,7 @@
         @saved="fetchMeasurements"
       />
 
-      <div class="actions">
+      <div v-if="isAdmin" class="actions">
         <button @click="editOrder(order.order_id)" class="btn primary">
           Редактировать заказ
         </button>
@@ -64,6 +64,8 @@ import OrderMeasurements from "./OrderDetails/OrderMeasurements.vue";
 import EditOrderModal from "./OrderDetails/EditOrderModal.vue";
 
 const store = useStore();
+const isAdmin = computed(() => store.getters["auth/isAdmin"]);
+
 const route = useRoute();
 const router = useRouter();
 const orderId = route.params.id;

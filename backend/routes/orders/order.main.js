@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("../../config/db");
+const authenticate = require("../../middleware/auth");
 
 // Получение всех заказов
 router.get("/", async (req, res) => {
@@ -28,22 +29,65 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Получение деталей заказа
-router.get("/:id", async (req, res) => {
+router.get("/assigned-to-me", authenticate, async (req, res) => {
   try {
-    const { rows } = await pool.query(
-      `SELECT o.*, c.fullname as client_name 
-       FROM orders o
-       JOIN clients c ON o.client_id = c.client_id
-       WHERE o.order_id = $1`,
-      [req.params.id]
+    console.log("Authenticated user:", req.user); // Логируем пользователя
+
+    const userId = req.user.user_id;
+    console.log("User ID:", userId);
+
+    const employeeQuery = await pool.query(
+      "SELECT employee_id FROM employees WHERE user_id = $1",
+      [userId]
     );
-    if (rows.length === 0)
-      return res.status(404).json({ error: "Order not found" });
-    res.json(rows[0]);
+    console.log("Employee query result:", employeeQuery.rows);
+
+    if (employeeQuery.rows.length === 0) {
+      console.log("Employee not found for user:", userId);
+      return res.status(404).json({ error: "Сотрудник не найден" });
+    }
+
+    const employeeId = employeeQuery.rows[0].employee_id;
+    console.log("Employee ID:", employeeId);
+
+    const { rows } = await pool.query(
+      `SELECT 
+        o.order_id,
+        o.tracking_number,
+        o.status,
+        o.total_cost::float, 
+        o.fitting_date,
+        o.deadline_date,
+        o.comment,
+        o.created_at,
+        c.fullname as client_name,
+        c.phone_number as client_phone
+       FROM orders o
+       JOIN order_employees oe ON o.order_id = oe.order_id
+       JOIN clients c ON o.client_id = c.client_id
+       WHERE oe.employee_id = $1
+         AND o.status NOT IN ('Отменен')
+       ORDER BY o.created_at DESC`,
+      [employeeId]
+    );
+    console.log("Found orders:", rows.length);
+
+    res.json(
+      rows.map((row) => ({
+        ...row,
+        created_at: new Date(row.created_at).toISOString(),
+        deadline_date: row.deadline_date
+          ? new Date(row.deadline_date).toISOString()
+          : null,
+      }))
+    );
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error" });
+    console.error("Ошибка в /orders/assigned-to-me:", err);
+    res.status(500).json({
+      error: "Ошибка сервера",
+      details: err.message,
+      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+    });
   }
 });
 
@@ -70,6 +114,25 @@ router.get("/:id/employees", async (req, res) => {
   } catch (err) {
     console.error("Error fetching order employees:", err);
     res.status(500).json({ error: "Database error", details: err.message });
+  }
+});
+
+// Получение деталей заказа
+router.get("/:id", async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT o.*, c.fullname as client_name 
+       FROM orders o
+       JOIN clients c ON o.client_id = c.client_id
+       WHERE o.order_id = $1`,
+      [req.params.id]
+    );
+    if (rows.length === 0)
+      return res.status(404).json({ error: "Order not found" });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 

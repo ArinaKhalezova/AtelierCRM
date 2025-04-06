@@ -9,6 +9,7 @@ import materials from "./modules/materials";
 import services from "./modules/services";
 import orders from "./modules/orders";
 import orderDetails from "./modules/orderDetails";
+import employeeOrders from "./modules/employeeOrders";
 
 export default createStore({
   modules: {
@@ -21,5 +22,6 @@ export default createStore({
     services,
     orders,
     orderDetails,
+    employeeOrders,
   },
 });

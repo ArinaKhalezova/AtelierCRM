@@ -54,13 +54,25 @@ export default {
       await api.logout(); // Если есть API для логаута
     },
     async checkAuth({ commit, state }) {
-      if (!state.token) return false;
-
       try {
+        // Проверяем наличие токена
+        if (!state.token) {
+          return false;
+        }
+
+        // Проверяем валидность токена на сервере
         const response = await api.checkAuth();
-        commit("SET_USER", response.data);
-        return true;
+
+        if (response.data) {
+          commit("SET_USER", response.data);
+          return true;
+        }
+
+        // Если ответ пустой, очищаем аутентификацию
+        commit("CLEAR_AUTH");
+        return false;
       } catch (error) {
+        console.error("Auth check failed:", error);
         commit("CLEAR_AUTH");
         return false;
       }

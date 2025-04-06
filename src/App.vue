@@ -11,7 +11,8 @@
         </router-link>
         <nav class="nav-links">
           <router-link to="/">Главная</router-link>
-          <router-link to="/orders">Заказы</router-link>
+          <router-link v-if="isAdmin" to="/orders">Заказы</router-link>
+          <router-link v-else to="/my-orders">Мои заказы</router-link>
           <template v-if="isAdmin">
             <router-link to="/services">Услуги</router-link>
             <router-link to="/deliveries">Поставки</router-link>
