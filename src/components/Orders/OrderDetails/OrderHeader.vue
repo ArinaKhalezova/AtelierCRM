@@ -1,6 +1,6 @@
 <template>
   <div class="header">
-    <button @click="$router.push('/orders')" class="btn back">← Назад</button>
+    <button @click="goBack" class="btn back">← Назад</button>
     <h2>Заказ № {{ order.tracking_number }}</h2>
     <OrderStatusChanger
       :order-id="order.order_id"
@@ -10,14 +10,29 @@
 </template>
 
 <script setup>
-import OrderStatusChanger from '../OrderStatusChanger.vue';
+import { useRouter } from "vue-router";
+import OrderStatusChanger from "../OrderStatusChanger.vue";
 
-defineProps({
+const props = defineProps({
   order: {
     type: Object,
     required: true,
   },
+  isAdmin: {
+    type: Boolean,
+    default: false,
+  },
 });
+
+const router = useRouter();
+
+const goBack = () => {
+  if (props.isAdmin) {
+    router.push("/orders");
+  } else {
+    router.push("/my-orders");
+  }
+};
 </script>
 
 <style scoped>

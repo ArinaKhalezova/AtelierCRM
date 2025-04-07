@@ -25,6 +25,7 @@
               required
               :min="minDeadlineDate"
               class="input"
+              :disabled="!isAdmin"
             />
           </div>
         </div>
@@ -124,6 +125,7 @@ const props = defineProps({
 const emit = defineEmits(["close", "success"]);
 
 const store = useStore();
+const isAdmin = computed(() => store.getters["auth/isAdmin"]);
 const formData = ref(initializeFormData());
 const isSubmitting = ref(false);
 const error = ref(null);
@@ -179,10 +181,10 @@ function initializeFormData() {
     }
   }
 
-//   // Если нет ни одной примерки - добавляем пустую
-//   if (initialData.fittings.length === 0) {
-//     initialData.fittings.push({ date: "", result: "" });
-//   }
+  //   // Если нет ни одной примерки - добавляем пустую
+  //   if (initialData.fittings.length === 0) {
+  //     initialData.fittings.push({ date: "", result: "" });
+  //   }
 
   return {
     ...initialData,

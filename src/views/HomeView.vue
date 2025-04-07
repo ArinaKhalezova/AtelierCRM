@@ -62,7 +62,7 @@
             <p class="metric-value">{{ notStartedOrdersCount }}</p>
           </div>
         </div>
-        <router-link to="/orders?status=ожидает" class="metric-link"
+        <router-link to="/orders" class="metric-link"
           >Посмотреть все →</router-link
         >
       </div>

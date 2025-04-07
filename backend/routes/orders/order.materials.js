@@ -1,20 +1,17 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 const pool = require("../../config/db");
+const authenticate = require("../../middleware/auth");
 
-/**
- * Получение материалов заказа
- * GET /orders/:id/materials
- */
 router.get("/:id/materials", async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT 
+      `SELECT
         om.order_material_id,
         om.quantity,
         m.material_id,
-        m.material_name, 
-        m.cost_per_unit, 
+        m.material_name,
+        m.cost_per_unit,
         m.unit,
         m.type
        FROM order_materials om
@@ -37,11 +34,10 @@ router.get("/:id/materials", async (req, res) => {
   }
 });
 
-/**
- * Добавление материала к заказу
- * POST /orders/:id/materials
- */
-router.post("/:id/materials", async (req, res) => {
+router.post("/:id/materials", authenticate, async (req, res) => {
+  if (!req.user.is_admin) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -52,7 +48,7 @@ router.post("/:id/materials", async (req, res) => {
     if (!material_id || !quantity || quantity <= 0) {
       return res.status(400).json({
         error: "Неверные параметры запроса",
-        details: "Требуются material_id и положительное quantity"
+        details: "Требуются material_id и положительное quantity",
       });
     }
 
@@ -66,7 +62,7 @@ router.post("/:id/materials", async (req, res) => {
     if (materialCheck.rows.length === 0) {
       return res.status(404).json({
         error: "Материал не найден",
-        details: `Material with id ${material_id} not found`
+        details: `Material with id ${material_id} not found`,
       });
     }
 
@@ -79,8 +75,8 @@ router.post("/:id/materials", async (req, res) => {
         details: {
           requested: quantity,
           available: availableQuantity,
-          material_name: materialName
-        }
+          material_name: materialName,
+        },
       });
     }
 
@@ -108,98 +104,99 @@ router.post("/:id/materials", async (req, res) => {
       orderId: req.params.id,
       materialId: material_id,
       quantity: quantity,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     res.status(201).json(insertResult.rows[0]);
-
   } catch (err) {
     await client.query("ROLLBACK");
     console.error("Error adding material to order:", {
       error: err.message,
       orderId: req.params.id,
       body: req.body,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Ошибка при добавлении материала к заказу",
-      details: err.message 
+      details: err.message,
     });
   } finally {
     client.release();
   }
 });
 
-/**
- * Удаление материала из заказа
- * DELETE /orders/:orderId/materials/:materialId
- */
-router.delete("/:orderId/materials/:materialId", async (req, res) => {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
+router.delete(
+  "/:orderId/materials/:materialId",
+  authenticate,
+  async (req, res) => {
+    if (!req.user.is_admin) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
 
-    // 1. Получаем информацию о материале для возврата на склад
-    const materialQuery = await client.query(
-      `SELECT om.quantity, om.material_id, m.material_name
+      // 1. Получаем информацию о материале для возврата на склад
+      const materialQuery = await client.query(
+        `SELECT om.quantity, om.material_id, m.material_name
        FROM order_materials om
        JOIN materials m ON om.material_id = m.material_id
        WHERE om.order_material_id = $1`,
-      [req.params.materialId]
-    );
+        [req.params.materialId]
+      );
 
-    if (materialQuery.rows.length === 0) {
-      return res.status(404).json({
-        error: "Материал в заказе не найден",
-        details: `Order material with id ${req.params.materialId} not found`
-      });
-    }
+      if (materialQuery.rows.length === 0) {
+        return res.status(404).json({
+          error: "Материал в заказе не найден",
+          details: `Order material with id ${req.params.materialId} not found`,
+        });
+      }
 
-    const { quantity, material_id, material_name } = materialQuery.rows[0];
+      const { quantity, material_id, material_name } = materialQuery.rows[0];
 
-    // 2. Возвращаем материал на склад
-    await client.query(
-      `UPDATE materials 
+      // 2. Возвращаем материал на склад
+      await client.query(
+        `UPDATE materials 
        SET quantity = quantity + $1 
        WHERE material_id = $2`,
-      [quantity, material_id]
-    );
+        [quantity, material_id]
+      );
 
-    // 3. Удаляем материал из заказа
-    await client.query(
-      `DELETE FROM order_materials 
+      // 3. Удаляем материал из заказа
+      await client.query(
+        `DELETE FROM order_materials 
        WHERE order_material_id = $1`,
-      [req.params.materialId]
-    );
+        [req.params.materialId]
+      );
 
-    await client.query("COMMIT");
+      await client.query("COMMIT");
 
-    // Логирование успешной операции
-    console.log("Material removed from order:", {
-      orderId: req.params.orderId,
-      materialId: material_id,
-      materialName: material_name,
-      quantityReturned: quantity,
-      timestamp: new Date().toISOString()
-    });
+      // Логирование успешной операции
+      console.log("Material removed from order:", {
+        orderId: req.params.orderId,
+        materialId: material_id,
+        materialName: material_name,
+        quantityReturned: quantity,
+        timestamp: new Date().toISOString(),
+      });
 
-    res.status(204).send();
-
-  } catch (err) {
-    await client.query("ROLLBACK");
-    console.error("Error removing material from order:", {
-      error: err.message,
-      orderId: req.params.orderId,
-      materialId: req.params.materialId,
-      timestamp: new Date().toISOString()
-    });
-    res.status(500).json({ 
-      error: "Ошибка при удалении материала из заказа",
-      details: err.message 
-    });
-  } finally {
-    client.release();
+      res.status(204).send();
+    } catch (err) {
+      await client.query("ROLLBACK");
+      console.error("Error removing material from order:", {
+        error: err.message,
+        orderId: req.params.orderId,
+        materialId: req.params.materialId,
+        timestamp: new Date().toISOString(),
+      });
+      res.status(500).json({
+        error: "Ошибка при удалении материала из заказа",
+        details: err.message,
+      });
+    } finally {
+      client.release();
+    }
   }
-});
+);
 
 module.exports = router;

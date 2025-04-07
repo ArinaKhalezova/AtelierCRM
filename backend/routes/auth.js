@@ -5,7 +5,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
-// Добавьте этот middleware для проверки токена
+// middleware для проверки токена
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
@@ -28,7 +28,7 @@ router.get("/me", authenticateToken, async (req, res) => {
   try {
     const user = await pool.query(
       "SELECT user_id, fullname, email, role FROM users WHERE user_id = $1",
-      [req.user.userId] // Обратите внимание - должно быть req.user.user_id
+      [req.user.userId] 
     );
 
     if (user.rows.length === 0) {

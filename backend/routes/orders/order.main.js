@@ -183,7 +183,10 @@ router.post("/", async (req, res) => {
 });
 
 // Назначение сотрудника на заказ
-router.post("/:id/assign-employee", async (req, res) => {
+router.post("/:id/assign-employee", authenticate, async (req, res) => {
+  if (req.user.role !== "Администратор") {
+    return res.status(403).json({ error: "Доступ запрещен" });
+  }
   const { id } = req.params;
   const { employee_id } = req.body;
 
@@ -235,25 +238,32 @@ router.post("/:id/assign-employee", async (req, res) => {
 });
 
 // Удаление сотрудника из заказа
-router.delete("/:orderId/employees/:employeeId", async (req, res) => {
-  const { orderId, employeeId } = req.params;
-
-  try {
-    const { rowCount } = await pool.query(
-      "DELETE FROM order_employees WHERE order_id = $1 AND employee_id = $2",
-      [orderId, employeeId]
-    );
-
-    if (rowCount === 0) {
-      return res.status(404).json({ error: "Assignment not found" });
+router.delete(
+  "/:orderId/employees/:employeeId",
+  authenticate,
+  async (req, res) => {
+    if (req.user.role !== "Администратор") {
+      return res.status(403).json({ error: "Доступ запрещен" });
     }
+    const { orderId, employeeId } = req.params;
 
-    res.status(204).send();
-  } catch (err) {
-    console.error("Error removing employee from order:", err);
-    res.status(500).json({ error: "Database error", details: err.message });
+    try {
+      const { rowCount } = await pool.query(
+        "DELETE FROM order_employees WHERE order_id = $1 AND employee_id = $2",
+        [orderId, employeeId]
+      );
+
+      if (rowCount === 0) {
+        return res.status(404).json({ error: "Assignment not found" });
+      }
+
+      res.status(204).send();
+    } catch (err) {
+      console.error("Error removing employee from order:", err);
+      res.status(500).json({ error: "Database error", details: err.message });
+    }
   }
-});
+);
 
 // Обновленные функции генерации кода
 async function generateDateBasedCode(client) {

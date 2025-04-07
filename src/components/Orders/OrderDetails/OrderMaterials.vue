@@ -18,6 +18,7 @@
           </span>
         </div>
         <button
+          v-if="canEdit"
           @click="removeMaterial(material.order_material_id)"
           class="btn danger"
         >
@@ -35,6 +36,10 @@ defineProps({
     type: Array,
     required: true,
     default: () => [],
+  },
+  canEdit: {
+    type: Boolean,
+    default: false,
   },
 });
 

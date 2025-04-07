@@ -22,6 +22,7 @@
           >
         </div>
         <button
+          v-if="canEdit"
           @click="removeService(service.order_service_id)"
           class="btn danger"
         >
@@ -40,6 +41,10 @@ const props = defineProps({
   services: {
     type: Array,
     required: true,
+  },
+  canEdit: {
+    type: Boolean,
+    default: false,
   },
 });
 

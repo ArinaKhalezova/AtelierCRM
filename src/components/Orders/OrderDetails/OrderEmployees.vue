@@ -25,6 +25,7 @@
             <span class="employee-name">{{ employee.fullname }}</span>
             <span class="employee-position">({{ employee.position }})</span>
             <button
+              v-if="canEdit"
               @click="removeEmployee(employee.employee_id)"
               class="btn remove-btn"
               title="Убрать с заказа"
@@ -34,7 +35,7 @@
           </li>
         </ul>
 
-        <div class="assign-form">
+        <div v-if="canEdit" class="assign-form">
           <select
             v-model="selectedEmployeeId"
             class="employee-select"
@@ -76,6 +77,10 @@ const props = defineProps({
     type: Number,
     required: true,
   },
+  canEdit: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const selectedEmployeeId = ref("");
@@ -105,10 +110,15 @@ const assignEmployee = async () => {
       employeeId: selectedEmployeeId.value,
     });
     selectedEmployeeId.value = "";
-    // Обновляем список сотрудников после назначения
     await store.dispatch("orderDetails/fetchOrderEmployees", props.orderId);
   } catch (error) {
     console.error("Error assigning employee:", error);
+    if (error.response?.status === 403) {
+      store.commit(
+        "orderDetails/SET_EMPLOYEE_ASSIGNMENT_ERROR",
+        "Недостаточно прав"
+      );
+    }
   }
 };
 
@@ -119,10 +129,15 @@ const removeEmployee = async (employeeId) => {
         orderId: props.orderId,
         employeeId,
       });
-      // Обновляем список сотрудников после удаления
       await store.dispatch("orderDetails/fetchOrderEmployees", props.orderId);
     } catch (error) {
       console.error("Error removing employee:", error);
+      if (error.response?.status === 403) {
+        store.commit(
+          "orderDetails/SET_EMPLOYEE_ASSIGNMENT_ERROR",
+          "Недостаточно прав"
+        );
+      }
     }
   }
 };

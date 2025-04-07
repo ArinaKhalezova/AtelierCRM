@@ -3,22 +3,28 @@
     <div v-if="isLoading" class="loading">Загрузка...</div>
     <div v-else-if="error" class="error">{{ error }}</div>
     <div v-else-if="order" class="content">
-      <OrderHeader :order="order" />
+      <OrderHeader :order="order" :is-admin="isAdmin" />
 
       <OrderMainInfo :order="order" />
 
       <OrderEmployees
         :order-id="orderId"
+        :can-edit="isAdmin"
         v-if="
           order && order.status !== 'Выполнен' && order.status !== 'Отменен'
         "
       />
 
-      <OrderServices :services="services" @remove-service="removeService" />
+      <OrderServices
+        :services="services"
+        @remove-service="removeService"
+        :can-edit="isAdmin"
+      />
 
       <OrderMaterials
         :materials="materials"
         @remove-material="removeMaterial"
+        :can-edit="isAdmin"
       />
 
       <OrderComment v-if="order.comment" :comment="order.comment" />
@@ -29,11 +35,15 @@
         @saved="fetchMeasurements"
       />
 
-      <div v-if="isAdmin" class="actions">
+      <div class="actions">
         <button @click="editOrder(order.order_id)" class="btn primary">
           Редактировать заказ
         </button>
-        <button @click="deleteOrder(order.order_id)" class="btn danger">
+        <button
+          v-if="isAdmin"
+          @click="deleteOrder(order.order_id)"
+          class="btn danger"
+        >
           Удалить заказ
         </button>
       </div>
