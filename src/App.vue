@@ -34,34 +34,28 @@
   </div>
 </template>
 
-<script>
-import { computed, onMounted } from "vue";
-import { useRouter } from "vue-router";
-import { useStore } from "vuex";
+<script setup>
+import { computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useStore } from 'vuex'
 
-export default {
-  setup() {
-    const router = useRouter();
-    const store = useStore();
-    const isAdmin = computed(() => store.getters["auth/isAdmin"]);
+const router = useRouter()
+const store = useStore()
 
-    const isAuthenticated = computed(
-      () => store.getters["auth/isAuthenticated"]
-    );
+// Computed свойства
+const isAdmin = computed(() => store.getters['auth/isAdmin'])
+const isAuthenticated = computed(() => store.getters['auth/isAuthenticated'])
 
-    const handleLogout = () => {
-      store.dispatch("auth/logout");
-      router.push("/login");
-    };
+// Методы
+const handleLogout = () => {
+  store.dispatch('auth/logout')
+  router.push('/login')
+}
 
-    // Проверяем авторизацию при загрузке
-    onMounted(async () => {
-      await store.dispatch("auth/checkAuth");
-    });
-
-    return { isAuthenticated, handleLogout, isAdmin };
-  },
-};
+// Хук жизненного цикла
+onMounted(async () => {
+  await store.dispatch('auth/checkAuth')
+})
 </script>
 
 <style scoped>

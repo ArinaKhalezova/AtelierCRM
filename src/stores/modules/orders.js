@@ -7,6 +7,7 @@ export default {
     loading: false,
     error: null,
     ordersCount: null,
+    statusCounts: {},
   }),
   mutations: {
     SET_ORDERS(state, orders) {
@@ -38,6 +39,9 @@ export default {
     },
     SET_ERROR(state, error) {
       state.error = error;
+    },
+    SET_STATUS_COUNTS(state, counts) {
+      state.statusCounts = counts || {};
     },
   },
   actions: {
@@ -135,9 +139,10 @@ export default {
     async fetchOrdersCountByStatus({ commit }) {
       try {
         const response = await api.getOrdersCountByStatus();
-        commit("SET_ORDERS_COUNT", response.data);
-      } catch (error) {
-        commit("SET_ERROR", error.message);
+        commit("SET_STATUS_COUNTS", response.data);
+      } catch (e) {
+        console.error("Error loading status counts:", e);
+        commit("SET_STATUS_COUNTS", {});
       }
     },
   },

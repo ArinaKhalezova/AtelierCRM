@@ -1,6 +1,8 @@
 <template>
   <div class="home-view">
-    <div class="welcome-banner">
+    <div v-if="loading" class="global-loading">Загрузка...</div>
+    <div v-else-if="error" class="global-error">{{ error }}</div>
+    <div v-else class="welcome-banner">
       <h1>Добро пожаловать</h1>
       <p>Сегодня: {{ currentDate }}</p>
     </div>
@@ -62,18 +64,27 @@
             <p class="metric-value">{{ notStartedOrdersCount }}</p>
           </div>
         </div>
-        <router-link to="/orders" class="metric-link"
+        <router-link to="/orders?status=ожидает" class="metric-link"
           >Посмотреть все →</router-link
         >
       </div>
+    </div>
+
+    <div>
+      <Timeline />
+      <Gant />
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useStore } from "vuex";
+import Timeline from "@/components/Home/Timeline.vue";
+import Gant from "@/components/Home/Gant.vue";
 
+const loading = ref(true);
+const error = ref(null);
 const store = useStore();
 
 const currentDate = new Date().toLocaleDateString("ru-RU", {
@@ -89,9 +100,18 @@ const notStartedOrdersCount = computed(
   () => store.getters["orders/notStartedOrdersCount"]
 );
 
-onMounted(() => {
-  store.dispatch("orders/fetchOrders");
-  store.dispatch("orders/fetchOrdersCountByStatus");
+onMounted(async () => {
+  try {
+    await Promise.all([
+      store.dispatch("orders/fetchOrders"),
+      store.dispatch("orders/fetchOrdersCountByStatus"),
+    ]);
+  } catch (e) {
+    error.value = "Ошибка загрузки данных";
+    console.error("HomeView error:", e);
+  } finally {
+    loading.value = false;
+  }
 });
 </script>
 

@@ -6,15 +6,34 @@ const pool = require("../../config/db");
 router.get("/status-counts", async (req, res) => {
   try {
     const { rows } = await pool.query(`
-      SELECT status, COUNT(*) as count
+      SELECT 
+        status,
+        COUNT(*)::integer AS count
       FROM orders
       GROUP BY status
-      ORDER BY count DESC
+      ORDER BY status
     `);
-    res.json(rows);
+
+    const statuses = [
+      "Новый",
+      "Принят",
+      "В работе",
+      "Готов",
+      "Выполнен",
+      "Отменен",
+    ];
+    const result = statuses.reduce((acc, status) => {
+      acc[status] = rows.find((r) => r.status === status)?.count || 0;
+      return acc;
+    }, {});
+
+    res.json(result);
   } catch (err) {
-    console.error("Error in GET /orders/status-counts:", err);
-    res.status(500).json({ error: "Database error", details: err.message });
+    console.error("Error fetching status counts:", err);
+    res.status(500).json({
+      error: "Database error",
+      details: err.message,
+    });
   }
 });
 
