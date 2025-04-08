@@ -34,10 +34,7 @@ router.get("/:id/materials", async (req, res) => {
   }
 });
 
-router.post("/:id/materials", authenticate, async (req, res) => {
-  if (!req.user.is_admin) {
-    return res.status(403).json({ error: "Недостаточно прав" });
-  }
+router.post("/:id/materials", async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
