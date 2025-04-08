@@ -36,6 +36,9 @@
 
 <script setup>
 import ServiceStatusChanger from "../ServiceStatusChanger.vue";
+import { useStore } from "vuex";
+
+const store = useStore();
 
 const props = defineProps({
   services: {
@@ -50,8 +53,15 @@ const props = defineProps({
 
 const emit = defineEmits(["remove-service", "service-status-updated"]);
 
-const handleServiceStatusUpdate = ({ serviceId, newStatus }) => {
-  emit("service-status-updated", { serviceId, newStatus });
+const handleServiceStatusUpdate = async () => {
+  try {
+    await store.dispatch(
+      "orderDetails/fetchOrderServiceHistory",
+      store.getters["orderDetails/currentOrder"]?.order_id
+    );
+  } catch (error) {
+    console.error("Ошибка обновления истории:", error);
+  }
 };
 
 const removeService = (serviceId) => {

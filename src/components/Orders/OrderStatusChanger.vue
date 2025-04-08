@@ -42,20 +42,31 @@ const selectedStatus = ref(props.currentStatus);
 
 const availableStatuses = ["Новый", "В работе", "Готов", "Выполнен", "Отменен"];
 
-const updateStatus = async () => {
+const updateServiceStatus = async () => {
   try {
     isLoading.value = true;
-    await store.dispatch("orders/updateOrderStatus", {
-      orderId: props.orderId,
-      status: selectedStatus.value, 
-    });
-    emit("status-updated", {
-      orderId: props.orderId,
-      newStatus: selectedStatus.value,
-    });
+    await store.dispatch(
+      "orderDetails/updateOrderServiceStatus",
+      {
+        serviceId: props.serviceId,
+        status: selectedStatus.value,
+      },
+      { root: true }
+    );
+
+    // Принудительно обновляем историю после изменения
+    await store.dispatch(
+      "orderDetails/fetchOrderServiceHistory",
+      store.getters["orderDetails/currentOrder"]?.order_id,
+      { root: true }
+    );
+
+    emit("status-updated");
   } catch (error) {
     console.error("Ошибка обновления статуса:", error);
     selectedStatus.value = props.currentStatus;
+    // Показываем ошибку пользователю
+    store.commit("SET_ERROR", error.message, { root: true });
   } finally {
     isLoading.value = false;
   }

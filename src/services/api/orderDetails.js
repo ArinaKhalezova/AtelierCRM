@@ -1,6 +1,15 @@
 import apiClient from "../config";
 
 export default {
+  //история работы
+  getOrderHistory(orderId) {
+    return apiClient.get(`/orders/${orderId}/history`);
+  },
+
+  getOrderServiceHistory(orderId) {
+    return apiClient.get(`/orders/${orderId}/services/history`);
+  },
+
   // Услуги в заказе
   getOrderServices(orderId) {
     return apiClient.get(`/orders/${orderId}/services`);

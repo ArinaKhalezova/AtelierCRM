@@ -4,6 +4,8 @@ import ordersApi from "@/services/api/orders";
 export default {
   namespaced: true,
   state: () => ({
+    orderHistory: [],
+    serviceHistory: [],
     currentOrder: null,
     orderServices: [],
     orderMaterials: [],
@@ -72,9 +74,23 @@ export default {
     SET_EMPLOYEE_ASSIGNMENT_ERROR(state, error) {
       state.employeeAssignmentError = error;
     },
+    SET_ORDER_HISTORY(state, history) {
+      state.orderHistory = history;
+    },
+    SET_SERVICE_HISTORY(state, history) {
+      state.serviceHistory = history;
+    },
   },
   actions: {
     // Основной action для загрузки всех данных заказа
+    async fetchOrderHistory({ commit }, orderId) {
+      const response = await api.getOrderHistory(orderId);
+      commit("SET_ORDER_HISTORY", response.data);
+    },
+    async fetchOrderServiceHistory({ commit }, orderId) {
+      const response = await api.getOrderServiceHistory(orderId);
+      commit("SET_SERVICE_HISTORY", response.data);
+    },
     async fetchFullOrderDetails({ commit, dispatch }, orderId) {
       commit("SET_LOADING", true);
       try {
@@ -139,14 +155,16 @@ export default {
     async updateOrderServiceStatus({ commit }, { serviceId, status }) {
       try {
         const response = await api.updateOrderServiceStatus(serviceId, status);
+
         commit("UPDATE_ORDER_SERVICE_STATUS", {
-          serviceId,
-          status: response.data.status,
+          serviceId: parseInt(serviceId),
+          status: response.data.new_status,
         });
-        return true;
+        
+        return response.data;
       } catch (error) {
-        commit("SET_ERROR", error.message);
-        return false;
+        commit("SET_ERROR", error.response?.data?.error || error.message);
+        throw error;
       }
     },
 
@@ -278,6 +296,8 @@ export default {
     },
   },
   getters: {
+    orderHistory: (state) => state.orderHistory,
+    serviceHistory: (state) => state.serviceHistory,
     currentOrder: (state) => state.currentOrder,
     orderServices: (state) => state.orderServices,
     orderMaterials: (state) => state.orderMaterials,

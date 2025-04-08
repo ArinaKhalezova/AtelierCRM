@@ -17,7 +17,8 @@
 
       <OrderServices
         :services="services"
-        @remove-service="removeService"
+        @remove-service="remove - service"
+        @status-updated="handleStatusUpdated"
         :can-edit="isAdmin"
       />
 
@@ -55,6 +56,13 @@
         @close="closeEditModal"
         @success="handleEditSuccess"
       />
+
+      <OrderHistory v-if="orderHistory.length > 0" :history="orderHistory" />
+
+      <ServiceHistory
+        v-if="serviceHistory.length > 0"
+        :history="serviceHistory"
+      />
     </div>
   </div>
 </template>
@@ -72,6 +80,8 @@ import OrderMaterials from "./OrderDetails/OrderMaterials.vue";
 import OrderComment from "./OrderDetails/OrderComment.vue";
 import OrderMeasurements from "./OrderDetails/OrderMeasurements.vue";
 import EditOrderModal from "./OrderDetails/EditOrderModal.vue";
+import OrderHistory from "./OrderDetails/OrderHistory.vue";
+import ServiceHistory from "./OrderDetails/ServiceHistory.vue";
 
 const store = useStore();
 const isAdmin = computed(() => store.getters["auth/isAdmin"]);
@@ -79,6 +89,7 @@ const isAdmin = computed(() => store.getters["auth/isAdmin"]);
 const route = useRoute();
 const router = useRouter();
 const orderId = route.params.id;
+// const orderId = computed(() => Number(route.params.id));
 const isEditModalOpen = ref(false);
 
 const fetchMeasurements = async () => {
@@ -96,6 +107,10 @@ const materials = computed(() => store.getters["orderDetails/orderMaterials"]);
 const measurements = computed(() => store.getters["orderDetails/measurements"]);
 const isLoading = computed(() => store.getters["orderDetails/isLoading"]);
 const error = computed(() => store.getters["orderDetails/error"]);
+const orderHistory = computed(() => store.getters["orderDetails/orderHistory"]);
+const serviceHistory = computed(
+  () => store.getters["orderDetails/serviceHistory"]
+);
 
 // Методы
 const removeService = async (serviceId) => {
@@ -138,6 +153,14 @@ const handleEditSuccess = () => {
   store.dispatch("orderDetails/fetchFullOrderDetails", orderId);
 };
 
+const handleStatusUpdated = async () => {
+  try {
+    await store.dispatch("orderDetails/fetchOrderServiceHistory", orderId);
+  } catch (error) {
+    console.error("Ошибка обновления истории услуг:", error);
+  }
+};
+
 const deleteOrder = async (id) => {
   if (!confirm("Вы уверены, что хотите удалить этот заказ?")) return;
 
@@ -169,6 +192,8 @@ const deleteOrder = async (id) => {
 onMounted(async () => {
   try {
     await store.dispatch("orderDetails/fetchFullOrderDetails", orderId);
+    await store.dispatch("orderDetails/fetchOrderHistory", orderId);
+    await store.dispatch("orderDetails/fetchOrderServiceHistory", orderId);
   } catch (error) {
     console.error("Ошибка загрузки данных:", {
       message: error.message,
