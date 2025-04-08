@@ -3,7 +3,7 @@
     <h2>Ближайшие события</h2>
     <div class="timeline">
       <div
-        v-for="event in upcomingEvents"
+        v-for="event in displayedEvents"
         :key="event.id"
         class="timeline-item"
       >
@@ -14,18 +14,32 @@
           <router-link :to="`/orders/${event.orderId}`">Подробнее</router-link>
         </div>
       </div>
+
+      <button v-if="!showAll" @click="showAll = true" class="timeline-btn">
+        Показать еще ({{ upcomingEvents.length - 3 }})
+      </button>
+      <button v-else @click="showAll = false" class="timeline-btn">
+        Скрыть
+      </button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted, computed } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useStore } from "vuex";
 
 const store = useStore();
+const showAll = ref(false);
+
+const isAdmin = computed(() => store.getters["auth/isAdmin"]);
 
 const upcomingEvents = computed(() => {
-  const orders = store.getters["orders/allOrders"];
+  // Выбираем источник данных в зависимости от роли
+  const orders = isAdmin.value
+    ? store.getters["orders/allOrders"]
+    : store.state.employeeOrders.orders || [];
+
   return orders
     .filter((order) => order.fitting_date || order.deadline_date)
     .map((order) => ({
@@ -36,7 +50,7 @@ const upcomingEvents = computed(() => {
       orderId: order.order_id,
     }))
     .sort((a, b) => new Date(a.date) - new Date(b.date))
-    .slice(0, 5); // Показываем только 5 ближайших
+    .slice(0, isAdmin.value ? 5 : 3); // Разный лимит для админа и сотрудника
 });
 
 const formatEventDate = (dateString) => {
@@ -49,10 +63,20 @@ const formatEventDate = (dateString) => {
   });
 };
 
+const displayedEvents = computed(() => {
+  return showAll.value
+    ? upcomingEvents.value
+    : upcomingEvents.value.slice(0, 3);
+});
+
 onMounted(() => {
   try {
-    store.dispatch("orders/fetchOrders");
-    store.dispatch("orders/fetchOrdersCountByStatus");
+    if (isAdmin.value) {
+      store.dispatch("orders/fetchOrders");
+      store.dispatch("orders/fetchOrdersCountByStatus");
+    } else {
+      store.dispatch("employeeOrders/fetchOrders");
+    }
   } catch (e) {
     console.error("Component mount error:", e);
   }
@@ -131,5 +155,19 @@ onMounted(() => {
   color: var(--teal);
   text-decoration: none;
   font-size: 0.9rem;
+}
+
+.timeline-btn {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--teal);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+}
+
+.timeline-btn:hover {
+  background: var(--dark-teal);
 }
 </style>

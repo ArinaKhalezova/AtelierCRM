@@ -1,6 +1,6 @@
 <template>
   <div class="header">
-    <button @click="goBack" class="btn back">← Назад</button>
+    <button @click="goBack" class="btn back">← Все заказы</button>
     <h2>Заказ № {{ order.tracking_number }}</h2>
     <OrderStatusChanger
       :order-id="order.order_id"

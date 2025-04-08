@@ -22,14 +22,14 @@
         >
           <!-- Колонка с информацией -->
           <div class="order-info">
-            <span>№ {{ order.tracking_number }}</span>
-            <span class="order-client">{{ order.client_name }}</span>
+            <div>№ {{ order.tracking_number }}</div>
           </div>
 
           <!-- Область графика -->
           <div class="gantt-bars">
             <div
               class="gantt-bar"
+              @click="goToOrder(order.order_id)"
               :style="{
                 left: `${order.startPercent}%`,
                 width: `${order.widthPercent}%`,
@@ -47,9 +47,16 @@
 <script setup>
 import { onMounted, computed, ref } from "vue";
 import { useStore } from "vuex";
+import { useRouter } from "vue-router";
 
+const router = useRouter();
 const store = useStore();
 const isLoading = ref(true);
+const isAdmin = computed(() => store.getters["auth/isAdmin"]);
+
+const goToOrder = (orderId) => {
+  router.push(`/orders/${orderId}`);
+};
 
 const ganttDays = computed(() => {
   const days = [];
@@ -57,7 +64,7 @@ const ganttDays = computed(() => {
   const startDate = new Date(today);
   startDate.setDate(today.getDate() - 2);
   const endDate = new Date(today);
-  endDate.setDate(today.getDate() + 14);
+  endDate.setDate(today.getDate() + 30);
 
   for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
     days.push({
@@ -72,17 +79,21 @@ const ganttDays = computed(() => {
 });
 
 const ganttOrders = computed(() => {
-  const orders = store.getters["orders/allOrders"] || [];
+  const orders = isAdmin.value
+    ? store.getters["orders/allOrders"] || []
+    : store.state.employeeOrders.orders || [];
 
   if (!ganttDays.value.length) return [];
 
   return orders
     .filter((order) => {
       try {
+        const validStatuses = isAdmin.value
+          ? ["Новый", "Принят", "В работе", "Готов", "Отменен"]
+          : ["Новый", "В работе", "Готов"]; // Разные статусы для разных ролей
+
         return (
-          order.status &&
-          order.status !== "Выполнен" &&
-          order.status !== "Отменен" &&
+          validStatuses.includes(order.status) &&
           new Date(order.created_at) &&
           new Date(order.deadline_date)
         );
@@ -131,10 +142,16 @@ const getStatusColor = (status) => {
 
 onMounted(async () => {
   try {
-    await Promise.all([
-      store.dispatch("orders/fetchOrders"),
-      store.dispatch("orders/fetchOrdersCountByStatus"),
-    ]);
+    if (isAdmin.value) {
+      // Для админа загружаем все заказы и статистику
+      await Promise.all([
+        store.dispatch("orders/fetchOrders"),
+        store.dispatch("orders/fetchOrdersCountByStatus"),
+      ]);
+    } else {
+      // Для сотрудника загружаем только его заказы
+      await store.dispatch("employeeOrders/fetchOrders");
+    }
   } catch (e) {
     console.error("Failed to load data:", e);
   } finally {
@@ -163,7 +180,7 @@ onMounted(async () => {
 
 .gantt-header {
   display: flex;
-  margin-left: 200px;
+  margin-left: 145px;
   min-width: 1200px;
   border-bottom: 1px solid #eee;
 }
@@ -179,6 +196,7 @@ onMounted(async () => {
 
 .gantt-body {
   min-width: 1200px;
+  width: 95vw;
 }
 
 .gantt-row {
@@ -189,7 +207,7 @@ onMounted(async () => {
 }
 
 .order-info {
-  width: 200px;
+  width: 130px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -213,7 +231,7 @@ onMounted(async () => {
   height: 60%;
   top: 20%;
   border-radius: 4px;
-  cursor: help;
+  cursor: pointer;
 }
 
 .loading,
