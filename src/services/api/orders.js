@@ -45,4 +45,7 @@ export default {
   getOrderEmployees(orderId) {
     return apiClient.get(`/orders/${orderId}/employees`);
   },
+  getEmployeesWorkload() {
+    return apiClient.get("/orders/employees/workload"); 
+  },
 };

@@ -187,6 +187,7 @@ router.post("/:id/assign-employee", authenticate, async (req, res) => {
   if (req.user.role !== "Администратор") {
     return res.status(403).json({ error: "Доступ запрещен" });
   }
+
   const { id } = req.params;
   const { employee_id } = req.body;
 
@@ -194,46 +195,73 @@ router.post("/:id/assign-employee", authenticate, async (req, res) => {
     return res.status(400).json({ error: "Employee ID is required" });
   }
 
+  const client = await pool.connect();
   try {
-    // Проверяем, существует ли сотрудник
-    const employeeCheck = await pool.query(
+    await client.query("BEGIN");
+
+    // Проверяем загруженность сотрудника
+    const workloadCheck = await client.query(
+      `SELECT COUNT(*) as count 
+       FROM order_employees oe
+       JOIN orders o ON oe.order_id = o.order_id
+       WHERE oe.employee_id = $1 AND o.status IN ('Принят', 'В работе')`,
+      [employee_id]
+    );
+
+    const currentWorkload = parseInt(workloadCheck.rows[0].count);
+    const MAX_WORKLOAD = 5; // Максимальное количество заказов на сотрудника
+
+    if (currentWorkload >= MAX_WORKLOAD) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        error: `Сотрудник уже имеет максимальное количество заказов (${MAX_WORKLOAD})`,
+      });
+    }
+
+    // Остальные проверки (существование сотрудника, заказа и т.д.)
+    const employeeCheck = await client.query(
       "SELECT * FROM employees WHERE employee_id = $1",
       [employee_id]
     );
     if (employeeCheck.rows.length === 0) {
+      await client.query("ROLLBACK");
       return res.status(404).json({ error: "Employee not found" });
     }
 
-    // Проверяем, существует ли заказ
-    const orderCheck = await pool.query(
-      "SELECT * FROM orders WHERE order_id = $1",
+    const orderCheck = await client.query(
+      "SELECT * FROM orders WHERE order_id = $1 FOR UPDATE",
       [id]
     );
     if (orderCheck.rows.length === 0) {
+      await client.query("ROLLBACK");
       return res.status(404).json({ error: "Order not found" });
     }
 
-    // Проверяем, не назначен ли уже этот сотрудник
-    const existingAssignment = await pool.query(
+    const existingAssignment = await client.query(
       "SELECT * FROM order_employees WHERE order_id = $1 AND employee_id = $2",
       [id, employee_id]
     );
     if (existingAssignment.rows.length > 0) {
-      return res
-        .status(400)
-        .json({ error: "Employee is already assigned to this order" });
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        error: "Employee is already assigned to this order",
+      });
     }
 
     // Назначаем сотрудника
-    const { rows } = await pool.query(
+    const { rows } = await client.query(
       "INSERT INTO order_employees (order_id, employee_id) VALUES ($1, $2) RETURNING *",
       [id, employee_id]
     );
 
+    await client.query("COMMIT");
     res.status(201).json(rows[0]);
   } catch (err) {
+    await client.query("ROLLBACK");
     console.error("Error assigning employee to order:", err);
     res.status(500).json({ error: "Database error", details: err.message });
+  } finally {
+    client.release();
   }
 });
 
@@ -264,6 +292,31 @@ router.delete(
     }
   }
 );
+
+router.get("/employees/workload", authenticate, async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT 
+        e.employee_id,
+        u.fullname,
+        e.position,
+        COUNT(oe.order_id) FILTER (
+          WHERE o.status IN ('Принят', 'В работе')
+        ) AS active_orders_count
+      FROM employees e
+      JOIN users u ON e.user_id = u.user_id
+      LEFT JOIN order_employees oe ON e.employee_id = oe.employee_id
+      LEFT JOIN orders o ON oe.order_id = o.order_id
+      GROUP BY e.employee_id, u.fullname, e.position
+      ORDER BY active_orders_count
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching employees workload:", err);
+    res.status(500).json({ error: "Database error", details: err.message });
+  }
+});
 
 // Обновленные функции генерации кода
 async function generateDateBasedCode(client) {

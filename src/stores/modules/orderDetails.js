@@ -160,7 +160,7 @@ export default {
           serviceId: parseInt(serviceId),
           status: response.data.new_status,
         });
-        
+
         return response.data;
       } catch (error) {
         commit("SET_ERROR", error.response?.data?.error || error.message);
@@ -271,6 +271,15 @@ export default {
         throw error;
       } finally {
         commit("SET_EMPLOYEE_ASSIGNMENT_LOADING", false);
+      }
+    },
+    async fetchEmployeesWorkload({ commit }) {
+      try {
+        const response = await ordersApi.getEmployeesWorkload();
+        return response.data;
+      } catch (error) {
+        commit("SET_ERROR", "Ошибка загрузки загруженности сотрудников");
+        throw error;
       }
     },
     async fetchFullOrderDetails({ commit, dispatch }, orderId) {
