@@ -166,13 +166,16 @@ const deleteOrder = async (id) => {
 
   try {
     const success = await store.dispatch("orders/deleteOrder", id);
+
     if (success) {
-      router.push("/orders");
+      await router.push({
+        path: "/orders",
+        query: { deleted: id },
+      });
     }
   } catch (error) {
     console.error("Delete error:", error);
 
-    // Специальная обработка ошибки "Нельзя удалить заказ в статусе..."
     if (
       error.response?.status === 400 &&
       error.response?.data?.error?.includes("Нельзя удалить заказ в статусе")

@@ -90,10 +90,15 @@ export default {
     async deleteOrder({ commit, dispatch }, orderId) {
       commit("SET_LOADING", true);
       try {
-        await api.deleteOrder(orderId);
-        commit("DELETE_ORDER", orderId);
-        await dispatch("fetchOrders");
-        return true;
+        const response = await api.deleteOrder(orderId);
+
+        if (response.data.success) {
+          commit("DELETE_ORDER", orderId);
+          await dispatch("fetchOrders");
+          return true;
+        }
+
+        throw new Error(response.data.error || "Неизвестная ошибка");
       } catch (error) {
         let errorMessage = error.message;
 
@@ -119,10 +124,7 @@ export default {
     async updateOrderStatus({ commit }, { orderId, status }) {
       try {
         const response = await api.updateOrderStatus(orderId, status);
-        commit("UPDATE_ORDER_STATUS", {
-          orderId,
-          status: response.data.status,
-        });
+        commit("UPDATE_ORDER_STATUS", { orderId, status: status });
         return true;
       } catch (error) {
         commit("SET_ERROR", error.message);

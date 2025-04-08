@@ -332,11 +332,15 @@ router.put("/:id", async (req, res) => {
 });
 
 // Удаление заказа
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", authenticate, async (req, res) => {
+  if (req.user.role !== "Администратор") {
+    return res.status(403).json({ error: "Доступ запрещен" });
+  }
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
 
+    // Блокировка заказа и проверка статуса
     const orderCheck = await client.query(
       "SELECT status FROM orders WHERE order_id = $1 FOR UPDATE",
       [req.params.id]
@@ -344,21 +348,37 @@ router.delete("/:id", async (req, res) => {
 
     if (orderCheck.rows.length === 0) {
       await client.query("ROLLBACK");
-      return res.status(404).json({
-        success: false,
-        error: "Заказ не найден",
-      });
+      return res.status(404).json({ error: "Заказ не найден" });
     }
 
     const orderStatus = orderCheck.rows[0].status;
     if (["В работе", "Выполнен"].includes(orderStatus)) {
       await client.query("ROLLBACK");
       return res.status(400).json({
-        success: false,
-        error: "Нельзя удалить заказ в статусе " + orderStatus,
+        error: `Нельзя удалить заказ в статусе ${orderStatus}`,
       });
     }
 
+    // Удаление связанных записей в правильном порядке
+    await client.query(
+      `
+      DELETE FROM order_status_history 
+      WHERE order_service_id IN (
+        SELECT order_service_id 
+        FROM order_services 
+        WHERE order_id = $1
+      )
+    `,
+      [req.params.id]
+    );
+
+    await client.query("DELETE FROM order_employees WHERE order_id = $1", [
+      req.params.id,
+    ]);
+    await client.query(
+      "DELETE FROM order_status_history_order WHERE order_id = $1",
+      [req.params.id]
+    );
     await client.query("DELETE FROM order_materials WHERE order_id = $1", [
       req.params.id,
     ]);
@@ -373,12 +393,12 @@ router.delete("/:id", async (req, res) => {
     res.json({
       success: true,
       message: "Заказ успешно удален",
+      order_id: req.params.id,
     });
   } catch (err) {
     await client.query("ROLLBACK");
-    console.error("Error deleting order:", err);
+    console.error("Ошибка удаления заказа:", err);
     res.status(500).json({
-      success: false,
       error: "Ошибка при удалении заказа",
       details: err.message,
     });

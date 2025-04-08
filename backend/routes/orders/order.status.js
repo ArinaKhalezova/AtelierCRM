@@ -88,7 +88,15 @@ router.patch("/:id/status", async (req, res) => {
       }
 
       await client.query("COMMIT");
-      res.json(result.rows[0]);
+
+      //возврат обновлённого заказа
+      const {
+        rows: [updatedOrder],
+      } = await pool.query("SELECT * FROM orders WHERE order_id = $1", [
+        orderId,
+      ]);
+
+      res.json(updatedOrder);
     } catch (err) {
       await client.query("ROLLBACK");
       throw err;
