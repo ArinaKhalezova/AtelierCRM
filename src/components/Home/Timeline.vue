@@ -15,10 +15,14 @@
         </div>
       </div>
 
-      <button v-if="!showAll" @click="showAll = true" class="timeline-btn">
+      <button
+        v-if="!showAll && upcomingEvents.length > 3"
+        @click="showAll = true"
+        class="timeline-btn"
+      >
         Показать еще ({{ upcomingEvents.length - 3 }})
       </button>
-      <button v-else @click="showAll = false" class="timeline-btn">
+      <button v-else-if="showAll" @click="showAll = false" class="timeline-btn">
         Скрыть
       </button>
     </div>

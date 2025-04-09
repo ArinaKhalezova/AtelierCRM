@@ -98,7 +98,12 @@ const handleDeliverySubmit = async () => {
 };
 
 const deleteDelivery = async (id) => {
-  if (!confirm("Вы уверены, что хотите удалить эту поставку?")) return;
+  if (
+    !confirm(
+      "Будут удалены все материалы из этой поставки. Вы уверены, что хотите удалить эту поставку?"
+    )
+  )
+    return;
 
   isDeleting.value = true;
   store.commit("deliveries/SET_ERROR", null);

@@ -18,7 +18,7 @@
             <th>Ед. измерения</th>
             <th>Количество</th>
             <th>Цена за ед.</th>
-            <th class="actions-column">Действия</th>
+            <!-- <th class="actions-column">Действия</th> -->
           </tr>
         </thead>
         <tbody>
@@ -29,7 +29,7 @@
             <td>{{ material.quantity }}</td>
             <td>{{ material.cost_per_unit }} ₽</td>
             <td class="actions-column">
-              <button @click="openEditModal(material)" class="edit-button">
+              <!-- <button @click="openEditModal(material)" class="edit-button">
                 Редактировать
               </button>
               <button
@@ -37,7 +37,7 @@
                 class="delete-button"
               >
                 Удалить
-              </button>
+              </button> -->
             </td>
           </tr>
         </tbody>
@@ -73,9 +73,9 @@ onMounted(async () => {
   }
 });
 
-const openEditModal = (material) => {
-  selectedMaterial.value = { ...material };
-};
+// const openEditModal = (material) => {
+//   selectedMaterial.value = { ...material };
+// };
 
 const closeModal = () => {
   showAddModal.value = false;
@@ -98,21 +98,21 @@ const handleSave = async (materialData) => {
   }
 };
 
-const deleteMaterial = async (id) => {
-  if (!confirm("Вы уверены, что хотите удалить материал?")) return;
+// const deleteMaterial = async (id) => {
+//   if (!confirm("Вы уверены, что хотите удалить материал?")) return;
 
-  try {
-    await store.dispatch("materials/deleteMaterial", id);
-    // Обновляем список после удаления
-    await store.dispatch("materials/fetchMaterials");
-  } catch (error) {
-    console.error("Ошибка удаления:", error.response?.data || error.message);
-    store.commit(
-      "materials/SET_ERROR",
-      error.response?.data?.message || "Ошибка при удалении материала"
-    );
-  }
-};
+//   try {
+//     await store.dispatch("materials/deleteMaterial", id);
+//     // Обновляем список после удаления
+//     await store.dispatch("materials/fetchMaterials");
+//   } catch (error) {
+//     console.error("Ошибка удаления:", error.response?.data || error.message);
+//     store.commit(
+//       "materials/SET_ERROR",
+//       error.response?.data?.message || "Ошибка при удалении материала"
+//     );
+//   }
+// };
 </script>
 
 <style scoped>

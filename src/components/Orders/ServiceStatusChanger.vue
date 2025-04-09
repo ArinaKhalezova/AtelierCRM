@@ -49,6 +49,7 @@ const serviceStatuses = [
   "На примерке",
   "Доработка и отделка",
   "Исправляется",
+  "В работе",
   "Готов",
 ];
 
@@ -57,7 +58,7 @@ const updateServiceStatus = async () => {
     isLoading.value = true;
     await store.dispatch("orderDetails/updateOrderServiceStatus", {
       serviceId: props.serviceId,
-      status: selectedStatus.value, 
+      status: selectedStatus.value,
     });
     emit("status-updated", {
       serviceId: props.serviceId,
@@ -145,6 +146,10 @@ const updateServiceStatus = async () => {
 .status-исправляется {
   background-color: rgba(239, 154, 154, 0.2);
   color: #c62828;
+}
+.status-в-работе {
+  background-color: rgba(255, 213, 79, 0.2);
+  color: #ff8f00;
 }
 .status-готов {
   background-color: rgba(76, 175, 80, 0.2);

@@ -2,9 +2,14 @@
   <div class="clients-list">
     <div class="header">
       <h2>Клиенты</h2>
-      <button @click="openAddModal" class="add-client-button">
-        <span class="plus-icon">+</span> Добавить клиента
-      </button>
+      <div class="controls">
+        <div class="search-box">
+          <input v-model="searchQuery" placeholder="Поиск клиентов..." />
+        </div>
+        <button @click="openAddModal" class="add-client-button">
+          <span class="plus-icon">+</span> Добавить клиента
+        </button>
+      </div>
     </div>
 
     <div v-if="error" class="error-message">{{ error }}</div>
@@ -21,12 +26,15 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="client in clients" :key="client.client_id">
+            <tr v-for="client in filteredClients" :key="client.client_id">
               <td data-label="ФИО">{{ client.fullname }}</td>
               <td data-label="Телефон">{{ client.phone_number }}</td>
               <td data-label="Email">{{ client.email || "—" }}</td>
               <td class="actions-column" data-label="Действия">
-                <button @click="deleteClient(client.client_id)" class="delete-button">
+                <button
+                  @click="deleteClient(client.client_id)"
+                  class="delete-button"
+                >
                   Удалить
                 </button>
               </td>
@@ -72,9 +80,22 @@ const newClient = ref({
   phone_number: "",
   email: "",
 });
+const searchQuery = ref("");
 
 const clients = computed(() => store.state.clients.clients);
 const error = computed(() => store.state.clients.error);
+
+const filteredClients = computed(() => {
+  if (!searchQuery.value) return clients.value;
+
+  const query = searchQuery.value.toLowerCase();
+  return clients.value.filter(
+    (client) =>
+      client.fullname.toLowerCase().includes(query) ||
+      client.phone_number.toLowerCase().includes(query) ||
+      (client.email && client.email.toLowerCase().includes(query))
+  );
+});
 
 onMounted(async () => {
   await store.dispatch("clients/fetchClients");
@@ -125,6 +146,28 @@ const deleteClient = async (id) => {
   margin-bottom: 1.5rem;
   flex-wrap: wrap;
   gap: 1rem;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+  max-width: 400px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 0.6rem 1.2rem 0.6rem 2rem;
+  border: 1px solid var(--warm-gray);
+  border-radius: var(--border-radius);
+  font-size: 0.9rem;
 }
 
 h2 {

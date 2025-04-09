@@ -190,20 +190,29 @@ router.delete("/:id", async (req, res) => {
 
     // 1. Получаем все материалы поставки
     const materialsQuery = await client.query(
-      `SELECT material_id, quantity 
+      `SELECT material_id 
        FROM delivery_materials 
        WHERE delivery_id = $1`,
       [id]
     );
 
-    // 2. Удаляем материалы поставки
+    // 2. Удаляем материалы поставки из связующей таблицы
     await client.query(
       `DELETE FROM delivery_materials 
        WHERE delivery_id = $1`,
       [id]
     );
 
-    // 3. Удаляем саму поставку
+    // 3. Удаляем сами материалы из таблицы materials
+    for (const material of materialsQuery.rows) {
+      await client.query(
+        `DELETE FROM materials 
+         WHERE material_id = $1`,
+        [material.material_id]
+      );
+    }
+
+    // 4. Удаляем саму поставку
     await client.query(
       `DELETE FROM deliveries 
        WHERE delivery_id = $1`,

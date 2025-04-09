@@ -35,7 +35,9 @@
                 width: `${order.widthPercent}%`,
                 background: getStatusColor(order.status),
               }"
-              :title="`${order.tracking_number}: ${order.status}`"
+              :title="`${order.tracking_number}: ${order.status} (${formatDate(
+                order.created_at
+              )} - ${formatDate(order.deadline_date)})`"
             ></div>
           </div>
         </div>
@@ -58,11 +60,23 @@ const goToOrder = (orderId) => {
   router.push(`/orders/${orderId}`);
 };
 
+const formatDate = (dateString) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  return date.toLocaleDateString("ru-RU", {
+    day: "numeric",
+    month: "short",
+  });
+};
+
 const ganttDays = computed(() => {
   const days = [];
   const today = new Date();
+  today.setHours(0, 0, 0, 0); // Нормализуем время
+
   const startDate = new Date(today);
   startDate.setDate(today.getDate() - 2);
+
   const endDate = new Date(today);
   endDate.setDate(today.getDate() + 30);
 
@@ -85,17 +99,21 @@ const ganttOrders = computed(() => {
 
   if (!ganttDays.value.length) return [];
 
+  const firstDay = new Date(ganttDays.value[0].date);
+  const lastDay = new Date(ganttDays.value[ganttDays.value.length - 1].date);
+  const totalRange = lastDay - firstDay;
+
   return orders
     .filter((order) => {
       try {
         const validStatuses = isAdmin.value
           ? ["Новый", "Принят", "В работе", "Готов", "Отменен"]
-          : ["Новый", "В работе", "Готов"]; // Разные статусы для разных ролей
+          : ["Новый", "В работе", "Готов"];
 
         return (
           validStatuses.includes(order.status) &&
-          new Date(order.created_at) &&
-          new Date(order.deadline_date)
+          order.created_at &&
+          order.deadline_date
         );
       } catch {
         return false;
@@ -104,22 +122,25 @@ const ganttOrders = computed(() => {
     .slice(0, 10)
     .map((order) => {
       try {
-        const firstDay = new Date(ganttDays.value[0].date);
-        const lastDay = new Date(
-          ganttDays.value[ganttDays.value.length - 1].date
-        );
-        const totalDays = (lastDay - firstDay) / (1000 * 60 * 60 * 24);
-
         const created = new Date(order.created_at);
         const deadline = new Date(order.deadline_date);
 
-        const start = Math.max((created - firstDay) / 86400000, 0);
-        const end = Math.min((deadline - firstDay) / 86400000, totalDays);
+        // Убедимся, что даты корректны
+        if (isNaN(created.getTime())) throw new Error("Invalid created date");
+        if (isNaN(deadline.getTime())) throw new Error("Invalid deadline date");
+
+        // Рассчитываем позицию начала относительно первого дня
+        const startPos = Math.max(created - firstDay, 0);
+        // Рассчитываем позицию конца (не может быть больше общего диапазона)
+        const endPos = Math.min(deadline - firstDay, totalRange);
+
+        // Ширина не может быть отрицательной
+        const width = Math.max(endPos - startPos, 0);
 
         return {
           ...order,
-          startPercent: (start / totalDays) * 100,
-          widthPercent: ((end - start) / totalDays) * 100,
+          startPercent: (startPos / totalRange) * 100,
+          widthPercent: (width / totalRange) * 100,
         };
       } catch (e) {
         console.error("Error processing order:", order.order_id, e);
@@ -143,13 +164,11 @@ const getStatusColor = (status) => {
 onMounted(async () => {
   try {
     if (isAdmin.value) {
-      // Для админа загружаем все заказы и статистику
       await Promise.all([
         store.dispatch("orders/fetchOrders"),
         store.dispatch("orders/fetchOrdersCountByStatus"),
       ]);
     } else {
-      // Для сотрудника загружаем только его заказы
       await store.dispatch("employeeOrders/fetchOrders");
     }
   } catch (e) {

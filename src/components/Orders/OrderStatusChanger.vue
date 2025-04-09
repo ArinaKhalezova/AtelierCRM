@@ -40,7 +40,14 @@ const store = useStore();
 const isLoading = ref(false);
 const selectedStatus = ref(props.currentStatus);
 
-const availableStatuses = ["Новый", "В работе", "Готов", "Выполнен", "Отменен"];
+const availableStatuses = [
+  "Новый",
+  "Принят",
+  "В работе",
+  "Готов",
+  "Выполнен",
+  "Отменен",
+];
 
 const updateStatus = async () => {
   try {
@@ -108,8 +115,12 @@ const updateStatus = async () => {
 
 /* Status colors */
 .status-новый {
-  background-color: rgba(139, 170, 173, 0.2);
+  background-color: rgba(88, 102, 104, 0.2);
   color: var(--dark-teal);
+}
+.status-принят {
+  background-color: rgba(24, 165, 231, 0.2);
+  color: #2e7d32;
 }
 .status-в-работе {
   background-color: rgba(255, 160, 0, 0.2);

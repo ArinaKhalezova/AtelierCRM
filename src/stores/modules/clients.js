@@ -11,7 +11,7 @@ export default {
       state.clients = clients;
     },
     ADD_CLIENT(state, client) {
-      state.clients.push(client);
+      state.clients.unshift(client);
     },
     DELETE_CLIENT(state, id) {
       state.clients = state.clients.filter((c) => c.client_id !== id);

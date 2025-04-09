@@ -92,6 +92,26 @@ export default {
       }
     },
 
+    async updateDeliveryAction({ commit }, { deliveryId, deliveryData }) {
+      commit("SET_LOADING", true);
+      try {
+        const response = await api.updateDelivery(deliveryId, deliveryData);
+
+        // Обновляем поставку в списке
+        commit("UPDATE_DELIVERY", response.data);
+
+        // Обновляем список материалов
+        await dispatch("materials/fetchMaterials", null, { root: true });
+
+        return response.data;
+      } catch (error) {
+        commit("SET_ERROR", error.message);
+        throw error;
+      } finally {
+        commit("SET_LOADING", false);
+      }
+    },
+
     async deleteDeliveryAction({ commit, dispatch }, deliveryId) {
       commit("SET_LOADING", true);
       try {
