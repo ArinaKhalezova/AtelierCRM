@@ -1,6 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("../config/db");
+const multer = require("multer");
+const path = require("path");
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 // Вспомогательная функция для получения полной информации о поставке
 async function getFullDelivery(deliveryId) {
@@ -52,12 +57,13 @@ router.get("/", async (req, res) => {
   try {
     const deliveriesQuery = await pool.query(
       `SELECT 
-        d.delivery_id,
-        d.delivery_date,
-        d.document_path,
-        s.supplier_id,
-        s.org_name AS supplier_name
-       FROM deliveries d
+          d.delivery_id,
+          d.delivery_date,
+          d.document_name,
+          d.document_data,
+          s.supplier_id,
+          s.org_name AS supplier_name
+        FROM deliveries d
        JOIN suppliers s ON d.supplier_id = s.supplier_id
        ORDER BY d.delivery_date DESC`
     );
@@ -112,10 +118,10 @@ router.post("/", async (req, res) => {
     // 1. Создаем поставку
     const deliveryResult = await client.query(
       `INSERT INTO deliveries 
-       (supplier_id, delivery_date, document_path) 
-       VALUES ($1, $2, $3) 
-       RETURNING delivery_id`,
-      [supplier_id, delivery_date, document_path || null]
+       (supplier_id, delivery_date) 
+       VALUES ($1, $2) 
+       RETURNING *`,
+      [supplier_id, delivery_date]
     );
 
     const deliveryId = deliveryResult.rows[0].delivery_id;
@@ -177,6 +183,56 @@ router.post("/", async (req, res) => {
     });
   } finally {
     client.release();
+  }
+});
+
+// Добавляем в роутер новые endpoints
+router.post("/upload", upload.single("document"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "Файл не был загружен" });
+    }
+
+    const { delivery_id } = req.body;
+
+    await pool.query(
+      `UPDATE deliveries 
+       SET document_name = $1, document_data = $2
+       WHERE delivery_id = $3`,
+      [req.file.originalname, req.file.buffer, delivery_id]
+    );
+
+    res.json({ success: true, filename: req.file.originalname });
+  } catch (err) {
+    console.error("Error uploading document:", err);
+    res.status(500).json({ error: "Ошибка при загрузке документа" });
+  }
+});
+
+router.get("/:id/download", async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT document_name, document_data 
+       FROM deliveries 
+       WHERE delivery_id = $1`,
+      [req.params.id]
+    );
+
+    if (rows.length === 0 || !rows[0].document_data) {
+      return res.status(404).json({ error: "Документ не найден" });
+    }
+
+    const { document_name, document_data } = rows[0];
+
+    res.setHeader("Content-Type", "application/octet-stream");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${document_name}"`
+    );
+    res.send(document_data);
+  } catch (err) {
+    console.error("Error downloading document:", err);
+    res.status(500).json({ error: "Ошибка при скачивании документа" });
   }
 });
 

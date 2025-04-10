@@ -7,6 +7,22 @@ export default {
   addDelivery(delivery) {
     return apiClient.post("/deliveries", delivery);
   },
+  uploadDocument(deliveryId, file) {
+    const formData = new FormData();
+    formData.append("document", file);
+    formData.append("delivery_id", deliveryId);
+
+    return apiClient.post("/deliveries/upload", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
+  downloadDocument(deliveryId) {
+    return apiClient.get(`/deliveries/${deliveryId}/download`, {
+      responseType: "blob",
+    });
+  },
   deleteDelivery(id) {
     return apiClient.delete(`/deliveries/${id}`);
   },

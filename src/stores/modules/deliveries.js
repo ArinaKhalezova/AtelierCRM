@@ -112,6 +112,39 @@ export default {
       }
     },
 
+    async uploadDocument({ commit, dispatch }, { deliveryId, file }) {
+      commit("SET_LOADING", true);
+      try {
+        const formData = new FormData();
+        formData.append("document", file);
+        formData.append("delivery_id", deliveryId);
+
+        // Используем api вместо apiClient
+        const response = await api.uploadDocument(deliveryId, file);
+
+        // Обновляем список поставок после загрузки
+        await dispatch("fetchDeliveries");
+        return response.data;
+      } catch (error) {
+        commit("SET_ERROR", error.message);
+        throw error;
+      } finally {
+        commit("SET_LOADING", false);
+      }
+    },
+
+    async downloadDocument({ commit }, deliveryId) {
+      commit("SET_LOADING", true);
+      try {
+        const response = await api.downloadDocument(deliveryId);
+        return response.data;
+      } catch (error) {
+        commit("SET_ERROR", error.message);
+        throw error;
+      } finally {
+        commit("SET_LOADING", false);
+      }
+    },
     async deleteDeliveryAction({ commit, dispatch }, deliveryId) {
       commit("SET_LOADING", true);
       try {

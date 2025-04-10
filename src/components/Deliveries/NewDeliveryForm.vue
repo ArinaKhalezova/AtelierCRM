@@ -28,12 +28,14 @@
       </div>
 
       <div class="form-group">
-        <label>Путь к документу</label>
+        <label>Накладная</label>
         <input
-          v-model="formData.document_path"
-          type="text"
-          placeholder="/documents/delivery_123.pdf"
+          type="file"
+          @change="handleFileUpload"
+          ref="fileInput"
+          accept=".pdf,.jpg,.jpeg,.png"
         />
+        <small v-if="uploadedFile">Выбран файл: {{ uploadedFile.name }}</small>
       </div>
     </div>
 
@@ -193,6 +195,9 @@ const isSubmitting = ref(false);
 const showMaterialModal = ref(false);
 const errorMessage = ref("");
 
+const fileInput = ref(null);
+const uploadedFile = ref(null);
+
 const newMaterial = ref({
   material_name: "",
   type: "",
@@ -216,6 +221,10 @@ const materialTypes = computed(
 const materialUnits = computed(
   () => store.getters["materials/materialUnits"] || []
 );
+
+const handleFileUpload = (event) => {
+  uploadedFile.value = event.target.files[0];
+};
 
 // Загрузка данных
 onMounted(async () => {
@@ -324,29 +333,11 @@ const handleSubmit = async () => {
   isSubmitting.value = true;
   errorMessage.value = "";
 
-  const hasInvalidMaterials = formData.value.materials.some((material) => {
-    return (
-      !material.material_name?.trim() ||
-      !material.type ||
-      !material.unit ||
-      !material.quantity ||
-      material.quantity <= 0 ||
-      !material.cost_per_unit ||
-      material.cost_per_unit <= 0
-    );
-  });
-
-  if (hasInvalidMaterials) {
-    errorMessage.value = "Один или несколько материалов имеют неверные данные";
-    isSubmitting.value = false;
-    return;
-  }
-
   try {
+    // 1. Сначала создаем поставку
     const deliveryData = {
       supplier_id: formData.value.supplier_id,
       delivery_date: formData.value.delivery_date,
-      document_path: formData.value.document_path || null,
       materials: formData.value.materials.map((m) => ({
         material_name: m.material_name,
         type: m.type,
@@ -356,23 +347,32 @@ const handleSubmit = async () => {
         ...(m.material_id ? { material_id: m.material_id } : { is_new: true }),
       })),
     };
+    const createdDelivery = await store.dispatch(
+      "deliveries/addDeliveryAction",
+      deliveryData
+    );
 
-    await store.dispatch("deliveries/addDeliveryAction", deliveryData);
+    // 2. Если есть файл - загружаем его
+    if (uploadedFile.value) {
+      await store.dispatch("deliveries/uploadDocument", {
+        deliveryId: createdDelivery.delivery_id,
+        file: uploadedFile.value,
+      });
+    }
+
     emit("submit");
 
     // Сброс формы
     formData.value = {
       supplier_id: "",
       delivery_date: new Date().toISOString().split("T")[0],
-      document_path: "",
       materials: [],
     };
+    uploadedFile.value = null;
+    if (fileInput.value) fileInput.value.value = "";
   } catch (err) {
     console.error("Ошибка создания поставки:", err);
-    errorMessage.value =
-      err.response?.data?.message ||
-      err.message ||
-      "Ошибка при создании поставки";
+    errorMessage.value = err.message || "Ошибка при создании поставки";
   } finally {
     isSubmitting.value = false;
   }
@@ -412,6 +412,19 @@ const handleSubmit = async () => {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+input[type="file"] {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  width: 100%;
+}
+
+small {
+  display: block;
+  margin-top: 0.5rem;
+  color: #666;
 }
 
 .form-group label {

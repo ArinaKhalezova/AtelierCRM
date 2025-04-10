@@ -24,6 +24,7 @@
             <th>Поставщик</th>
             <th>Дата</th>
             <th>Материалы</th>
+            <th>Накладная</th>
             <th class="actions-column">Действия</th>
           </tr>
         </thead>
@@ -40,6 +41,25 @@
                 {{ material.material_name }} ({{ material.quantity }}
                 {{ material.unit }})
               </div>
+            </td>
+            <td>
+              <button
+                v-if="delivery.document_name"
+                @click="downloadDocument(delivery.delivery_id)"
+                class="download-btn"
+              >
+                <svg class="download-icon" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M12 15V3M12 15L8 11M12 15L16 11M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                {{ delivery.document_name }}
+              </button>
+              <span v-else>Нет накладной</span>
             </td>
             <td class="actions-column">
               <button
@@ -71,6 +91,7 @@ import Modal from "../Modal.vue";
 import NewDeliveryForm from "./NewDeliveryForm.vue";
 
 const store = useStore();
+const fileInput = ref(null);
 const isDeliveryModalOpen = ref(false);
 const isDeleting = ref(false);
 
@@ -95,6 +116,34 @@ const closeDeliveryModal = () => {
 const handleDeliverySubmit = async () => {
   await store.dispatch("deliveries/fetchDeliveries");
   closeDeliveryModal();
+};
+
+const downloadDocument = async (deliveryId) => {
+  try {
+    const response = await store.dispatch(
+      "deliveries/downloadDocument",
+      deliveryId
+    );
+
+    // Создаем ссылку для скачивания
+    const url = window.URL.createObjectURL(new Blob([response]));
+    const link = document.createElement("a");
+    link.href = url;
+
+    // Получаем имя файла
+    const delivery = store.state.deliveries.deliveries.find(
+      (d) => d.delivery_id === deliveryId
+    );
+    console.log("Delivery data:", delivery);
+    const filename = delivery?.document_name || `document_${deliveryId}.pdf`;
+
+    link.setAttribute("download", filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } catch (error) {
+    console.error("Ошибка скачивания файла:", error);
+  }
 };
 
 const deleteDelivery = async (id) => {
@@ -197,6 +246,61 @@ onMounted(async () => {
 
 .material-item:not(:last-child) {
   border-bottom: 1px dashed #eee;
+}
+
+.document-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  border: none;
+}
+
+.btn.small {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.8rem;
+}
+
+.btn.primary {
+  background-color: var(--teal);
+  color: white;
+}
+
+.btn.secondary {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: transparent;
+  color: var(--text-color); /* или конкретный цвет, например: #2c3e50 */
+  border: 1px solid var(--border-color); /* например: #d1d5db */
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.download-btn:hover {
+  background-color: rgba(59, 130, 246, 0.05);
+  border-color: rgb(17, 74, 92);
+  color: rgb(17, 74, 92);
+}
+
+.download-icon {
+  width: 1rem;
+  height: 1rem;
+  color: currentColor;
 }
 
 .actions-column {
