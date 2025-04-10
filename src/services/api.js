@@ -8,6 +8,7 @@ import services from "./api/services";
 import orders from "./api/orders";
 import orderDetails from "./api/orderDetails";
 import deliveries from "./api/deliveries";
+import fittings from "./api/fittings";
 
 export default {
   auth,
@@ -19,4 +20,5 @@ export default {
   orders,
   orderDetails,
   deliveries,
+  fittings,
 };

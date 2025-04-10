@@ -149,9 +149,10 @@ router.post("/", async (req, res) => {
   try {
     await client.query("BEGIN");
 
-    // Генерация tracking_number в транзакции
+    // Генерация tracking_number
     const tracking_number = await generateDateBasedCode(client);
 
+    // Создаем заказ
     const { rows } = await client.query(
       `INSERT INTO orders 
        (client_id, tracking_number, status, fitting_date, deadline_date, comment, total_cost, created_at) 
@@ -159,13 +160,22 @@ router.post("/", async (req, res) => {
       [
         client_id,
         tracking_number,
-        "Новый", // Добавляем статус по умолчанию
-        fitting_date || null, // Разрешаем NULL для необязательных полей
+        "Новый",
+        fitting_date || null,
         deadline_date,
         comment || null,
         total_cost,
       ]
     );
+
+    // Если указана дата примерки - создаем запись в fittings
+    if (fitting_date) {
+      await client.query(
+        `INSERT INTO fittings (order_id, fitting_date, result, notes)
+         VALUES ($1, $2, $3, $4)`,
+        [rows[0].order_id, fitting_date, "Запланирована", "Основная примерка"]
+      );
+    }
 
     await client.query("COMMIT");
     res.status(201).json(rows[0]);

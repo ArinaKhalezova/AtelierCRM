@@ -30,6 +30,8 @@
 
       <OrderComment v-if="order.comment" :comment="order.comment" />
 
+      <FittingsList :order-id="orderId" :can-edit="isAdmin" />
+
       <OrderMeasurements
         :measurements="measurements"
         :order-id="orderId"
@@ -82,6 +84,7 @@ import OrderMeasurements from "./OrderDetails/OrderMeasurements.vue";
 import EditOrderModal from "./OrderDetails/EditOrderModal.vue";
 import OrderHistory from "./OrderDetails/OrderHistory.vue";
 import ServiceHistory from "./OrderDetails/ServiceHistory.vue";
+import FittingsList from "./OrderDetails/FittingsList.vue";
 
 const store = useStore();
 const isAdmin = computed(() => store.getters["auth/isAdmin"]);
@@ -89,7 +92,6 @@ const isAdmin = computed(() => store.getters["auth/isAdmin"]);
 const route = useRoute();
 const router = useRouter();
 const orderId = route.params.id;
-// const orderId = computed(() => Number(route.params.id));
 const isEditModalOpen = ref(false);
 
 const fetchMeasurements = async () => {
