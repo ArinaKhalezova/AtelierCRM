@@ -39,13 +39,16 @@ const showAll = ref(false);
 const isAdmin = computed(() => store.getters["auth/isAdmin"]);
 
 const upcomingEvents = computed(() => {
-  // Выбираем источник данных в зависимости от роли
   const orders = isAdmin.value
     ? store.getters["orders/allOrders"]
     : store.state.employeeOrders.orders || [];
 
   return orders
-    .filter((order) => order.fitting_date || order.deadline_date)
+    .filter(
+      (order) =>
+        ["Принят", "В работе", "Готов"].includes(order.status) &&
+        (order.fitting_date || order.deadline_date)
+    )
     .map((order) => ({
       id: order.order_id,
       title: order.fitting_date ? "Примерка" : "Срок выполнения",
@@ -54,7 +57,7 @@ const upcomingEvents = computed(() => {
       orderId: order.order_id,
     }))
     .sort((a, b) => new Date(a.date) - new Date(b.date))
-    .slice(0, isAdmin.value ? 5 : 3); // Разный лимит для админа и сотрудника
+    .slice(0, isAdmin.value ? 5 : 3);
 });
 
 const formatEventDate = (dateString) => {

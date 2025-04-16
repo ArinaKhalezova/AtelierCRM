@@ -29,6 +29,32 @@ router.get("/", async (req, res) => {
   }
 });
 
+router.get("/status-counts", async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT 
+        status,
+        COUNT(*) AS count
+      FROM orders
+      GROUP BY status
+    `);
+
+    const counts = rows.reduce((acc, row) => {
+      acc[row.status] = row.count;
+      return acc;
+    }, {});
+
+    res.json(counts);
+  } catch (err) {
+    console.error("Error fetching status counts:", err);
+    res.status(500).json({
+      error: "Database error",
+      details: err.message,
+      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+    });
+  }
+});
+
 router.get("/assigned-to-me", authenticate, async (req, res) => {
   try {
     console.log("Authenticated user:", req.user); // Логируем пользователя
@@ -466,19 +492,37 @@ router.delete("/:id", authenticate, async (req, res) => {
       });
     }
 
-    // Удаление связанных записей в правильном порядке
-    await client.query(
-      `
-      DELETE FROM order_status_history 
-      WHERE order_service_id IN (
-        SELECT order_service_id 
-        FROM order_services 
-        WHERE order_id = $1
-      )
-    `,
+    // Получаем все материалы заказа для возврата
+    const materialsQuery = await client.query(
+      `SELECT material_id, quantity 
+       FROM order_materials 
+       WHERE order_id = $1`,
       [req.params.id]
     );
 
+    // Возвращаем материалы на склад
+    for (const material of materialsQuery.rows) {
+      await client.query(
+        `UPDATE materials 
+         SET quantity = quantity + $1 
+         WHERE material_id = $2`,
+        [material.quantity, material.material_id]
+      );
+    }
+
+    // Удаление связанных записей
+    await client.query("DELETE FROM fittings WHERE order_id = $1", [
+      req.params.id,
+    ]);
+    await client.query(
+      `DELETE FROM order_status_history 
+       WHERE order_service_id IN (
+         SELECT order_service_id 
+         FROM order_services 
+         WHERE order_id = $1
+       )`,
+      [req.params.id]
+    );
     await client.query("DELETE FROM order_employees WHERE order_id = $1", [
       req.params.id,
     ]);
@@ -501,6 +545,7 @@ router.delete("/:id", authenticate, async (req, res) => {
       success: true,
       message: "Заказ успешно удален",
       order_id: req.params.id,
+      materials_restored: materialsQuery.rows.length,
     });
   } catch (err) {
     await client.query("ROLLBACK");

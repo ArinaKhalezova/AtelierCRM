@@ -11,6 +11,7 @@ import DeliveriesView from "@/views/DeliveriesView.vue";
 import ClientsView from "@/views/ClientsView.vue";
 import DataView from "@/views/DataView.vue";
 import EmployeeOrderList from "@/components/Orders/EmployeeOrderList.vue";
+import NotFoundView from "@/views/NotFoundView.vue";
 
 const routes = [
   {
@@ -95,7 +96,9 @@ const routes = [
   //редирект для несуществующих страниц
   {
     path: "/:pathMatch(.*)*",
-    redirect: "/",
+    name: "not-found",
+    component: NotFoundView,
+    meta: { title: "Страница не найдена" },
   },
 ];
 
@@ -136,6 +139,11 @@ export function setupRouter(app, store) {
           return next("/orders");
         }
       }
+
+      // Устанавливаем заголовок страницы
+      document.title = to.meta.title
+        ? `${to.meta.title} | Швейное ателье`
+        : "Швейное ателье";
 
       next();
     } catch (error) {
