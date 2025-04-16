@@ -14,6 +14,14 @@ export default {
     ADD_DELIVERY(state, delivery) {
       state.deliveries.unshift(delivery);
     },
+    UPDATE_DELIVERY(state, updatedDelivery) {
+      const index = state.deliveries.findIndex(
+        (d) => d.delivery_id === updatedDelivery.delivery_id
+      );
+      if (index !== -1) {
+        state.deliveries.splice(index, 1, updatedDelivery);
+      }
+    },
     SET_LOADING(state, isLoading) {
       state.isLoading = isLoading;
     },
@@ -92,26 +100,6 @@ export default {
       }
     },
 
-    async updateDeliveryAction({ commit }, { deliveryId, deliveryData }) {
-      commit("SET_LOADING", true);
-      try {
-        const response = await api.updateDelivery(deliveryId, deliveryData);
-
-        // Обновляем поставку в списке
-        commit("UPDATE_DELIVERY", response.data);
-
-        // Обновляем список материалов
-        await dispatch("materials/fetchMaterials", null, { root: true });
-
-        return response.data;
-      } catch (error) {
-        commit("SET_ERROR", error.message);
-        throw error;
-      } finally {
-        commit("SET_LOADING", false);
-      }
-    },
-
     async uploadDocument({ commit, dispatch }, { deliveryId, file }) {
       commit("SET_LOADING", true);
       try {
@@ -145,6 +133,25 @@ export default {
         commit("SET_LOADING", false);
       }
     },
+
+    async updateDeliveryAction(
+      { commit, dispatch },
+      { deliveryId, deliveryData }
+    ) {
+      commit("SET_LOADING", true);
+      try {
+        const response = await api.updateDelivery(deliveryId, deliveryData);
+        commit("UPDATE_DELIVERY", response.data);
+        await dispatch("materials/fetchMaterials", null, { root: true });
+        return response.data;
+      } catch (error) {
+        commit("SET_ERROR", error.message);
+        throw error;
+      } finally {
+        commit("SET_LOADING", false);
+      }
+    },
+
     async deleteDeliveryAction({ commit, dispatch }, deliveryId) {
       commit("SET_LOADING", true);
       try {

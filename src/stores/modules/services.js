@@ -9,10 +9,18 @@ export default {
   }),
   mutations: {
     SET_SERVICES(state, services) {
-      state.services = services; 
+      state.services = services;
     },
     ADD_SERVICE(state, service) {
       state.services.push(service);
+    },
+    UPDATE_SERVICE(state, updatedService) {
+      const index = state.services.findIndex(
+        (s) => s.service_id === updatedService.service_id
+      );
+      if (index !== -1) {
+        state.services.splice(index, 1, updatedService);
+      }
     },
     DELETE_SERVICE(state, serviceId) {
       state.services = state.services.filter((s) => s.service_id !== serviceId);
@@ -27,8 +35,8 @@ export default {
   actions: {
     async fetchServices({ commit }) {
       try {
-        const response = await api.getServices(); // ваша API функция
-        commit("SET_SERVICES", response.data); // убедитесь что response.data - массив
+        const response = await api.getServices();
+        commit("SET_SERVICES", response.data);
       } catch (error) {
         commit("SET_ERROR", error.message);
         throw error;
@@ -58,6 +66,22 @@ export default {
         return true;
       } catch (error) {
         console.error("Add service error:", error);
+        throw error;
+      }
+    },
+
+    async updateService({ commit }, { id, serviceData }) {
+      try {
+        const response = await api.updateService(id, serviceData);
+        commit("UPDATE_SERVICE", response.data);
+        commit("SET_ERROR", null);
+        return response.data;
+      } catch (error) {
+        commit(
+          "SET_ERROR",
+          error.response?.data?.error || "Ошибка при обновлении услуги"
+        );
+        console.error("Error updating service:", error);
         throw error;
       }
     },

@@ -1,12 +1,13 @@
 <template>
   <div class="clients-list">
+    <div v-if="error" class="error-message">{{ error }}</div>
     <div class="header">
       <h2>Клиенты</h2>
       <div class="controls">
         <div class="search-box">
           <input v-model="searchQuery" placeholder="Поиск клиентов..." />
         </div>
-        <button @click="openAddModal" class="add-client-button">
+        <button @click="openModal" class="add-client-button">
           <span class="plus-icon">+</span> Добавить клиента
         </button>
       </div>
@@ -31,6 +32,9 @@
               <td data-label="Телефон">{{ client.phone_number }}</td>
               <td data-label="Email">{{ client.email || "—" }}</td>
               <td class="actions-column" data-label="Действия">
+                <button @click="openModal(client)" class="edit-button">
+                  Редактировать
+                </button>
                 <button
                   @click="deleteClient(client.client_id)"
                   class="delete-button"
@@ -44,24 +48,62 @@
       </div>
     </div>
 
-    <!-- Модальное окно добавления -->
+    <!-- Единое модальное окно -->
     <Modal :isOpen="isModalOpen" @close="closeModal">
       <div class="modal-form">
-        <h3>Новый клиент</h3>
-        <form @submit.prevent="addClient">
-          <div class="form-group">
+        <h3>{{ isEditing ? "Редактирование" : "Добавление" }} клиента</h3>
+
+        <div v-if="formErrors._general" class="form-error">
+          {{ formErrors._general }}
+        </div>
+
+        <form @submit.prevent="saveClient">
+          <div class="form-group" :class="{ 'has-error': formErrors.fullname }">
             <label>ФИО:</label>
-            <input v-model="newClient.fullname" required />
+            <input
+              v-model="formData.fullname"
+              required
+              @input="formErrors.fullname = ''"
+            />
+            <span v-if="formErrors.fullname" class="field-error">
+              {{ formErrors.fullname }}
+            </span>
+            <div class="hint">Минимум 2 символа, только буквы и дефисы</div>
           </div>
-          <div class="form-group">
+
+          <div
+            class="form-group"
+            :class="{ 'has-error': formErrors.phone_number }"
+          >
             <label>Телефон:</label>
-            <input v-model="newClient.phone_number" required />
+            <input
+              v-model="formData.phone_number"
+              placeholder="+7XXXXXXXXXX или 8XXXXXXXXXX"
+              required
+              @input="formErrors.phone_number = ''"
+            />
+            <span v-if="formErrors.phone_number" class="field-error">
+              {{ formErrors.phone_number }}
+            </span>
+            <div class="hint">Формат: +7XXXXXXXXXX или 8XXXXXXXXXX</div>
           </div>
-          <div class="form-group">
+
+          <div class="form-group" :class="{ 'has-error': formErrors.email }">
             <label>Email:</label>
-            <input v-model="newClient.email" type="email" />
+            <input
+              v-model="formData.email"
+              type="email"
+              @input="formErrors.email = ''"
+            />
+            <span v-if="formErrors.email" class="field-error">
+              {{ formErrors.email }}
+            </span>
+            <div class="hint">Необязательное поле</div>
           </div>
-          <button type="submit" class="submit-button">Добавить клиента</button>
+
+          <button type="submit" class="submit-button">
+            {{ isEditing ? "Сохранить" : "Добавить" }}
+          </button>
         </form>
       </div>
     </Modal>
@@ -74,13 +116,16 @@ import { useStore } from "vuex";
 import Modal from "@/components/Modal.vue";
 
 const store = useStore();
+
 const isModalOpen = ref(false);
-const newClient = ref({
+const isEditing = ref(false);
+const searchQuery = ref("");
+const formData = ref({
   fullname: "",
   phone_number: "",
   email: "",
 });
-const searchQuery = ref("");
+const formErrors = ref({});
 
 const clients = computed(() => store.state.clients.clients);
 const error = computed(() => store.state.clients.error);
@@ -97,25 +142,50 @@ const filteredClients = computed(() => {
   );
 });
 
-onMounted(async () => {
-  await store.dispatch("clients/fetchClients");
-});
+const openModal = (client = null) => {
+  isEditing.value = !!client;
+  formData.value = client
+    ? { ...client }
+    : {
+        fullname: "",
+        phone_number: "",
+        email: "",
+      };
+  isModalOpen.value = true;
+};
 
-const openAddModal = () => (isModalOpen.value = true);
-const closeModal = () => (isModalOpen.value = false);
+const closeModal = () => {
+  isModalOpen.value = false;
+  formData.value = {};
+  formErrors.value = {};
+  store.commit("clients/SET_ERROR", null);
+};
 
-const addClient = async () => {
-  if (!newClient.value.fullname || !newClient.value.phone_number) {
-    store.commit("clients/SET_ERROR", "Заполните обязательные поля");
-    return;
-  }
+const saveClient = async () => {
+  formErrors.value = {};
 
   try {
-    await store.dispatch("clients/addClientAction", newClient.value);
-    newClient.value = { fullname: "", phone_number: "", email: "" };
-    closeModal();
+    const action = isEditing.value
+      ? "clients/updateClientAction"
+      : "clients/addClientAction";
+
+    const payload = isEditing.value
+      ? {
+          id: formData.value.client_id,
+          clientData: formData.value,
+        }
+      : formData.value;
+
+    const result = await store.dispatch(action, payload);
+
+    if (result.success) {
+      await store.dispatch("clients/fetchClients");
+      closeModal();
+    } else {
+      formErrors.value = result.errors || {};
+    }
   } catch (err) {
-    store.commit("clients/SET_ERROR", "Ошибка при добавлении");
+    console.error("Ошибка сохранения клиента:", err);
   }
 };
 
@@ -128,9 +198,49 @@ const deleteClient = async (id) => {
     }
   }
 };
+
+onMounted(async () => {
+  await store.dispatch("clients/fetchClients");
+});
 </script>
 
 <style scoped>
+.error-message {
+  color: #d32f2f;
+  background-color: #fde8e8;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.form-error {
+  color: #d32f2f;
+  margin-bottom: 16px;
+  font-size: 0.9em;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group.has-error input,
+.form-group.has-error select {
+  border-color: #d32f2f;
+}
+
+.field-error {
+  color: #d32f2f;
+  font-size: 0.8em;
+  display: block;
+  margin-top: 4px;
+}
+
+.hint {
+  color: #666;
+  font-size: 0.8em;
+  margin-top: 4px;
+}
+
 .clients-list {
   width: 100%;
   height: 100%;
@@ -243,8 +353,8 @@ h2 {
 }
 
 .actions-column {
-  width: 120px;
-  text-align: center;
+  white-space: nowrap;
+  width: 1%;
 }
 
 .client-table tr:last-child td {
@@ -253,6 +363,21 @@ h2 {
 
 .client-table tr:hover {
   background-color: rgba(139, 170, 173, 0.05);
+}
+
+.edit-button {
+  background-color: var(--teal);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  margin-right: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.edit-button:hover {
+  background-color: #7a9b9e;
 }
 
 .delete-button {

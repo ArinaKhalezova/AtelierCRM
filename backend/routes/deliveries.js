@@ -3,9 +3,28 @@ const router = express.Router();
 const pool = require("../config/db");
 const multer = require("multer");
 const path = require("path");
+const validate = require("../validation");
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
+
+// Валидация данных поставки
+function validateDeliveryData(data) {
+  const errors = {};
+
+  // Валидация поставщика
+  if (!data.supplier_id) errors.supplier_id = "Необходимо указать поставщика";
+
+  // Валидация даты
+  const dateError = validate.date(data.delivery_date);
+  if (dateError) errors.delivery_date = dateError;
+
+  // Валидация материалов
+  const materialsError = validate.materials(data.materials);
+  if (materialsError) errors.materials = materialsError;
+
+  return Object.keys(errors).length > 0 ? errors : null;
+}
 
 // Вспомогательная функция для получения полной информации о поставке
 async function getFullDelivery(deliveryId) {
@@ -110,6 +129,14 @@ router.post("/", async (req, res) => {
     });
   }
 
+  const validationErrors = validateDeliveryData(req.body);
+  if (validationErrors) {
+    return res.status(400).json({
+      error: "Ошибки валидации",
+      details: validationErrors,
+    });
+  }
+
   const client = await pool.connect();
 
   try {
@@ -186,7 +213,6 @@ router.post("/", async (req, res) => {
   }
 });
 
-// Добавляем в роутер новые endpoints
 router.post("/upload", upload.single("document"), async (req, res) => {
   try {
     if (!req.file) {
@@ -233,6 +259,172 @@ router.get("/:id/download", async (req, res) => {
   } catch (err) {
     console.error("Error downloading document:", err);
     res.status(500).json({ error: "Ошибка при скачивании документа" });
+  }
+});
+
+router.put("/:id", async (req, res) => {
+  const { id } = req.params;
+  const { supplier_id, delivery_date, materials } = req.body;
+
+  // Валидация
+  if (!supplier_id || !delivery_date || !materials?.length) {
+    return res.status(400).json({
+      error: "Необходимо указать поставщика, дату и хотя бы один материал",
+    });
+  }
+
+  const validationErrors = validateDeliveryData(req.body);
+  if (validationErrors) {
+    return res.status(400).json({
+      error: "Ошибки валидации",
+      details: validationErrors,
+    });
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    // 1. Проверка существования поставки
+    const deliveryExists = await client.query(
+      "SELECT * FROM deliveries WHERE delivery_id = $1",
+      [id]
+    );
+
+    if (!deliveryExists.rows.length) {
+      return res.status(404).json({ error: "Поставка не найдена" });
+    }
+
+    // 2. Обновление основной информации о поставке
+    await client.query(
+      `UPDATE deliveries SET
+        supplier_id = $1,
+        delivery_date = $2
+       WHERE delivery_id = $3`,
+      [supplier_id, delivery_date, id]
+    );
+
+    // 3. Получаем текущие материалы поставки
+    const currentMaterials = await client.query(
+      `SELECT * FROM delivery_materials WHERE delivery_id = $1`,
+      [id]
+    );
+
+    // 4. Обработка изменений материалов
+    const newMaterialIds = new Set();
+    const oldMaterialIds = new Set(
+      currentMaterials.rows.map((m) => m.material_id)
+    );
+
+    // Добавление/обновление материалов
+    for (const material of materials) {
+      let materialId = material.material_id;
+
+      // Создание нового материала при необходимости
+      if (!materialId && material.material_name) {
+        const newMaterial = await client.query(
+          `INSERT INTO materials 
+           (material_name, type, unit, quantity, cost_per_unit) 
+           VALUES ($1, $2, $3, 0, $4) 
+           RETURNING material_id`,
+          [
+            material.material_name,
+            material.type,
+            material.unit,
+            material.cost_per_unit,
+          ]
+        );
+        materialId = newMaterial.rows[0].material_id;
+      }
+
+      // Проверка обязательных полей
+      if (!materialId || !material.quantity || !material.cost_per_unit) {
+        throw new Error("Не все обязательные поля материала заполнены");
+      }
+
+      newMaterialIds.add(materialId);
+
+      // Обновление или добавление материала
+      const existingMaterial = currentMaterials.rows.find(
+        (m) => m.material_id === materialId
+      );
+
+      if (existingMaterial) {
+        // Обновление существующего материала
+        const quantityDiff = material.quantity - existingMaterial.quantity;
+
+        await client.query(
+          `UPDATE delivery_materials SET
+            quantity = $1,
+            cost_per_unit = $2
+           WHERE delivery_material_id = $3`,
+          [
+            material.quantity,
+            material.cost_per_unit,
+            existingMaterial.delivery_material_id,
+          ]
+        );
+
+        // Обновление количества на складе
+        await client.query(
+          `UPDATE materials SET
+            quantity = quantity + $1
+           WHERE material_id = $2`,
+          [quantityDiff, materialId]
+        );
+      } else {
+        // Добавление нового материала
+        await client.query(
+          `INSERT INTO delivery_materials 
+           (delivery_id, material_id, quantity, cost_per_unit)
+           VALUES ($1, $2, $3, $4)`,
+          [id, materialId, material.quantity, material.cost_per_unit]
+        );
+
+        // Обновление количества на складе
+        await client.query(
+          `UPDATE materials SET
+            quantity = quantity + $1
+           WHERE material_id = $2`,
+          [material.quantity, materialId]
+        );
+      }
+    }
+
+    // Удаление отсутствующих материалов
+    for (const oldMaterial of currentMaterials.rows) {
+      if (!newMaterialIds.has(oldMaterial.material_id)) {
+        await client.query(
+          `DELETE FROM delivery_materials 
+           WHERE delivery_material_id = $1`,
+          [oldMaterial.delivery_material_id]
+        );
+
+        // Возврат количества на складе
+        await client.query(
+          `UPDATE materials SET
+            quantity = quantity - $1
+           WHERE material_id = $2`,
+          [oldMaterial.quantity, oldMaterial.material_id]
+        );
+      }
+    }
+
+    await client.query("COMMIT");
+
+    // Получаем обновленные данные
+    const fullDelivery = await getFullDelivery(id);
+    res.json(fullDelivery);
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("Ошибка обновления поставки:", err);
+    res.status(500).json({
+      error: "Ошибка сервера при обновлении поставки",
+      details: process.env.NODE_ENV === "development" ? err.message : undefined,
+    });
+  } finally {
+    client.release();
   }
 });
 

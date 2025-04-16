@@ -1,10 +1,19 @@
 <template>
   <div class="employees-tab">
+    <div v-if="error" class="error-message">
+      {{ error }}
+    </div>
+
     <div class="header">
       <h2>Сотрудники</h2>
-      <button @click="openEmployeeModal" class="add-employee-button">
-        <span class="plus-icon">+</span> Добавить сотрудника
-      </button>
+      <div class="controls">
+        <div class="search-box">
+          <input v-model="searchQuery" placeholder="Поиск сотрудников..." />
+        </div>
+        <button @click="openModal" class="add-employee-button">
+          <span class="plus-icon">+</span> Добавить сотрудника
+        </button>
+      </div>
     </div>
 
     <div class="table-wrapper">
@@ -20,12 +29,18 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="employee in employees" :key="employee.employee_id">
+            <tr
+              v-for="employee in filteredEmployees"
+              :key="employee.employee_id"
+            >
               <td data-label="ФИО">{{ employee.fullname }}</td>
               <td data-label="Должность">{{ employee.position }}</td>
               <td data-label="Телефон">{{ employee.phone_number }}</td>
               <td data-label="Email">{{ employee.email || "—" }}</td>
               <td class="actions-column" data-label="Действия">
+                <button @click="openModal(employee)" class="edit-button">
+                  Редактировать
+                </button>
                 <button
                   @click="deleteEmployee(employee.employee_id)"
                   class="delete-button"
@@ -39,40 +54,105 @@
       </div>
     </div>
 
-    <!-- Модальное окно остаётся без изменений -->
-    <Modal :isOpen="isEmployeeModalOpen" @close="closeEmployeeModal">
-      <h3>Добавить нового сотрудника</h3>
-      <form @submit.prevent="addEmployee">
-        <div class="form-group">
-          <label>ФИО:</label>
-          <input v-model="newEmployee.fullname" required />
+    <!-- Единое модальное окно -->
+    <Modal :isOpen="isModalOpen" @close="closeModal">
+      <div class="modal-form">
+        <h3>{{ isEditing ? "Редактирование" : "Добавление" }} сотрудника</h3>
+
+        <div v-if="formErrors._general" class="form-error">
+          {{ formErrors._general }}
         </div>
-        <div class="form-group">
-          <label>Должность:</label>
-          <select v-model="newEmployee.position" required>
-            <option
-              v-for="position in jobPositions"
-              :key="position"
-              :value="position"
+
+        <form @submit.prevent="saveEmployee">
+          <div class="form-group" :class="{ 'has-error': formErrors.fullname }">
+            <label>ФИО:</label>
+            <input
+              v-model="formData.fullname"
+              required
+              placeholder="Иванов Иван Иванович"
+              @input="clearError('fullname')"
+            />
+            <span v-if="formErrors.fullname" class="field-error">
+              {{ formErrors.fullname }}
+            </span>
+            <div class="hint">Минимум 2 символа, только буквы и дефисы</div>
+          </div>
+
+          <div class="form-group" :class="{ 'has-error': formErrors.position }">
+            <label>Должность:</label>
+            <select
+              v-model="formData.position"
+              required
+              @change="clearError('position')"
             >
-              {{ position }}
-            </option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Телефон:</label>
-          <input v-model="newEmployee.phone_number" required />
-        </div>
-        <div class="form-group">
-          <label>Email:</label>
-          <input v-model="newEmployee.email" type="email" />
-        </div>
-        <div class="form-group">
-          <label>Пароль:</label>
-          <input v-model="newEmployee.password" type="password" required />
-        </div>
-        <button type="submit" class="submit-button">Добавить сотрудника</button>
-      </form>
+              <option value="">Выберите должность</option>
+              <option
+                v-for="position in jobPositions"
+                :key="position"
+                :value="position"
+              >
+                {{ position }}
+              </option>
+            </select>
+            <span v-if="formErrors.position" class="field-error">
+              {{ formErrors.position }}
+            </span>
+          </div>
+
+          <div
+            class="form-group"
+            :class="{ 'has-error': formErrors.phone_number }"
+          >
+            <label>Телефон:</label>
+            <input
+              v-model="formData.phone_number"
+              placeholder="+7XXXXXXXXXX или 8XXXXXXXXXX"
+              required
+              @input="clearError('phone_number')"
+            />
+            <span v-if="formErrors.phone_number" class="field-error">
+              {{ formErrors.phone_number }}
+            </span>
+            <div class="hint">Формат: +7XXXXXXXXXX или 8XXXXXXXXXX</div>
+          </div>
+
+          <div class="form-group" :class="{ 'has-error': formErrors.email }">
+            <label>Email:</label>
+            <input
+              v-model="formData.email"
+              type="email"
+              placeholder="example@mail.com"
+              @input="clearError('email')"
+            />
+            <span v-if="formErrors.email" class="field-error">
+              {{ formErrors.email }}
+            </span>
+          </div>
+
+          <div
+            v-if="!isEditing"
+            class="form-group"
+            :class="{ 'has-error': formErrors.password }"
+          >
+            <label>Пароль:</label>
+            <input
+              v-model="formData.password"
+              type="password"
+              required
+              placeholder="Не менее 6 символов"
+              @input="clearError('password')"
+            />
+            <span v-if="formErrors.password" class="field-error">
+              {{ formErrors.password }}
+            </span>
+            <div class="hint">Минимум 6 символов</div>
+          </div>
+
+          <button type="submit" class="submit-button">
+            {{ isEditing ? "Сохранить изменения" : "Добавить сотрудника" }}
+          </button>
+        </form>
+      </div>
     </Modal>
   </div>
 </template>
@@ -84,59 +164,86 @@ import Modal from "../Modal.vue";
 
 const store = useStore();
 
-const isEmployeeModalOpen = ref(false);
-const newEmployee = ref({
+const isModalOpen = ref(false);
+const isEditing = ref(false);
+const searchQuery = ref("");
+const formData = ref({
   fullname: "",
   position: "",
   phone_number: "",
   email: "",
   password: "",
 });
+const formErrors = ref({});
 
 const employees = computed(() => store.state.employees.employees);
 const jobPositions = computed(() => store.state.employees.jobPositions);
 const error = computed(() => store.state.employees.error);
 
-// Загрузка данных при монтировании компонента
-onMounted(async () => {
-  await store.dispatch("employees/fetchEmployees");
-  await store.dispatch("employees/fetchJobPositions");
+const filteredEmployees = computed(() => {
+  if (!searchQuery.value) return employees.value;
+
+  const query = searchQuery.value.toLowerCase();
+  return store.state.employees.employees.filter((employee) => {
+    return Object.values(employee).some((value) =>
+      String(value).toLowerCase().includes(query)
+    );
+  });
 });
 
-const openEmployeeModal = () => {
-  isEmployeeModalOpen.value = true;
-};
+const openModal = (employee = null) => {
+  isEditing.value = !!employee;
 
-const closeEmployeeModal = () => {
-  isEmployeeModalOpen.value = false;
-};
-
-const addEmployee = async () => {
-  if (
-    newEmployee.value.fullname.trim() &&
-    newEmployee.value.position &&
-    newEmployee.value.phone_number.trim() &&
-    newEmployee.value.password.trim()
-  ) {
-    try {
-      await store.dispatch("employees/addEmployeeAction", newEmployee.value);
-      newEmployee.value = {
-        fullname: "",
-        position: "",
-        phone_number: "",
-        email: "",
-        password: "",
-      };
-      store.commit("employees/SET_ERROR", ""); // Используем мутацию вместо прямого присваивания
-      closeEmployeeModal();
-    } catch (err) {
-      store.commit("employees/SET_ERROR", "Ошибка при добавлении сотрудника"); // Используем мутацию
-    }
+  if (employee) {
+    formData.value = {
+      ...employee,
+      password: "", // Пароль не хранится для редактирования
+    };
   } else {
-    store.commit(
-      "employees/SET_ERROR",
-      "Заполните обязательные поля: ФИО, должность, телефон и пароль"
-    ); // Используем мутацию
+    formData.value = {
+      fullname: "",
+      position: "",
+      phone_number: "",
+      email: "",
+      password: "",
+    };
+  }
+
+  isModalOpen.value = true;
+};
+
+const closeModal = () => {
+  isModalOpen.value = false;
+  formData.value = {};
+  formErrors.value = {}; // Сбрасываем ошибки при закрытии
+  store.commit("employees/SET_ERROR", null); // Сбрасываем глобальную ошибку
+};
+
+const saveEmployee = async () => {
+  formErrors.value = {};
+
+  try {
+    const action = isEditing.value
+      ? "employees/updateEmployeeAction"
+      : "employees/addEmployeeAction";
+
+    const payload = isEditing.value
+      ? {
+          id: formData.value.employee_id,
+          employeeData: formData.value,
+        }
+      : formData.value;
+
+    const result = await store.dispatch(action, payload);
+
+    if (result.success) {
+      await store.dispatch("employees/fetchEmployees");
+      closeModal();
+    } else {
+      formErrors.value = result.errors || {};
+    }
+  } catch (err) {
+    console.error("Ошибка сохранения сотрудника:", err);
   }
 };
 
@@ -150,9 +257,57 @@ const deleteEmployee = async (employeeId) => {
     }
   }
 };
+
+const clearError = (field) => {
+  if (formErrors.value[field]) {
+    formErrors.value = { ...formErrors.value, [field]: "" };
+  }
+};
+
+// Загрузка данных при монтировании компонента
+onMounted(async () => {
+  await store.dispatch("employees/fetchEmployees");
+  await store.dispatch("employees/fetchJobPositions");
+});
 </script>
 
 <style scoped>
+.error-message {
+  color: #d32f2f;
+  background-color: #fde8e8;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.form-error {
+  color: #d32f2f;
+  margin-bottom: 16px;
+  font-size: 0.9em;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group.has-error input,
+.form-group.has-error select {
+  border-color: #d32f2f;
+}
+
+.field-error {
+  color: #d32f2f;
+  font-size: 0.8em;
+  display: block;
+  margin-top: 4px;
+}
+
+.hint {
+  color: #666;
+  font-size: 0.8em;
+  margin-top: 4px;
+}
+
 .employees-tab {
   width: 100%;
   height: 100%;
@@ -168,6 +323,28 @@ const deleteEmployee = async (employeeId) => {
   margin-bottom: 1.5rem;
   flex-wrap: wrap;
   gap: 1rem;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+  max-width: 400px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 0.6rem 1.2rem 0.6rem 2rem;
+  border: 1px solid var(--warm-gray);
+  border-radius: var(--border-radius);
+  font-size: 0.9rem;
 }
 
 h2 {
@@ -235,8 +412,8 @@ h2 {
 }
 
 .actions-column {
-  width: 120px;
-  text-align: center;
+  white-space: nowrap;
+  width: 1%;
 }
 
 .employee-table tr:last-child td {
@@ -245,6 +422,21 @@ h2 {
 
 .employee-table tr:hover {
   background-color: rgba(139, 170, 173, 0.05);
+}
+
+.edit-button {
+  background-color: var(--teal);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  margin-right: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.edit-button:hover {
+  background-color: #7a9b9e;
 }
 
 .delete-button {

@@ -25,6 +25,9 @@
             <td>{{ service.description || "—" }}</td>
             <td>{{ service.base_cost }} ₽</td>
             <td class="actions-column">
+              <button @click="openEditModal(service)" class="edit-button">
+                Редактировать
+              </button>
               <button
                 @click="deleteService(service.service_id)"
                 class="delete-button"
@@ -91,6 +94,57 @@
         </form>
       </div>
     </Modal>
+
+    <!-- Модальное окно редактирования -->
+    <Modal :isOpen="isEditModalOpen" @close="closeEditModal">
+      <div class="modal-form">
+        <h3>Редактировать услугу</h3>
+        <form @submit.prevent="updateService" class="form-grid">
+          <div class="form-group">
+            <label>Категория</label>
+            <select v-model="editedService.category" required>
+              <option
+                v-for="category in serviceCategories"
+                :key="category"
+                :value="category"
+              >
+                {{ category }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Название</label>
+            <input v-model="editedService.name" required minlength="2" />
+          </div>
+          <div class="form-group">
+            <label>Описание</label>
+            <textarea v-model="editedService.description" rows="3" />
+          </div>
+          <div class="form-group">
+            <label>Стоимость (₽)</label>
+            <input
+              v-model.number="editedService.base_cost"
+              type="number"
+              min="0"
+              step="0.01"
+              required
+            />
+          </div>
+          <div class="form-actions">
+            <button type="button" @click="closeEditModal" class="cancel-button">
+              Отмена
+            </button>
+            <button
+              type="submit"
+              :disabled="isSubmitting"
+              class="submit-button"
+            >
+              {{ isSubmitting ? "Сохранение..." : "Сохранить" }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </Modal>
   </div>
 </template>
 
@@ -103,7 +157,15 @@ const store = useStore();
 
 const isSubmitting = ref(false);
 const isServiceModalOpen = ref(false);
+const isEditModalOpen = ref(false);
 const newService = ref({
+  category: "",
+  name: "",
+  description: "",
+  base_cost: 0,
+});
+const editedService = ref({
+  service_id: null,
   category: "",
   name: "",
   description: "",
@@ -119,15 +181,6 @@ const error = computed(() => store.state.services.error);
 onMounted(async () => {
   await store.dispatch("services/fetchServices");
   await store.dispatch("services/fetchServiceCategories");
-  // try {
-  //   await store
-  //     .dispatch("services/fetchServices")
-  //     .then(console.log(store.state.services.services));
-  //   await store.dispatch("services/fetchServiceCategories");
-  // } catch (err) {
-  //   console.error("Ошибка при загрузке данных:", err);
-  //   store.commit("services/SET_ERROR", "Не удалось загрузить услуги");
-  // }
 });
 
 const openServiceModal = () => {
@@ -138,6 +191,22 @@ const closeServiceModal = () => {
   isServiceModalOpen.value = false;
   newService.value = { category: "", name: "", description: "", base_cost: 0 };
   store.commit("services/SET_ERROR", null);
+};
+
+const openEditModal = (service) => {
+  editedService.value = { ...service };
+  isEditModalOpen.value = true;
+};
+
+const closeEditModal = () => {
+  isEditModalOpen.value = false;
+  editedService.value = {
+    service_id: null,
+    category: "",
+    name: "",
+    description: "",
+    base_cost: 0,
+  };
 };
 
 const addService = async () => {
@@ -156,6 +225,28 @@ const addService = async () => {
     console.error("Ошибка при добавлении услуги:", err);
   } finally {
     isSubmitting.value = false; // Всегда сбрасываем обратно в false
+  }
+};
+
+const updateService = async () => {
+  isSubmitting.value = true;
+  try {
+    const serviceData = {
+      category: editedService.value.category,
+      name: editedService.value.name.trim(),
+      description: editedService.value.description.trim(),
+      base_cost: parseFloat(editedService.value.base_cost),
+    };
+
+    await store.dispatch("services/updateService", {
+      id: editedService.value.service_id,
+      serviceData: serviceData,
+    });
+    closeEditModal();
+  } catch (err) {
+    console.error("Ошибка при обновлении услуги:", err);
+  } finally {
+    isSubmitting.value = false;
   }
 };
 
@@ -242,6 +333,21 @@ const deleteService = async (serviceId) => {
 
 .services-table tr:hover {
   background-color: rgba(139, 170, 173, 0.05);
+}
+
+.edit-button {
+  background-color: var(--teal);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  margin-right: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.edit-button:hover {
+  background-color: #7a9b9e;
 }
 
 .delete-button {

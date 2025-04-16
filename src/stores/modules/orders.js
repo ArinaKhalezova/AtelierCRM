@@ -64,6 +64,17 @@ export default {
       }
     },
 
+    async fetchOverdueOrders({ commit }) {
+      try {
+        const response = await api.getOverdueOrders();
+        commit("SET_ORDERS", response.data); // Добавляем мутацию
+        return response.data;
+      } catch (error) {
+        commit("SET_ERROR", "Ошибка загрузки просроченных заказов");
+        throw error;
+      }
+    },
+
     async createOrder({ commit }, orderData) {
       try {
         const response = await api.createOrder(orderData);

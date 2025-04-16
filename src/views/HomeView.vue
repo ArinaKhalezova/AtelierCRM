@@ -70,7 +70,9 @@
       </div>
     </div>
 
-    <div>
+    <div class="content-grid">
+      <OverdueOrdersAlert />
+      <EmployeeWorkload />
       <Timeline />
       <Gant />
     </div>
@@ -80,6 +82,8 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { useStore } from "vuex";
+import OverdueOrdersAlert from "@/components/Home/OverdueOrdersAlert.vue";
+import EmployeeWorkload from "@/components/Home/EmployeeWorkload.vue";
 import Timeline from "@/components/Home/Timeline.vue";
 import Gant from "@/components/Home/Gant.vue";
 
@@ -138,6 +142,12 @@ onMounted(async () => {
   font-size: 1.1rem;
   color: var(--warm-gray);
   margin: 0.5rem 0 0;
+}
+
+.content-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 
 .metrics-grid {

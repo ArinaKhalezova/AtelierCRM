@@ -7,6 +7,9 @@ export default {
   addEmployee(employee) {
     return apiClient.post("/employees", employee);
   },
+  updateEmployee(id, employeeData) {
+    return apiClient.put(`/employees/${id}`, employeeData);
+  },
   deleteEmployee(id) {
     return apiClient.delete(`/employees/${id}`);
   },

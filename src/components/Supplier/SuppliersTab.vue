@@ -1,5 +1,6 @@
 <template>
   <div class="suppliers-tab">
+    <div v-if="error" class="error-message">{{ error }}</div>
     <div class="header">
       <h2>Поставщики</h2>
       <button @click="openSupplierModal" class="add-button">
@@ -44,75 +45,64 @@
 
     <Modal :isOpen="isSupplierModalOpen" @close="closeSupplierModal">
       <div class="modal-form">
-        <h3>Добавить поставщика</h3>
-        <form @submit.prevent="addSupplier">
-          <div class="form-group">
-            <label>Название:</label>
-            <input v-model="newSupplier.org_name" required />
-          </div>
-          <div class="form-group">
-            <label>Телефон:</label>
-            <input
-              v-model="newSupplier.phone_number"
-              required
-              pattern="[\d\+][\d\s\-\(\)]*"
-              title="Введите корректный номер телефона"
-            />
-          </div>
-          <div class="form-group">
-            <label>Адрес:</label>
-            <input v-model="newSupplier.address" required />
-          </div>
-          <div class="form-group">
-            <label>ИНН:</label>
-            <input
-              v-model="newSupplier.inn"
-              required
-              pattern="\d{10}|\d{12}"
-              title="ИНН должен содержать 10 или 12 цифр"
-              maxlength="12"
-            />
-          </div>
-          <button type="submit" class="submit-button">Добавить</button>
-        </form>
-      </div>
-    </Modal>
-
-    <Modal :isOpen="isSupplierModalOpen" @close="closeSupplierModal">
-      <div class="modal-form">
         <h3>
-          {{
-            editingSupplier ? "Редактировать поставщика" : "Добавить поставщика"
-          }}
+          {{ editingSupplier ? "Редактирование" : "Добавление" }} поставщика
         </h3>
+
+        <!-- Общая ошибка формы -->
+        <div v-if="formErrors._general" class="form-error">
+          {{ formErrors._general }}
+        </div>
+
         <form @submit.prevent="saveSupplier">
-          <div class="form-group">
-            <label>Название:</label>
+          <div class="form-group" :class="{ 'has-error': formErrors.org_name }">
+            <label>Название организации:</label>
             <input v-model="newSupplier.org_name" required />
+            <span v-if="formErrors.org_name" class="field-error">
+              {{ formErrors.org_name }}
+            </span>
+            <div class="hint">От 2 до 100 символов</div>
           </div>
-          <div class="form-group">
+
+          <div
+            class="form-group"
+            :class="{ 'has-error': formErrors.phone_number }"
+          >
             <label>Телефон:</label>
             <input
               v-model="newSupplier.phone_number"
+              placeholder="+7XXXXXXXXXX или 8XXXXXXXXXX"
               required
-              pattern="[\d\+][\d\s\-\(\)]*"
-              title="Введите корректный номер телефона"
             />
+            <span v-if="formErrors.phone_number" class="field-error">
+              {{ formErrors.phone_number }}
+            </span>
+            <div class="hint">Формат: +7XXXXXXXXXX или 8XXXXXXXXXX</div>
           </div>
-          <div class="form-group">
+
+          <div class="form-group" :class="{ 'has-error': formErrors.address }">
             <label>Адрес:</label>
             <input v-model="newSupplier.address" required />
+            <span v-if="formErrors.address" class="field-error">
+              {{ formErrors.address }}
+            </span>
+            <div class="hint">Минимум 5 символов</div>
           </div>
-          <div class="form-group">
+
+          <div class="form-group" :class="{ 'has-error': formErrors.inn }">
             <label>ИНН:</label>
             <input
               v-model="newSupplier.inn"
+              placeholder="10 или 12 цифр"
               required
-              pattern="\d{10}|\d{12}"
-              title="ИНН должен содержать 10 или 12 цифр"
               maxlength="12"
             />
+            <span v-if="formErrors.inn" class="field-error">
+              {{ formErrors.inn }}
+            </span>
+            <div class="hint">Только цифры, 10 или 12 символов</div>
           </div>
+
           <button type="submit" class="submit-button">
             {{ editingSupplier ? "Сохранить" : "Добавить" }}
           </button>
@@ -127,22 +117,11 @@ import { ref, computed, onMounted } from "vue";
 import { useStore } from "vuex";
 import Modal from "../Modal.vue";
 
-const validatePhone = (phone) => {
-  // Простая валидация телефона (минимум 5 цифр)
-  const phoneRegex = /^[\d\+][\d\s\-\(\)]{4,}$/;
-  return phoneRegex.test(phone);
-};
-
-const validateINN = (inn) => {
-  // Валидация ИНН (10 или 12 цифр)
-  const innRegex = /^(\d{10}|\d{12})$/;
-  return innRegex.test(inn);
-};
-
-const editingSupplier = ref(null);
-
 const store = useStore();
+
+const formErrors = ref({});
 const isSupplierModalOpen = ref(false);
+const editingSupplier = ref(null);
 const newSupplier = ref({
   org_name: "",
   phone_number: "",
@@ -160,96 +139,49 @@ const openSupplierModal = () => {
 };
 
 const openEditModal = (supplier) => {
-  editingSupplier.value = { ...supplier };
-  newSupplier.value = {
-    org_name: supplier.org_name,
-    phone_number: supplier.phone_number,
-    address: supplier.address,
-    inn: supplier.inn,
-  };
+  editingSupplier.value = supplier;
+  newSupplier.value = { ...supplier };
   isSupplierModalOpen.value = true;
 };
 
 const closeSupplierModal = () => {
   isSupplierModalOpen.value = false;
   editingSupplier.value = null;
-  newSupplier.value = { org_name: "", phone_number: "", address: "", inn: "" };
+  newSupplier.value = {
+    org_name: "",
+    phone_number: "",
+    address: "",
+    inn: "",
+  };
+  formErrors.value = {};
   store.commit("suppliers/SET_ERROR", null);
 };
 
 const saveSupplier = async () => {
+  formErrors.value = {};
+
   try {
-    // Общая валидация
-    if (!Object.values(newSupplier.value).every((field) => field.trim())) {
-      alert("Все поля обязательны для заполнения");
-      return;
-    }
+    const action = editingSupplier.value
+      ? "suppliers/updateSupplierAction"
+      : "suppliers/addSupplierAction";
 
-    if (!/^\d{10}$|^\d{12}$/.test(newSupplier.value.inn)) {
-      alert("ИНН должен содержать 10 или 12 цифр");
-      return;
-    }
+    const payload = editingSupplier.value
+      ? {
+          id: editingSupplier.value.supplier_id,
+          supplierData: newSupplier.value,
+        }
+      : newSupplier.value;
 
-    if (editingSupplier.value) {
-      await store.dispatch("suppliers/updateSupplierAction", {
-        id: editingSupplier.value.supplier_id,
-        supplierData: newSupplier.value,
-      });
+    const result = await store.dispatch(action, payload);
+
+    if (result.success) {
+      await store.dispatch("suppliers/fetchSuppliers");
+      closeSupplierModal();
     } else {
-      await store.dispatch("suppliers/addSupplierAction", newSupplier.value);
+      formErrors.value = result.errors || {};
     }
-
-    closeSupplierModal();
-    await store.dispatch("suppliers/fetchSuppliers");
   } catch (err) {
-    console.error("Save supplier error:", err);
-    if (err.response?.status === 409) {
-      alert("Поставщик с таким ИНН уже существует");
-    } else {
-      alert("Ошибка при сохранении поставщика");
-    }
-  }
-};
-
-const addSupplier = async () => {
-  try {
-    // Валидация
-    if (!Object.values(newSupplier.value).every((field) => field.trim())) {
-      alert("Все поля обязательны для заполнения");
-      return;
-    }
-
-    if (!/^\d{10}$|^\d{12}$/.test(newSupplier.value.inn)) {
-      alert("ИНН должен содержать 10 или 12 цифр");
-      return;
-    }
-
-    // Отправка данных
-    await store.dispatch("suppliers/addSupplierAction", {
-      org_name: newSupplier.value.org_name.trim(),
-      phone_number: newSupplier.value.phone_number.trim(),
-      address: newSupplier.value.address.trim(),
-      inn: newSupplier.value.inn.trim(),
-    });
-
-    // Сброс формы
-    newSupplier.value = {
-      org_name: "",
-      phone_number: "",
-      address: "",
-      inn: "",
-    };
-    closeSupplierModal();
-
-    // Обновление списка
-    await store.dispatch("suppliers/fetchSuppliers");
-  } catch (err) {
-    console.error("Add supplier error:", err);
-    if (err.response?.status === 409) {
-      alert("Поставщик с таким ИНН уже существует");
-    } else {
-      alert("Ошибка при добавлении поставщика");
-    }
+    console.error("Ошибка сохранения поставщика:", err);
   }
 };
 
@@ -285,6 +217,42 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.error-message {
+  color: #d32f2f;
+  background-color: #fde8e8;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.form-error {
+  color: #d32f2f;
+  margin-bottom: 16px;
+  font-size: 0.9em;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group.has-error input,
+.form-group.has-error select {
+  border-color: #d32f2f;
+}
+
+.field-error {
+  color: #d32f2f;
+  font-size: 0.8em;
+  display: block;
+  margin-top: 4px;
+}
+
+.hint {
+  color: #666;
+  font-size: 0.8em;
+  margin-top: 4px;
+}
+
 .suppliers-tab {
   display: flex;
   flex-direction: column;

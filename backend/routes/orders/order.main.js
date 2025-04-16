@@ -91,6 +91,37 @@ router.get("/assigned-to-me", authenticate, async (req, res) => {
   }
 });
 
+// Получение просроченных заказов
+router.get("/overdue", authenticate, async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT 
+        o.order_id,
+        o.tracking_number,
+        o.deadline_date,
+        o.status,
+        c.fullname as client_name,
+        c.phone_number as client_phone,
+        u.fullname as assigned_to_name
+      FROM orders o
+      JOIN clients c ON o.client_id = c.client_id
+      LEFT JOIN users u ON o.assigned_to = u.user_id
+      WHERE o.status NOT IN ('Готов', 'Выполнен', 'Отменен')
+        AND o.deadline_date::date < CURRENT_DATE
+      ORDER BY o.deadline_date ASC
+      LIMIT 10
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error("Error in GET /orders/overdue:", err);
+    res.status(500).json({
+      error: "Database error",
+      details: err.message,
+      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+    });
+  }
+});
+
 // Получение сотрудников, назначенных на заказ
 router.get("/:id/employees", async (req, res) => {
   const { id } = req.params;
@@ -313,19 +344,31 @@ router.get("/employees/workload", authenticate, async (req, res) => {
         e.position,
         COUNT(oe.order_id) FILTER (
           WHERE o.status IN ('Принят', 'В работе')
-        ) AS active_orders_count
+        ) AS active_orders_count,
+        COUNT(oe.order_id) FILTER (
+          WHERE o.status = 'Готов'
+        ) AS ready_orders_count,
+        COALESCE(
+          MIN(o.deadline_date) FILTER (
+            WHERE o.status IN ('Принят', 'В работе')
+          ), 
+          NULL
+        ) AS nearest_deadline
       FROM employees e
       JOIN users u ON e.user_id = u.user_id
       LEFT JOIN order_employees oe ON e.employee_id = oe.employee_id
       LEFT JOIN orders o ON oe.order_id = o.order_id
       GROUP BY e.employee_id, u.fullname, e.position
-      ORDER BY active_orders_count
+      ORDER BY active_orders_count DESC
     `);
 
     res.json(rows);
   } catch (err) {
     console.error("Error fetching employees workload:", err);
-    res.status(500).json({ error: "Database error", details: err.message });
+    res.status(500).json({
+      error: "Database error",
+      details: err.message,
+    });
   }
 });
 

@@ -42,29 +42,77 @@ export default {
     async addSupplierAction({ commit }, supplierData) {
       try {
         const response = await api.addSupplier(supplierData);
-        commit("ADD_SUPPLIER", response.data);
-        commit("SET_ERROR", null);
-        return response.data;
-      } catch (err) {
-        commit(
-          "SET_ERROR",
-          err.response?.data?.error || "Ошибка при добавлении поставщика"
-        );
-        throw err;
+
+        if (response.data.success) {
+          commit("ADD_SUPPLIER", response.data.data);
+          commit("SET_ERROR", null);
+          return {
+            success: true,
+            message: response.data.message || "Поставщик успешно добавлен",
+          };
+        } else {
+          commit("SET_ERROR", response.data.message || "Ошибка валидации");
+          return {
+            success: false,
+            message: response.data.message,
+            errors: response.data.errors || {},
+          };
+        }
+      } catch (error) {
+        let errorMessage = "Ошибка при добавлении поставщика";
+        let errors = {};
+
+        if (error.response) {
+          errorMessage = error.response.data.message || errorMessage;
+          errors = error.response.data.errors || {};
+        } else {
+          errorMessage = "Ошибка сети. Проверьте соединение.";
+        }
+
+        commit("SET_ERROR", errorMessage);
+        return {
+          success: false,
+          message: errorMessage,
+          errors,
+        };
       }
     },
     async updateSupplierAction({ commit }, { id, supplierData }) {
       try {
         const response = await api.updateSupplier(id, supplierData);
-        commit("UPDATE_SUPPLIER", response.data);
-        commit("SET_ERROR", null);
-        return response.data;
-      } catch (err) {
-        commit(
-          "SET_ERROR",
-          err.response?.data?.error || "Ошибка при обновлении поставщика"
-        );
-        throw err;
+
+        if (response.data.success) {
+          commit("UPDATE_SUPPLIER", response.data.data);
+          commit("SET_ERROR", null);
+          return {
+            success: true,
+            message: response.data.message || "Данные поставщика обновлены",
+          };
+        } else {
+          commit("SET_ERROR", response.data.message || "Ошибка валидации");
+          return {
+            success: false,
+            message: response.data.message,
+            errors: response.data.errors || {},
+          };
+        }
+      } catch (error) {
+        let errorMessage = "Ошибка при обновлении поставщика";
+        let errors = {};
+
+        if (error.response) {
+          errorMessage = error.response.data.message || errorMessage;
+          errors = error.response.data.errors || {};
+        } else {
+          errorMessage = "Ошибка сети. Проверьте соединение.";
+        }
+
+        commit("SET_ERROR", errorMessage);
+        return {
+          success: false,
+          message: errorMessage,
+          errors,
+        };
       }
     },
     async deleteSupplierAction({ commit }, id) {

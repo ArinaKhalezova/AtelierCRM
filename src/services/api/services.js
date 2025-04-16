@@ -10,6 +10,9 @@ export default {
   addService(serviceData) {
     return apiClient.post("/services", serviceData);
   },
+  updateService(id, serviceData) {
+    return apiClient.put(`/services/${id}`, serviceData);
+  },
   deleteService(serviceId) {
     return apiClient.delete(`/services/${serviceId}`);
   },

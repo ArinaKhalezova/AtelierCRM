@@ -81,6 +81,14 @@
         @cancel="closeDeliveryModal"
       />
     </Modal>
+
+    <Modal :isOpen="isEditModalOpen" @close="closeEditModal" size="lg">
+      <EditDeliveryForm
+        :delivery="selectedDelivery"
+        @submit="handleDeliveryUpdate"
+        @cancel="closeEditModal"
+      />
+    </Modal>
   </div>
 </template>
 
@@ -91,7 +99,6 @@ import Modal from "../Modal.vue";
 import NewDeliveryForm from "./NewDeliveryForm.vue";
 
 const store = useStore();
-const fileInput = ref(null);
 const isDeliveryModalOpen = ref(false);
 const isDeleting = ref(false);
 

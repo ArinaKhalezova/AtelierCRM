@@ -7,6 +7,9 @@ export default {
   getOrderDetails(orderId) {
     return apiClient.get(`/orders/${orderId}`);
   },
+  getOverdueOrders() {
+    return apiClient.get("/orders/overdue");
+  },
   createOrder(order) {
     return apiClient.post("/orders", order);
   },
@@ -46,6 +49,6 @@ export default {
     return apiClient.get(`/orders/${orderId}/employees`);
   },
   getEmployeesWorkload() {
-    return apiClient.get("/orders/employees/workload"); 
+    return apiClient.get("/orders/employees/workload");
   },
 };

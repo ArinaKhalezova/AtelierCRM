@@ -50,6 +50,58 @@ router.post("/", async (req, res) => {
   }
 });
 
+router.put("/:id", async (req, res) => {
+  const { id } = req.params;
+  const { category, name, description, base_cost } = req.body;
+
+  // Валидация
+  if (!category || !name || !name.trim() || isNaN(base_cost)) {
+    return res.status(400).json({
+      error: "Заполните все обязательные поля корректно",
+    });
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    // Проверка существования услуги
+    const serviceExists = await client.query(
+      "SELECT 1 FROM services WHERE service_id = $1",
+      [id]
+    );
+
+    if (!serviceExists.rowCount) {
+      return res.status(404).json({ error: "Услуга не найдена" });
+    }
+
+    // Обновление данных
+    const { rows } = await client.query(
+      `UPDATE services SET
+        category = $1,
+        name = $2,
+        description = $3,
+        base_cost = $4
+       WHERE service_id = $5
+       RETURNING *`,
+      [category, name.trim(), description, parseFloat(base_cost), id]
+    );
+
+    await client.query("COMMIT");
+    res.json(rows[0]);
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("Ошибка обновления услуги:", err);
+    res.status(500).json({
+      error: "Ошибка сервера при обновлении услуги",
+      details: process.env.NODE_ENV === "development" ? err.message : undefined,
+    });
+  } finally {
+    client.release();
+  }
+});
+
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
 

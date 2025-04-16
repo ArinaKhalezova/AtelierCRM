@@ -14,6 +14,14 @@ export default {
     ADD_EMPLOYEE(state, employee) {
       state.employees.push(employee);
     },
+    UPDATE_EMPLOYEE(state, updatedEmployee) {
+      const index = state.employees.findIndex(
+        (e) => e.employee_id === updatedEmployee.employee_id
+      );
+      if (index !== -1) {
+        state.employees.splice(index, 1, updatedEmployee);
+      }
+    },
     DELETE_EMPLOYEE(state, employeeId) {
       state.employees = state.employees.filter(
         (e) => e.employee_id !== employeeId
@@ -47,17 +55,87 @@ export default {
         console.error("Error fetching job positions:", error);
       }
     },
-    async addEmployeeAction({ commit, dispatch }, employee) {
+    async addEmployeeAction({ commit }, employeeData) {
       try {
-        const response = await api.addEmployee(employee);
-        // После успешного добавления обновляем список сотрудников
-        await dispatch("fetchEmployees");
-        commit("SET_ERROR", null);
-        return response.data;
+        const response = await api.addEmployee(employeeData);
+
+        if (response.data.success) {
+          commit("ADD_EMPLOYEE", response.data.data);
+          commit("SET_ERROR", null);
+          return {
+            success: true,
+            message: response.data.message || "Сотрудник успешно добавлен",
+          };
+        } else {
+          // Ошибки валидации от сервера
+          commit("SET_ERROR", response.data.message || "Ошибка валидации");
+          return {
+            success: false,
+            message: response.data.message,
+            errors: response.data.errors || {},
+          };
+        }
       } catch (error) {
-        commit("SET_ERROR", "Ошибка при добавлении сотрудника");
-        console.error("Error adding employee:", error);
-        throw error;
+        let errorMessage = "Ошибка при добавлении сотрудника";
+        let errors = {};
+
+        if (error.response) {
+          // Ошибка от сервера
+          errorMessage = error.response.data.message || errorMessage;
+          errors = error.response.data.errors || {};
+        } else {
+          // Ошибка сети
+          errorMessage = "Ошибка сети. Проверьте соединение.";
+        }
+
+        commit("SET_ERROR", errorMessage);
+        return {
+          success: false,
+          message: errorMessage,
+          errors,
+        };
+      }
+    },
+    async updateEmployeeAction({ commit }, { id, employeeData }) {
+      try {
+        const response = await api.updateEmployee(id, employeeData);
+
+        if (response.data.success) {
+          commit("UPDATE_EMPLOYEE", response.data.data);
+          commit("SET_ERROR", null);
+          return {
+            success: true,
+            message:
+              response.data.message || "Данные сотрудника успешно обновлены",
+          };
+        } else {
+          // Ошибки валидации от сервера
+          commit("SET_ERROR", response.data.message || "Ошибка валидации");
+          return {
+            success: false,
+            message: response.data.message,
+            errors: response.data.errors || {},
+          };
+        }
+      } catch (error) {
+        let errorMessage = "Ошибка при обновлении сотрудника";
+        let errors = {};
+
+        if (error.response) {
+          // Ошибка от сервера
+          errorMessage = error.response.data.message || errorMessage;
+          errors = error.response.data.errors || {};
+        } else {
+          // Ошибка сети
+          errorMessage = "Ошибка сети. Проверьте соединение.";
+        }
+
+        commit("SET_ERROR", errorMessage);
+        return {
+          success: false,
+          message: errorMessage,
+          errors,
+        };
       }
     },
     async deleteEmployeeAction({ commit }, id) {

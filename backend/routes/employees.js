@@ -1,6 +1,35 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("../config/db");
+const validate = require("../validation");
+
+// Вспомогательная функция для валидации данных сотрудника
+function validateEmployeeData(data, isUpdate = false) {
+  const errors = {};
+
+  // Валидация ФИО
+  const fullnameError = validate.fullname(data.fullname);
+  if (fullnameError) errors.fullname = fullnameError;
+
+  // Валидация телефона
+  const phoneError = validate.phone(data.phone_number);
+  if (phoneError) errors.phone_number = phoneError;
+
+  // Валидация email (не обязателен)
+  const emailError = validate.email(data.email);
+  if (emailError) errors.email = emailError;
+
+  // Валидация пароля (только при создании)
+  if (!isUpdate) {
+    const passwordError = validate.password(data.password);
+    if (passwordError) errors.password = passwordError;
+  }
+
+  // Валидация должности
+  if (!data.position) errors.position = "Должность обязательна для заполнения";
+
+  return Object.keys(errors).length > 0 ? errors : null;
+}
 
 // Получение всех сотрудников
 router.get("/", async (req, res) => {
@@ -34,10 +63,41 @@ router.get("/job-positions", async (req, res) => {
 router.post("/", async (req, res) => {
   const { fullname, phone_number, email, password, position } = req.body;
 
-  if (!fullname || !phone_number || !password || !position) {
-    return res
-      .status(400)
-      .json({ error: "Обязательные поля: ФИО, телефон, пароль и должность" });
+  // Проверка обязательных полей
+  const requiredFields = {
+    fullname: "ФИО",
+    phone_number: "Телефон",
+    password: "Пароль",
+    position: "Должность",
+  };
+
+  const missingFields = Object.entries(requiredFields)
+    .filter(([field]) => !req.body[field])
+    .map(([_, name]) => name);
+
+  if (missingFields.length > 0) {
+    return res.status(400).json({
+      success: false,
+      message: "Не заполнены обязательные поля",
+      errors: {
+        _general: `Заполните обязательные поля: ${missingFields.join(", ")}`,
+        ...Object.fromEntries(
+          Object.keys(requiredFields)
+            .filter((field) => !req.body[field])
+            .map((field) => [field, "Обязательное поле"])
+        ),
+      },
+    });
+  }
+
+  // Валидация данных
+  const validationErrors = validateEmployeeData(req.body);
+  if (validationErrors) {
+    return res.status(400).json({
+      success: false,
+      message: "Ошибки валидации данных",
+      errors: validationErrors,
+    });
   }
 
   try {
@@ -58,11 +118,175 @@ router.post("/", async (req, res) => {
     );
 
     await pool.query("COMMIT");
-    res.status(201).json(employeeResult.rows[0]);
+
+    res.status(201).json({
+      success: true,
+      data: employeeResult.rows[0],
+      message: "Сотрудник успешно добавлен",
+    });
   } catch (err) {
     await pool.query("ROLLBACK");
     console.error(err);
-    res.status(500).json({ error: "Ошибка сервера" });
+
+    // Обработка ошибки дубликата
+    if (err.code === "23505") {
+      const detail = err.detail.toLowerCase();
+      let field = "";
+      if (detail.includes("email")) field = "email";
+      if (detail.includes("phone_number")) field = "phone_number";
+
+      return res.status(400).json({
+        success: false,
+        message: "Ошибка при создании сотрудника",
+        errors: {
+          [field]: `Такой ${
+            field === "email" ? "email" : "телефон"
+          } уже существует`,
+          _general: `Сотрудник с таким ${
+            field === "email" ? "email" : "телефоном"
+          } уже зарегистрирован`,
+        },
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Ошибка сервера при создании сотрудника",
+      error: process.env.NODE_ENV === "development" ? err.message : undefined,
+    });
+  }
+});
+
+// Редактирование сотрудника
+router.put("/:id", async (req, res) => {
+  const { id } = req.params;
+  const { fullname, phone_number, email, position } = req.body;
+
+  // Проверка обязательных полей
+  const requiredFields = {
+    fullname: "ФИО",
+    phone_number: "Телефон",
+    position: "Должность",
+  };
+
+  const missingFields = Object.entries(requiredFields)
+    .filter(([field]) => !req.body[field])
+    .map(([_, name]) => name);
+
+  if (missingFields.length > 0) {
+    return res.status(400).json({
+      success: false,
+      message: "Не заполнены обязательные поля",
+      errors: {
+        _general: `Заполните обязательные поля: ${missingFields.join(", ")}`,
+        ...Object.fromEntries(
+          Object.keys(requiredFields)
+            .filter((field) => !req.body[field])
+            .map((field) => [field, "Обязательное поле"])
+        ),
+      },
+    });
+  }
+
+  // Валидация данных
+  const validationErrors = validateEmployeeData(req.body, true);
+  if (validationErrors) {
+    return res.status(400).json({
+      success: false,
+      message: "Ошибки валидации данных",
+      errors: validationErrors,
+    });
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    // 1. Проверяем существование сотрудника
+    const employeeExists = await client.query(
+      "SELECT user_id FROM employees WHERE employee_id = $1",
+      [id]
+    );
+
+    if (!employeeExists.rowCount) {
+      return res.status(404).json({
+        success: false,
+        message: "Сотрудник не найден",
+        errors: {
+          _general: "Сотрудник с указанным ID не существует",
+        },
+      });
+    }
+
+    const userId = employeeExists.rows[0].user_id;
+
+    // 2. Обновляем данные пользователя
+    await client.query(
+      `UPDATE users SET 
+        fullname = $1,
+        phone_number = $2,
+        email = $3
+       WHERE user_id = $4`,
+      [fullname, phone_number, email, userId]
+    );
+
+    // 3. Обновляем должность сотрудника
+    await client.query(
+      `UPDATE employees SET 
+        position = $1
+       WHERE employee_id = $2`,
+      [position, id]
+    );
+
+    // 4. Получаем обновленные данные
+    const updatedEmployee = await client.query(
+      `SELECT e.employee_id, u.fullname, u.phone_number, u.email, e.position 
+       FROM employees e
+       JOIN users u ON e.user_id = u.user_id
+       WHERE e.employee_id = $1`,
+      [id]
+    );
+
+    await client.query("COMMIT");
+
+    res.json({
+      success: true,
+      data: updatedEmployee.rows[0],
+      message: "Данные сотрудника успешно обновлены",
+    });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("Ошибка обновления сотрудника:", err);
+
+    // Обработка ошибки дубликата
+    if (err.code === "23505") {
+      const detail = err.detail.toLowerCase();
+      let field = "";
+      if (detail.includes("email")) field = "email";
+      if (detail.includes("phone_number")) field = "phone_number";
+
+      return res.status(400).json({
+        success: false,
+        message: "Ошибка при обновлении сотрудника",
+        errors: {
+          [field]: `Такой ${
+            field === "email" ? "email" : "телефон"
+          } уже существует`,
+          _general: `Сотрудник с таким ${
+            field === "email" ? "email" : "телефоном"
+          } уже зарегистрирован`,
+        },
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Ошибка сервера при обновлении сотрудника",
+      error: process.env.NODE_ENV === "development" ? err.message : undefined,
+    });
+  } finally {
+    client.release();
   }
 });
 

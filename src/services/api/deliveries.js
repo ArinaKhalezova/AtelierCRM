@@ -23,6 +23,9 @@ export default {
       responseType: "blob",
     });
   },
+  updateDelivery(id, deliveryData) {
+    return apiClient.put(`/deliveries/${id}`, deliveryData);
+  },
   deleteDelivery(id) {
     return apiClient.delete(`/deliveries/${id}`);
   },
