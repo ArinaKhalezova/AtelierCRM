@@ -28,7 +28,7 @@ router.get("/me", authenticateToken, async (req, res) => {
   try {
     const user = await pool.query(
       "SELECT user_id, fullname, email, role FROM users WHERE user_id = $1",
-      [req.user.userId] 
+      [req.user.userId]
     );
 
     if (user.rows.length === 0) {

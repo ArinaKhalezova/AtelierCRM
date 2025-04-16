@@ -34,15 +34,43 @@ function validateEmployeeData(data, isUpdate = false) {
 // Получение всех сотрудников
 router.get("/", async (req, res) => {
   try {
-    const { rows } = await pool.query(`
-      SELECT e.employee_id, u.fullname, u.phone_number, u.email, e.position 
-      FROM employees e
-      JOIN users u ON e.user_id = u.user_id
-    `);
+    let query;
+    let params = [];
+
+    // Проверяем роль из токена (req.user добавляется middleware auth)
+    if (req.user?.role === "Старший администратор") {
+      query = `
+        SELECT 
+          e.employee_id,
+          u.fullname,
+          e.position,
+          u.phone_number,
+          u.email,
+          u.password_hash 
+        FROM employees e
+        JOIN users u ON e.user_id = u.user_id
+      `;
+    } else {
+      query = `
+        SELECT 
+          e.employee_id,
+          u.fullname,
+          e.position,
+          u.phone_number,
+          u.email
+        FROM employees e
+        JOIN users u ON e.user_id = u.user_id
+      `;
+    }
+
+    const { rows } = await pool.query(query, params);
     res.json(rows);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Ошибка сервера" });
+    console.error("Error fetching employees:", err);
+    res.status(500).json({
+      error: "Database error",
+      details: process.env.NODE_ENV === "development" ? err.message : undefined,
+    });
   }
 });
 
@@ -104,9 +132,12 @@ router.post("/", async (req, res) => {
     await pool.query("BEGIN");
 
     // Создание пользователя
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
     const userResult = await pool.query(
       "INSERT INTO users (fullname, phone_number, email, password_hash, role) VALUES ($1, $2, $3, $4, 'Работник') RETURNING user_id",
-      [fullname, phone_number, email, password]
+      [fullname, phone_number, email, hashedPassword]
     );
 
     const userId = userResult.rows[0].user_id;

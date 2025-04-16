@@ -26,7 +26,10 @@ module.exports = async function authenticate(req, res, next) {
       return res.status(401).json({ error: "Пользователь не найден" });
     }
 
-    req.user = rows[0];
+    req.user = {
+      ...rows[0],
+      isSuperAdmin: rows[0].role === "Старший администратор",
+    };
     next();
   } catch (err) {
     console.error("Authentication error:", err);

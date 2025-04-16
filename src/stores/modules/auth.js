@@ -79,7 +79,9 @@ export default {
     },
   },
   getters: {
-    isAdmin: (state) => state.user?.role === "Администратор",
+    isSuperAdmin: (state) => state.user?.role === "Старший администратор",
+    isAdmin: (state) =>
+      ["Администратор", "Старший администратор"].includes(state.user?.role),
     isAuthenticated: (state) => !!state.token,
     currentUser: (state) => state.user,
     error: (state) => state.error,

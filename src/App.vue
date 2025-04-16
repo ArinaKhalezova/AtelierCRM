@@ -18,7 +18,9 @@
             <router-link to="/deliveries">Поставки</router-link>
             <router-link to="/clients">Клиенты</router-link>
             <router-link to="/employees">Сотрудники</router-link>
-            <router-link to="/data">Справочник</router-link></template
+            <router-link v-if="isSuperAdmin" to="/data"
+              >Справочник</router-link
+            ></template
           >
         </nav>
         <button @click="handleLogout" class="logout-btn">Выйти</button>
@@ -35,27 +37,28 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useStore } from 'vuex'
+import { computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { useStore } from "vuex";
 
-const router = useRouter()
-const store = useStore()
+const router = useRouter();
+const store = useStore();
 
 // Computed свойства
-const isAdmin = computed(() => store.getters['auth/isAdmin'])
-const isAuthenticated = computed(() => store.getters['auth/isAuthenticated'])
+const isAdmin = computed(() => store.getters["auth/isAdmin"]);
+const isSuperAdmin = computed(() => store.getters["auth/isSuperAdmin"]);
+const isAuthenticated = computed(() => store.getters["auth/isAuthenticated"]);
 
 // Методы
 const handleLogout = () => {
-  store.dispatch('auth/logout')
-  router.push('/login')
-}
+  store.dispatch("auth/logout");
+  router.push("/login");
+};
 
 // Хук жизненного цикла
 onMounted(async () => {
-  await store.dispatch('auth/checkAuth')
-})
+  await store.dispatch("auth/checkAuth");
+});
 </script>
 
 <style scoped>

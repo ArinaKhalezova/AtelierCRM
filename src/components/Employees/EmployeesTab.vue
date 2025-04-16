@@ -10,8 +10,12 @@
         <div class="search-box">
           <input v-model="searchQuery" placeholder="Поиск сотрудников..." />
         </div>
-        <button @click="openModal" class="add-employee-button">
-          <span class="plus-icon">+</span> Добавить сотрудника
+        <button
+          @click="openModal"
+          class="add-employee-button"
+          v-if="isSuperAdmin"
+        >
+          + Добавить сотрудника
         </button>
       </div>
     </div>
@@ -25,9 +29,11 @@
               <th>Должность</th>
               <th>Телефон</th>
               <th>Email</th>
+              <!-- <th v-if="isSuperAdmin">Пароль</th> -->
               <th class="actions-column">Действия</th>
             </tr>
           </thead>
+
           <tbody>
             <tr
               v-for="employee in filteredEmployees"
@@ -37,16 +43,22 @@
               <td data-label="Должность">{{ employee.position }}</td>
               <td data-label="Телефон">{{ employee.phone_number }}</td>
               <td data-label="Email">{{ employee.email || "—" }}</td>
+              <!-- <td v-if="isSuperAdmin">
+                {{ employee.password_hash || "••••••" }}
+              </td> -->
               <td class="actions-column" data-label="Действия">
-                <button @click="openModal(employee)" class="edit-button">
-                  Редактировать
-                </button>
-                <button
-                  @click="deleteEmployee(employee.employee_id)"
-                  class="delete-button"
-                >
-                  Удалить
-                </button>
+                <template v-if="isSuperAdmin">
+                  <button @click="openModal(employee)" class="edit-button">
+                    Редактировать
+                  </button>
+                  <button
+                    @click="deleteEmployee(employee.employee_id)"
+                    class="delete-button"
+                  >
+                    Удалить
+                  </button>
+                </template>
+                <span v-else>-</span>
               </td>
             </tr>
           </tbody>
@@ -179,6 +191,8 @@ const formErrors = ref({});
 const employees = computed(() => store.state.employees.employees);
 const jobPositions = computed(() => store.state.employees.jobPositions);
 const error = computed(() => store.state.employees.error);
+
+const isSuperAdmin = computed(() => store.getters["auth/isSuperAdmin"]);
 
 const filteredEmployees = computed(() => {
   if (!searchQuery.value) return employees.value;
