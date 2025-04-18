@@ -2,9 +2,11 @@
   <div class="materials-tab">
     <div class="header">
       <h2>Материалы</h2>
-      <button @click="showAddModal = true" class="add-button">
-        <span class="plus-icon">+</span> Добавить материал
-      </button>
+      <div class="controls">
+        <div class="search-box">
+          <input v-model="searchQuery" placeholder="Поиск материалов..." />
+        </div>
+      </div>
     </div>
 
     <div v-if="error" class="error-message">{{ error }}</div>
@@ -18,16 +20,20 @@
             <th>Ед. измерения</th>
             <th>Количество</th>
             <th>Цена за ед.</th>
+            <th>№ Поставки</th>
+            <th>Дата поставки</th>
             <!-- <th class="actions-column">Действия</th> -->
           </tr>
         </thead>
         <tbody>
-          <tr v-for="material in materials" :key="material.material_id">
+          <tr v-for="material in filteredMaterials" :key="material.material_id">
             <td>{{ material.material_name }}</td>
             <td>{{ material.type }}</td>
             <td>{{ material.unit }}</td>
             <td>{{ material.quantity }}</td>
             <td>{{ material.cost_per_unit }} ₽</td>
+            <td>{{ material.delivery_number }}</td>
+            <td>{{ formatDate(material.delivery_date) }}</td>
             <td class="actions-column">
               <!-- <button @click="openEditModal(material)" class="edit-button">
                 Редактировать
@@ -59,17 +65,44 @@ import { useStore } from "vuex";
 import MaterialModal from "@/components/Materials/MaterialModal.vue";
 
 const store = useStore();
+const searchQuery = ref("");
+
 const showAddModal = ref(false);
 const selectedMaterial = ref(null);
 
 const materials = computed(() => store.state.materials.materials);
 const error = computed(() => store.state.materials.error);
 
+const filteredMaterials = computed(() => {
+  if (!searchQuery.value) return materials.value;
+
+  const query = searchQuery.value.toLowerCase();
+  return materials.value.filter(
+    (material) =>
+      material.material_name.toLowerCase().includes(query) ||
+      material.type.toLowerCase().includes(query) ||
+      (material.delivery_number &&
+        material.delivery_number.toLowerCase().includes(query)) ||
+      (material.supplier_name &&
+        material.supplier_name.toLowerCase().includes(query))
+  );
+});
+
+const formatDate = (dateString) => {
+  if (!dateString) return "—"; // Возвращаем прочерк, если дата отсутствует
+
+  try {
+    const date = new Date(dateString);
+    return isNaN(date.getTime()) ? "—" : date.toLocaleDateString("ru-RU");
+  } catch {
+    return "—";
+  }
+};
 onMounted(async () => {
   try {
     await store.dispatch("materials/fetchMaterials");
   } catch (err) {
-    store.commit("materials/setError", "Ошибка загрузки материалов");
+    console.error("Ошибка загрузки материалов:", err);
   }
 });
 

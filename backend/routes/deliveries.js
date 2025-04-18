@@ -12,6 +12,10 @@ const upload = multer({ storage });
 function validateDeliveryData(data) {
   const errors = {};
 
+  // Валидация номера поставки
+  if (!data.delivery_number)
+    errors.delivery_number = "Номер поставки обязателен";
+
   // Валидация поставщика
   if (!data.supplier_id) errors.supplier_id = "Необходимо указать поставщика";
 
@@ -32,6 +36,7 @@ async function getFullDelivery(deliveryId) {
     const deliveryQuery = await pool.query(
       `SELECT 
         d.delivery_id,
+        d.delivery_number,
         d.delivery_date,
         d.document_path,
         s.supplier_id,
@@ -77,6 +82,7 @@ router.get("/", async (req, res) => {
     const deliveriesQuery = await pool.query(
       `SELECT 
           d.delivery_id,
+          d.delivery_number,
           d.delivery_date,
           d.document_name,
           d.document_data,
@@ -120,12 +126,24 @@ router.get("/", async (req, res) => {
 
 // Добавление новой поставки с материалами
 router.post("/", async (req, res) => {
-  const { supplier_id, delivery_date, document_path, materials } = req.body;
+  const {
+    supplier_id,
+    delivery_date,
+    delivery_number,
+    document_path,
+    materials,
+  } = req.body;
 
   // Валидация
-  if (!supplier_id || !delivery_date || !materials?.length) {
+  if (
+    !delivery_number ||
+    !supplier_id ||
+    !delivery_date ||
+    !materials?.length
+  ) {
     return res.status(400).json({
-      error: "Необходимо указать поставщика, дату и хотя бы один материал",
+      error:
+        "Необходимо указать номер поставки, поставщика, дату и хотя бы один материал",
     });
   }
 
@@ -145,10 +163,10 @@ router.post("/", async (req, res) => {
     // 1. Создаем поставку
     const deliveryResult = await client.query(
       `INSERT INTO deliveries 
-       (supplier_id, delivery_date) 
-       VALUES ($1, $2) 
-       RETURNING *`,
-      [supplier_id, delivery_date]
+     (supplier_id, delivery_date, delivery_number) 
+     VALUES ($1, $2, $3) 
+     RETURNING *`,
+      [supplier_id, delivery_date, delivery_number]
     );
 
     const deliveryId = deliveryResult.rows[0].delivery_id;
@@ -264,12 +282,18 @@ router.get("/:id/download", async (req, res) => {
 
 router.put("/:id", async (req, res) => {
   const { id } = req.params;
-  const { supplier_id, delivery_date, materials } = req.body;
+  const { supplier_id, delivery_date, delivery_number, materials } = req.body;
 
   // Валидация
-  if (!supplier_id || !delivery_date || !materials?.length) {
+  if (
+    !delivery_number ||
+    !supplier_id ||
+    !delivery_date ||
+    !materials?.length
+  ) {
     return res.status(400).json({
-      error: "Необходимо указать поставщика, дату и хотя бы один материал",
+      error:
+        "Необходимо указать номер поставки, поставщика, дату и хотя бы один материал",
     });
   }
 
@@ -300,9 +324,10 @@ router.put("/:id", async (req, res) => {
     await client.query(
       `UPDATE deliveries SET
         supplier_id = $1,
-        delivery_date = $2
-       WHERE delivery_id = $3`,
-      [supplier_id, delivery_date, id]
+        delivery_date = $2,
+        delivery_number = $3
+      WHERE delivery_id = $4`,
+      [supplier_id, delivery_date, delivery_number, id]
     );
 
     // 3. Получаем текущие материалы поставки

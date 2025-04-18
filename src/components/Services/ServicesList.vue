@@ -1,11 +1,19 @@
 <template>
   <div class="services-tab">
+    <div v-if="error" class="error-message">{{ error }}</div>
     <div class="header">
       <h2>Услуги</h2>
-      <button @click="openServiceModal" class="add-button">
-        <span class="plus-icon">+</span> Добавить услугу
-      </button>
+      <div class="controls">
+        <div class="search-box">
+          <input v-model="searchQuery" placeholder="Поиск услуг..." />
+        </div>
+        <button @click="openServiceModal" class="add-button">
+          <span class="plus-icon">+</span> Добавить услугу
+        </button>
+      </div>
     </div>
+
+    <div v-if="error" class="error-message">{{ error }}</div>
 
     <div class="table-wrapper">
       <table class="services-table">
@@ -19,7 +27,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="service in services" :key="service.service_id">
+          <tr v-for="service in filteredServices" :key="service.service_id">
             <td>{{ service.category }}</td>
             <td>{{ service.name }}</td>
             <td>{{ service.description || "—" }}</td>
@@ -40,13 +48,19 @@
       </table>
     </div>
 
-    <Modal :isOpen="isServiceModalOpen" @close="closeServiceModal">
+    <!-- Единое модальное окно для добавления/редактирования -->
+    <Modal :isOpen="isModalOpen" @close="closeModal">
       <div class="modal-form">
-        <h3>Добавить услугу</h3>
-        <form @submit.prevent="addService" class="form-grid">
-          <div class="form-group">
+        <h3>{{ isEditing ? "Редактирование" : "Добавление" }} услуги</h3>
+
+        <div v-if="formErrors._general" class="form-error">
+          {{ formErrors._general }}
+        </div>
+
+        <form @submit.prevent="saveService" class="form-grid">
+          <div class="form-group" :class="{ 'has-error': formErrors.category }">
             <label>Категория</label>
-            <select v-model="newService.category" required>
+            <select v-model="formData.category" required>
               <option value="" disabled>Выберите категорию</option>
               <option
                 v-for="category in serviceCategories"
@@ -56,82 +70,51 @@
                 {{ category }}
               </option>
             </select>
+            <span v-if="formErrors.category" class="field-error">
+              {{ formErrors.category }}
+            </span>
           </div>
-          <div class="form-group">
-            <label>Название</label>
-            <input v-model="newService.name" required minlength="2" />
-          </div>
-          <div class="form-group">
-            <label>Описание</label>
-            <textarea v-model="newService.description" rows="3" />
-          </div>
-          <div class="form-group">
-            <label>Стоимость (₽)</label>
-            <input
-              v-model.number="newService.base_cost"
-              type="number"
-              min="0"
-              step="0.01"
-              required
-            />
-          </div>
-          <div class="form-actions">
-            <button
-              type="button"
-              @click="closeServiceModal"
-              class="cancel-button"
-            >
-              Отмена
-            </button>
-            <button
-              type="submit"
-              :disabled="isSubmitting"
-              class="submit-button"
-            >
-              {{ isSubmitting ? "Добавление..." : "Добавить" }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </Modal>
 
-    <!-- Модальное окно редактирования -->
-    <Modal :isOpen="isEditModalOpen" @close="closeEditModal">
-      <div class="modal-form">
-        <h3>Редактировать услугу</h3>
-        <form @submit.prevent="updateService" class="form-grid">
-          <div class="form-group">
-            <label>Категория</label>
-            <select v-model="editedService.category" required>
-              <option
-                v-for="category in serviceCategories"
-                :key="category"
-                :value="category"
-              >
-                {{ category }}
-              </option>
-            </select>
-          </div>
-          <div class="form-group">
+          <div class="form-group" :class="{ 'has-error': formErrors.name }">
             <label>Название</label>
-            <input v-model="editedService.name" required minlength="2" />
+            <input v-model="formData.name" required minlength="2" />
+            <span v-if="formErrors.name" class="field-error">
+              {{ formErrors.name }}
+            </span>
+            <div class="hint">Минимум 2 символа</div>
           </div>
-          <div class="form-group">
+
+          <div
+            class="form-group"
+            :class="{ 'has-error': formErrors.description }"
+          >
             <label>Описание</label>
-            <textarea v-model="editedService.description" rows="3" />
+            <textarea v-model="formData.description" rows="3" />
+            <span v-if="formErrors.description" class="field-error">
+              {{ formErrors.description }}
+            </span>
           </div>
-          <div class="form-group">
+
+          <div
+            class="form-group"
+            :class="{ 'has-error': formErrors.base_cost }"
+          >
             <label>Стоимость (₽)</label>
             <input
-              v-model.number="editedService.base_cost"
+              v-model.number="formData.base_cost"
               type="number"
               min="0"
               step="0.01"
               required
             />
+            <span v-if="formErrors.base_cost" class="field-error">
+              {{ formErrors.base_cost }}
+            </span>
+            <div class="hint">Число с двумя знаками после запятой</div>
           </div>
+
           <div class="form-actions">
-            <button type="button" @click="closeEditModal" class="cancel-button">
+            <button type="button" @click="closeModal" class="cancel-button">
               Отмена
             </button>
             <button
@@ -139,7 +122,15 @@
               :disabled="isSubmitting"
               class="submit-button"
             >
-              {{ isSubmitting ? "Сохранение..." : "Сохранить" }}
+              {{
+                isSubmitting
+                  ? isEditing
+                    ? "Сохранение..."
+                    : "Добавление..."
+                  : isEditing
+                  ? "Сохранить"
+                  : "Добавить"
+              }}
             </button>
           </div>
         </form>
@@ -156,21 +147,17 @@ import Modal from "../Modal.vue";
 const store = useStore();
 
 const isSubmitting = ref(false);
-const isServiceModalOpen = ref(false);
-const isEditModalOpen = ref(false);
-const newService = ref({
-  category: "",
-  name: "",
-  description: "",
-  base_cost: 0,
-});
-const editedService = ref({
+const isModalOpen = ref(false);
+const isEditing = ref(false);
+const searchQuery = ref("");
+const formData = ref({
   service_id: null,
   category: "",
   name: "",
   description: "",
   base_cost: 0,
 });
+const formErrors = ref({});
 
 const services = computed(() => store.state.services.services);
 const serviceCategories = computed(
@@ -178,73 +165,95 @@ const serviceCategories = computed(
 );
 const error = computed(() => store.state.services.error);
 
+const filteredServices = computed(() => {
+  if (!searchQuery.value) return services.value;
+
+  const query = searchQuery.value.toLowerCase();
+  return services.value.filter(
+    (service) =>
+      service.category.toLowerCase().includes(query) ||
+      service.name.toLowerCase().includes(query) ||
+      (service.description &&
+        service.description.toLowerCase().includes(query)) ||
+      service.base_cost.toString().includes(query)
+  );
+});
+
 onMounted(async () => {
   await store.dispatch("services/fetchServices");
   await store.dispatch("services/fetchServiceCategories");
 });
 
 const openServiceModal = () => {
-  isServiceModalOpen.value = true;
-};
-
-const closeServiceModal = () => {
-  isServiceModalOpen.value = false;
-  newService.value = { category: "", name: "", description: "", base_cost: 0 };
-  store.commit("services/SET_ERROR", null);
-};
-
-const openEditModal = (service) => {
-  editedService.value = { ...service };
-  isEditModalOpen.value = true;
-};
-
-const closeEditModal = () => {
-  isEditModalOpen.value = false;
-  editedService.value = {
+  isEditing.value = false;
+  formData.value = {
     service_id: null,
     category: "",
     name: "",
     description: "",
     base_cost: 0,
   };
+  isModalOpen.value = true;
 };
 
-const addService = async () => {
-  isSubmitting.value = true; // Устанавливаем в true перед началом отправки
-  try {
-    const serviceData = {
-      category: newService.value.category,
-      name: newService.value.name.trim(),
-      description: newService.value.description.trim(),
-      base_cost: parseFloat(newService.value.base_cost),
-    };
-
-    await store.dispatch("services/addService", serviceData);
-    closeServiceModal();
-  } catch (err) {
-    console.error("Ошибка при добавлении услуги:", err);
-  } finally {
-    isSubmitting.value = false; // Всегда сбрасываем обратно в false
-  }
+const openEditModal = (service) => {
+  isEditing.value = true;
+  formData.value = { ...service };
+  isModalOpen.value = true;
 };
 
-const updateService = async () => {
+const closeModal = () => {
+  isModalOpen.value = false;
+  formData.value = {
+    service_id: null,
+    category: "",
+    name: "",
+    description: "",
+    base_cost: 0,
+  };
+  formErrors.value = {};
+  store.commit("services/SET_ERROR", null);
+};
+
+const saveService = async () => {
   isSubmitting.value = true;
-  try {
-    const serviceData = {
-      category: editedService.value.category,
-      name: editedService.value.name.trim(),
-      description: editedService.value.description.trim(),
-      base_cost: parseFloat(editedService.value.base_cost),
-    };
+  formErrors.value = {};
 
-    await store.dispatch("services/updateService", {
-      id: editedService.value.service_id,
-      serviceData: serviceData,
-    });
-    closeEditModal();
+  try {
+    const action = isEditing.value
+      ? "services/updateService"
+      : "services/addService";
+
+    const payload = isEditing.value
+      ? {
+          id: formData.value.service_id,
+          serviceData: {
+            category: formData.value.category,
+            name: formData.value.name.trim(),
+            description: formData.value.description.trim(),
+            base_cost: parseFloat(formData.value.base_cost),
+          },
+        }
+      : {
+          category: formData.value.category,
+          name: formData.value.name.trim(),
+          description: formData.value.description.trim(),
+          base_cost: parseFloat(formData.value.base_cost),
+        };
+
+    const result = await store.dispatch(action, payload);
+
+    if (result?.success) {
+      await store.dispatch("services/fetchServices");
+      closeModal();
+    } else if (result?.errors) {
+      formErrors.value = result.errors;
+    }
   } catch (err) {
-    console.error("Ошибка при обновлении услуги:", err);
+    console.error("Ошибка при сохранении услуги:", err);
+    if (err.response?.data?.errors) {
+      formErrors.value = err.response.data.errors;
+    }
   } finally {
     isSubmitting.value = false;
   }
@@ -255,6 +264,7 @@ const deleteService = async (serviceId) => {
     isSubmitting.value = true;
     try {
       await store.dispatch("services/deleteService", serviceId);
+      await store.dispatch("services/fetchServices");
     } catch (err) {
       console.error("Ошибка при удалении услуги:", err);
     } finally {
@@ -271,10 +281,48 @@ const deleteService = async (serviceId) => {
   gap: 1.5rem;
 }
 
+.error-message {
+  color: #d32f2f;
+  background-color: #fde8e8;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.form-error {
+  color: #d32f2f;
+  margin-bottom: 16px;
+  font-size: 0.9em;
+}
+
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+  max-width: 400px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 0.6rem 1.2rem;
+  border: 1px solid var(--warm-gray);
+  border-radius: var(--border-radius);
+  font-size: 0.9rem;
 }
 
 .add-button {
@@ -366,10 +414,14 @@ const deleteService = async (serviceId) => {
 }
 
 .modal-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
   padding: 1.5rem;
+  max-width: 800px;
+}
+
+.modal-form h3 {
+  color: var(--dark-teal);
+  margin-bottom: 1.5rem;
+  text-align: center;
 }
 
 .form-grid {
@@ -382,6 +434,25 @@ const deleteService = async (serviceId) => {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+.form-group.has-error input,
+.form-group.has-error select,
+.form-group.has-error textarea {
+  border-color: #d32f2f;
+}
+
+.field-error {
+  color: #d32f2f;
+  font-size: 0.8em;
+  display: block;
+  margin-top: 4px;
+}
+
+.hint {
+  color: #666;
+  font-size: 0.8em;
+  margin-top: 4px;
 }
 
 .form-group label {
@@ -417,6 +488,7 @@ const deleteService = async (serviceId) => {
   justify-content: flex-end;
   gap: 1rem;
   grid-column: 1 / -1;
+  margin-top: 1rem;
 }
 
 .cancel-button {
@@ -491,6 +563,24 @@ const deleteService = async (serviceId) => {
 
   .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .controls {
+    width: 100%;
+  }
+
+  .search-box {
+    max-width: 100%;
+  }
+
+  .add-button {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>

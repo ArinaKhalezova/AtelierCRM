@@ -53,6 +53,7 @@ export default {
         const apiData = {
           supplier_id: deliveryData.supplier_id,
           delivery_date: deliveryData.delivery_date,
+          delivery_number: deliveryData.delivery_number,
           document_path: deliveryData.document_path,
           materials: await Promise.all(
             deliveryData.materials.map(async (m) => {
@@ -134,15 +135,18 @@ export default {
       }
     },
 
-    async updateDeliveryAction(
-      { commit, dispatch },
-      { deliveryId, deliveryData }
-    ) {
+    async updateDeliveryAction({ commit }, { id, deliveryData }) {
       commit("SET_LOADING", true);
       try {
-        const response = await api.updateDelivery(deliveryId, deliveryData);
+        const response = await api.updateDelivery(id, {
+          supplier_id: deliveryData.supplier_id,
+          delivery_date: deliveryData.delivery_date,
+          delivery_number: deliveryData.delivery_number,
+          materials: deliveryData.materials,
+        });
+
         commit("UPDATE_DELIVERY", response.data);
-        await dispatch("materials/fetchMaterials", null, { root: true });
+        await this.dispatch("materials/fetchMaterials");
         return response.data;
       } catch (error) {
         commit("SET_ERROR", error.message);

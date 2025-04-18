@@ -176,13 +176,14 @@ router.get("/:id/employees", async (req, res) => {
 
 // Получение деталей заказа
 router.get("/:id", async (req, res) => {
+  const orderId = Number(req.params.id); 
   try {
     const { rows } = await pool.query(
-      `SELECT o.*, c.fullname as client_name 
+      `SELECT o.*, c.fullname as client_name, c.phone_number as client_phone_number 
        FROM orders o
        JOIN clients c ON o.client_id = c.client_id
        WHERE o.order_id = $1`,
-      [req.params.id]
+      [orderId]
     );
     if (rows.length === 0)
       return res.status(404).json({ error: "Order not found" });

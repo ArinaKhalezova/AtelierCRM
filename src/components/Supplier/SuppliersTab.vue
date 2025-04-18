@@ -3,9 +3,14 @@
     <div v-if="error" class="error-message">{{ error }}</div>
     <div class="header">
       <h2>Поставщики</h2>
-      <button @click="openSupplierModal" class="add-button">
-        <span class="plus-icon">+</span> Добавить поставщика
-      </button>
+      <div class="controls">
+        <div class="search-box">
+          <input v-model="searchQuery" placeholder="Поиск поставщиков..." />
+        </div>
+        <button @click="openSupplierModal" class="add-button">
+          <span class="plus-icon">+</span> Добавить поставщика
+        </button>
+      </div>
     </div>
 
     <div v-if="error" class="error-message">{{ error }}</div>
@@ -22,7 +27,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="supplier in suppliers" :key="supplier.supplier_id">
+          <tr v-for="supplier in filteredSuppliers" :key="supplier.supplier_id">
             <td>{{ supplier.org_name }}</td>
             <td>{{ supplier.phone_number }}</td>
             <td>{{ supplier.address }}</td>
@@ -119,6 +124,7 @@ import Modal from "../Modal.vue";
 
 const store = useStore();
 
+const searchQuery = ref("");
 const formErrors = ref({});
 const isSupplierModalOpen = ref(false);
 const editingSupplier = ref(null);
@@ -132,6 +138,19 @@ const newSupplier = ref({
 // Computed
 const error = computed(() => store.state.suppliers.error);
 const suppliers = computed(() => store.state.suppliers.suppliers);
+
+const filteredSuppliers = computed(() => {
+  if (!searchQuery.value) return suppliers.value;
+
+  const query = searchQuery.value.toLowerCase();
+  return suppliers.value.filter(
+    (supplier) =>
+      supplier.org_name.toLowerCase().includes(query) ||
+      supplier.phone_number.toLowerCase().includes(query) ||
+      supplier.address.toLowerCase().includes(query) ||
+      supplier.inn.toLowerCase().includes(query)
+  );
+});
 
 // методы
 const openSupplierModal = () => {
@@ -263,6 +282,28 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+  max-width: 400px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 0.6rem 1.2rem;
+  border: 1px solid var(--warm-gray);
+  border-radius: var(--border-radius);
+  font-size: 0.9rem;
 }
 
 .add-button {

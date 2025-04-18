@@ -2,9 +2,14 @@
   <div class="deliveries-tab">
     <div class="header">
       <h2>Поставки</h2>
-      <button @click="openDeliveryModal" class="add-button">
-        <span class="plus-icon">+</span> Добавить поставку
-      </button>
+      <div class="controls">
+        <div class="search-box">
+          <input v-model="searchQuery" placeholder="Поиск поставок..." />
+        </div>
+        <button @click="openDeliveryModal" class="add-button">
+          <span class="plus-icon">+</span> Добавить поставку
+        </button>
+      </div>
     </div>
 
     <div v-if="error" class="error-message">
@@ -21,6 +26,7 @@
       <table class="deliveries-table">
         <thead>
           <tr>
+            <th>№ поставки</th>
             <th>Поставщик</th>
             <th>Дата</th>
             <th>Материалы</th>
@@ -29,7 +35,11 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="delivery in deliveries" :key="delivery.delivery_id">
+          <tr
+            v-for="delivery in filteredDeliveries"
+            :key="delivery.delivery_id"
+          >
+            <td>{{ delivery.delivery_number }}</td>
             <td>{{ delivery.supplier_name }}</td>
             <td>{{ formatDate(delivery.delivery_date) }}</td>
             <td>
@@ -62,6 +72,9 @@
               <span v-else>Нет накладной</span>
             </td>
             <td class="actions-column">
+              <button @click="openEditModal(delivery)" class="edit-button">
+                Редактировать
+              </button>
               <button
                 @click="deleteDelivery(delivery.delivery_id)"
                 class="delete-button"
@@ -97,14 +110,38 @@ import { ref, computed, onMounted } from "vue";
 import { useStore } from "vuex";
 import Modal from "../Modal.vue";
 import NewDeliveryForm from "./NewDeliveryForm.vue";
+import EditDeliveryForm from "./EditDeliveryForm.vue";
 
 const store = useStore();
+const searchQuery = ref("");
 const isDeliveryModalOpen = ref(false);
 const isDeleting = ref(false);
+
+const isEditModalOpen = ref(false);
+const selectedDelivery = ref(null);
 
 // Computed
 const deliveries = computed(() => store.state.deliveries.deliveries);
 const error = computed(() => store.state.deliveries.error);
+
+const filteredDeliveries = computed(() => {
+  if (!searchQuery.value) return deliveries.value;
+
+  const query = searchQuery.value.toLowerCase();
+  return deliveries.value.filter(
+    (delivery) =>
+      delivery.delivery_number?.toLowerCase().includes(query) ||
+      delivery.supplier_name.toLowerCase().includes(query) ||
+      delivery.delivery_date.toLowerCase().includes(query) ||
+      (delivery.document_name &&
+        delivery.document_name.toLowerCase().includes(query)) ||
+      delivery.materials.some(
+        (material) =>
+          material.material_name.toLowerCase().includes(query) ||
+          material.unit.toLowerCase().includes(query)
+      )
+  );
+});
 
 // методы
 const formatDate = (dateString) => {
@@ -120,9 +157,24 @@ const closeDeliveryModal = () => {
   store.commit("deliveries/SET_ERROR", null);
 };
 
+const openEditModal = (delivery) => {
+  selectedDelivery.value = { ...delivery };
+  isEditModalOpen.value = true;
+};
+
+const closeEditModal = () => {
+  isEditModalOpen.value = false;
+  store.commit("deliveries/SET_ERROR", null);
+};
+
 const handleDeliverySubmit = async () => {
   await store.dispatch("deliveries/fetchDeliveries");
   closeDeliveryModal();
+};
+
+const handleDeliveryUpdate = async () => {
+  await store.dispatch("deliveries/fetchDeliveries");
+  isEditModalOpen.value = false;
 };
 
 const downloadDocument = async (deliveryId) => {
@@ -200,6 +252,28 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+  max-width: 400px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 0.6rem 1.2rem;
+  border: 1px solid var(--warm-gray);
+  border-radius: var(--border-radius);
+  font-size: 0.9rem;
 }
 
 .add-button {
@@ -317,6 +391,21 @@ onMounted(async () => {
 
 .deliveries-table tr:hover {
   background-color: rgba(139, 170, 173, 0.05);
+}
+
+.edit-button {
+  background-color: var(--teal);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  margin-right: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.edit-button:hover {
+  background-color: #7a9b9e;
 }
 
 .delete-button {

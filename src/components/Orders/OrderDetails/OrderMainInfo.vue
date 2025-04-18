@@ -9,7 +9,7 @@
         </tr>
         <tr>
           <td class="label">Телефон:</td>
-          <td class="value">{{ order.client_phone || "—" }}</td>
+          <td class="value">{{ order.client_phone_number || "—" }}</td>
         </tr>
         <tr>
           <td class="label">Дата создания:</td>
@@ -80,10 +80,6 @@ h3 {
 .info-table tr:not(:last-child) {
   border-bottom: 1px solid rgba(77, 72, 71, 0.1);
 }
-
-/* .info-table td {
-  padding: 0.75rem 0;
-} */
 
 .label {
   font-size: 0.9rem;

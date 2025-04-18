@@ -91,7 +91,7 @@ const isAdmin = computed(() => store.getters["auth/isAdmin"]);
 
 const route = useRoute();
 const router = useRouter();
-const orderId = route.params.id;
+const orderId = Number(route.params.id);
 const isEditModalOpen = ref(false);
 
 const fetchMeasurements = async () => {

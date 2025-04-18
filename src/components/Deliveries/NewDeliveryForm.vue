@@ -25,6 +25,15 @@
           <label>Дата поставки</label>
           <input v-model="formData.delivery_date" type="date" required />
         </div>
+
+        <div class="form-group">
+          <label>Номер поставки (из накладной)</label>
+          <input
+            v-model="formData.delivery_number"
+            placeholder="Введите номер из накладной"
+            required
+          />
+        </div>
       </div>
 
       <div class="form-group">
@@ -209,6 +218,7 @@ const newMaterial = ref({
 const formData = ref({
   supplier_id: "",
   delivery_date: new Date().toISOString().split("T")[0],
+  delivery_number: "",
   document_path: "",
   materials: [],
 });
@@ -338,6 +348,7 @@ const handleSubmit = async () => {
     const deliveryData = {
       supplier_id: formData.value.supplier_id,
       delivery_date: formData.value.delivery_date,
+      delivery_number: formData.value.delivery_number,
       materials: formData.value.materials.map((m) => ({
         material_name: m.material_name,
         type: m.type,

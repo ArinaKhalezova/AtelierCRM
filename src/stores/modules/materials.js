@@ -1,4 +1,4 @@
-import api from "@/services/api/materials"; 
+import api from "@/services/api/materials";
 
 export default {
   namespaced: true,

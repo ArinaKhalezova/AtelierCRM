@@ -73,9 +73,18 @@ router.get("/check", async (req, res) => {
 // Получение всех материалов
 router.get("/", async (req, res) => {
   try {
-    const result = await pool.query(
-      "SELECT * FROM materials ORDER BY material_name"
-    );
+    const result = await pool.query(`
+      SELECT 
+        m.*,
+        d.delivery_number,
+        d.delivery_date,
+        s.org_name AS supplier_name
+      FROM materials m
+      JOIN delivery_materials dm ON m.material_id = dm.material_id
+      JOIN deliveries d ON dm.delivery_id = d.delivery_id
+      JOIN suppliers s ON d.supplier_id = s.supplier_id
+      ORDER BY m.material_name
+    `);
     res.json(result.rows);
   } catch (err) {
     console.error("Ошибка получения материалов:", err);

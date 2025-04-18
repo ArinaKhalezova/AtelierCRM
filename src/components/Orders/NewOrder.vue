@@ -5,23 +5,51 @@
     <div class="form">
       <div class="section">
         <h3>Клиент</h3>
-        <select v-model="order.client_id" required class="input">
+        <div class="search-box">
+          <input
+            v-model="clientSearch"
+            placeholder="Поиск клиента..."
+            class="search-input"
+          />
+        </div>
+        <select
+          v-model="order.client_id"
+          required
+          class="input"
+          :class="{ 'input-error': !order.client_id }"
+        >
           <option value="" disabled>Выберите клиента</option>
           <option
-            v-for="client in clients"
+            v-for="client in filteredClients"
             :key="client.client_id"
             :value="client.client_id"
           >
-            {{ client.fullname }} ({{ client.phone }})
+            {{ client.fullname }} ({{ client.phone_number }})
           </option>
         </select>
       </div>
 
       <div class="section">
-        <h3>Услуги</h3>
-        <div class="services">
+        <div class="section-header">
+          <h3>Услуги</h3>
+          <button
+            type="button"
+            @click="toggleServicesVisibility"
+            class="toggle-btn"
+          >
+            {{ showServices ? "Скрыть" : "Показать" }}
+          </button>
+        </div>
+        <div class="search-box">
+          <input
+            v-model="serviceSearch"
+            placeholder="Поиск услуг..."
+            class="search-input"
+          />
+        </div>
+        <div v-if="showServices" class="services">
           <div
-            v-for="service in availableServices"
+            v-for="service in filteredServices"
             :key="service.service_id"
             class="service"
           >
@@ -32,7 +60,11 @@
                 :value="service.service_id"
                 @change="calculateTotal"
               />
-              {{ service.name }} ({{ service.base_cost }} ₽)
+              <span class="service-info">
+                <span class="service-name">{{ service.name }}</span>
+                <span class="service-category">{{ service.category }}</span>
+                <span class="service-price">{{ service.base_cost }} ₽</span>
+              </span>
             </label>
             <input
               type="number"
@@ -48,10 +80,26 @@
       </div>
 
       <div class="section">
-        <h3>Материалы</h3>
-        <div class="materials">
+        <div class="section-header">
+          <h3>Материалы</h3>
+          <button
+            type="button"
+            @click="toggleMaterialsVisibility"
+            class="toggle-btn"
+          >
+            {{ showMaterials ? "Скрыть" : "Показать" }}
+          </button>
+        </div>
+        <div class="search-box">
+          <input
+            v-model="materialSearch"
+            placeholder="Поиск материалов..."
+            class="search-input"
+          />
+        </div>
+        <div v-if="showMaterials" class="materials">
           <div
-            v-for="material in availableMaterials"
+            v-for="material in filteredMaterials"
             :key="material.material_id"
             class="material"
           >
@@ -62,26 +110,32 @@
                 :value="material.material_id"
                 @change="calculateTotal"
               />
-              {{ material.material_name }} ({{ material.cost_per_unit }} ₽ /
-              {{ material.unit }})
+              <span class="material-info">
+                <span class="material-name">{{ material.material_name }}</span>
+                <span class="material-unit"
+                  >{{ material.cost_per_unit }} ₽ / {{ material.unit }}</span
+                >
+              </span>
             </label>
-            <input
-              type="number"
-              v-model.number="materialQuantities[material.material_id]"
-              min="1"
-              :max="material.quantity"
-              @input="calculateTotal"
-              :disabled="!selectedMaterials.includes(material.material_id)"
-              class="quantity"
-              :class="{
-                error:
-                  materialQuantities[material.material_id] > material.quantity,
-              }"
-              title="Доступно: {{ material.quantity }}"
-            />
-            <span class="available">
-              Доступно: {{ material.quantity }} {{ material.unit }}
-            </span>
+            <div class="material-controls">
+              <input
+                type="number"
+                v-model.number="materialQuantities[material.material_id]"
+                min="1"
+                :max="material.quantity"
+                @input="calculateTotal"
+                :disabled="!selectedMaterials.includes(material.material_id)"
+                class="quantity"
+                :class="{
+                  error:
+                    materialQuantities[material.material_id] >
+                    material.quantity,
+                }"
+              />
+              <span class="available">
+                Доступно: {{ material.quantity }} {{ material.unit }}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -122,15 +176,27 @@
         </div>
       </div>
 
-      <div class="total">
-        <h3>Итоговая стоимость: {{ order.total_cost }} ₽</h3>
+      <div class="total-section">
+        <div class="total-details">
+          <div class="total-item" v-if="selectedServices.length > 0">
+            <span>Услуги ({{ selectedServices.length }})</span>
+            <span>{{ servicesCost }} ₽</span>
+          </div>
+          <div class="total-item" v-if="selectedMaterials.length > 0">
+            <span>Материалы ({{ selectedMaterials.length }})</span>
+            <span>{{ materialsCost }} ₽</span>
+          </div>
+        </div>
+        <div class="total-amount">
+          <h3>Итоговая стоимость: {{ order.total_cost }} ₽</h3>
+        </div>
       </div>
 
       <div class="actions">
         <button @click="createOrder" :disabled="!isValid" class="btn primary">
           Создать заказ
         </button>
-        <button @click="cancel" class="btn">Отмена</button>
+        <button @click="cancel" class="btn secondary">Отмена</button>
       </div>
     </div>
   </div>
@@ -159,6 +225,13 @@ const errors = ref({
   fitting_date: "",
 });
 
+// Поиск и фильтрация
+const clientSearch = ref("");
+const serviceSearch = ref("");
+const materialSearch = ref("");
+const showServices = ref(true);
+const showMaterials = ref(true);
+
 const selectedServices = ref([]);
 const selectedMaterials = ref([]);
 const serviceQuantities = ref({});
@@ -184,6 +257,41 @@ const clients = computed(() => store.state.clients.clients);
 const availableServices = computed(() => store.state.services.services);
 const availableMaterials = computed(() => store.state.materials.materials);
 
+// Фильтрация клиентов
+const filteredClients = computed(() => {
+  if (!clientSearch.value) return clients.value;
+  const query = clientSearch.value.toLowerCase();
+  return clients.value.filter(
+    (client) =>
+      client.fullname.toLowerCase().includes(query) ||
+      client.phone_number.toLowerCase().includes(query)
+  );
+});
+
+// Фильтрация услуг
+const filteredServices = computed(() => {
+  if (!serviceSearch.value) return availableServices.value;
+  const query = serviceSearch.value.toLowerCase();
+  return availableServices.value.filter(
+    (service) =>
+      service.name.toLowerCase().includes(query) ||
+      service.category.toLowerCase().includes(query) ||
+      service.base_cost.toString().includes(query)
+  );
+});
+
+// Фильтрация материалов
+const filteredMaterials = computed(() => {
+  if (!materialSearch.value) return availableMaterials.value;
+  const query = materialSearch.value.toLowerCase();
+  return availableMaterials.value.filter(
+    (material) =>
+      material.material_name.toLowerCase().includes(query) ||
+      material.unit.toLowerCase().includes(query) ||
+      material.cost_per_unit.toString().includes(query)
+  );
+});
+
 const minDeadlineDate = computed(() => {
   const date = new Date();
   date.setDate(date.getDate() + 1);
@@ -203,6 +311,36 @@ const isValid = computed(() => {
     hasNoDateErrors
   );
 });
+
+// Стоимость услуг и материалов отдельно
+const servicesCost = computed(() => {
+  return selectedServices.value.reduce((total, serviceId) => {
+    const service = availableServices.value.find(
+      (s) => s.service_id === serviceId
+    );
+    const quantity = serviceQuantities.value[serviceId] || 1;
+    return total + service.base_cost * quantity;
+  }, 0);
+});
+
+const materialsCost = computed(() => {
+  return selectedMaterials.value.reduce((total, materialId) => {
+    const material = availableMaterials.value.find(
+      (m) => m.material_id === materialId
+    );
+    let quantity = materialQuantities.value[materialId] || 1;
+    if (quantity > material.quantity) quantity = material.quantity;
+    return total + material.cost_per_unit * quantity;
+  }, 0);
+});
+
+const toggleServicesVisibility = () => {
+  showServices.value = !showServices.value;
+};
+
+const toggleMaterialsVisibility = () => {
+  showMaterials.value = !showMaterials.value;
+};
 
 // Функция валидации дат
 const validateDates = () => {
@@ -244,34 +382,7 @@ watch(
 );
 
 const calculateTotal = () => {
-  let total = 0;
-
-  // Услуги
-  selectedServices.value.forEach((serviceId) => {
-    const service = availableServices.value.find(
-      (s) => s.service_id === serviceId
-    );
-    const quantity = serviceQuantities.value[serviceId] || 1;
-    total += service.base_cost * quantity;
-  });
-
-  // Материалы с проверкой доступности
-  selectedMaterials.value.forEach((materialId) => {
-    const material = availableMaterials.value.find(
-      (m) => m.material_id === materialId
-    );
-    let quantity = materialQuantities.value[materialId] || 1;
-
-    // Проверяем, чтобы не превышало доступное количество
-    if (quantity > material.quantity) {
-      quantity = material.quantity;
-      materialQuantities.value[materialId] = quantity; // Обновляем значение
-    }
-
-    total += material.cost_per_unit * quantity;
-  });
-
-  order.value.total_cost = total;
+  order.value.total_cost = servicesCost.value + materialsCost.value;
 };
 
 const createOrder = async () => {
@@ -283,7 +394,7 @@ const createOrder = async () => {
       deadline_date: order.value.deadline_date,
       comment: order.value.comment || null,
       total_cost: order.value.total_cost,
-      status: "Новый", // Явно указываем статус
+      status: "Новый",
     };
 
     // 1. Создаем заказ
@@ -354,6 +465,7 @@ const cancel = () => {
 .input-error {
   border-color: var(--danger) !important;
 }
+
 .new-order {
   max-width: 1200px;
   margin: 0 auto;
@@ -390,6 +502,26 @@ h2 {
   font-weight: 600;
 }
 
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  color: var(--teal);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.5rem;
+}
+
+.toggle-btn:hover {
+  text-decoration: underline;
+}
+
 .row {
   display: flex;
   gap: 1.5rem;
@@ -406,6 +538,27 @@ label {
   color: var(--warm-gray);
   font-size: 0.95rem;
   font-weight: 500;
+}
+
+.search-box {
+  margin-bottom: 1rem;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(77, 72, 71, 0.2);
+  border-radius: var(--border-radius);
+  background-color: white;
+  transition: all 0.2s ease;
+  font-size: 0.95rem;
+  color: var(--dark-teal);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(139, 170, 173, 0.2);
 }
 
 .input,
@@ -439,6 +592,9 @@ select:focus {
 .materials {
   display: grid;
   gap: 1rem;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
 }
 
 .service {
@@ -459,17 +615,38 @@ select:focus {
 .service label {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem;
   margin-bottom: 0;
   color: var(--dark-teal);
   cursor: pointer;
   flex-grow: 1;
 }
 
+.service-info {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.service-name {
+  font-weight: 500;
+}
+
+.service-category {
+  font-size: 0.85rem;
+  color: var(--warm-gray);
+}
+
+.service-price {
+  font-weight: 600;
+  color: var(--dark-teal);
+}
+
 .service input[type="checkbox"] {
   width: 18px;
   height: 18px;
   accent-color: var(--teal);
+  flex-shrink: 0;
 }
 
 .material {
@@ -492,17 +669,39 @@ select:focus {
 .material label {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem;
   margin-bottom: 0;
   color: var(--dark-teal);
   cursor: pointer;
   flex-grow: 1;
 }
 
+.material-info {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.material-name {
+  font-weight: 500;
+}
+
+.material-unit {
+  font-size: 0.85rem;
+  color: var(--warm-gray);
+}
+
 .material input[type="checkbox"] {
   width: 18px;
   height: 18px;
   accent-color: var(--teal);
+  flex-shrink: 0;
+}
+
+.material-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 .quantity {
@@ -520,24 +719,47 @@ select:focus {
   opacity: 0.7;
 }
 
+.quantity.error {
+  border-color: var(--danger);
+}
+
 .available {
   font-size: 0.85rem;
   color: var(--warm-gray);
-  width: 100%;
-  margin-top: 0.5rem;
-  padding-left: 2rem;
+  white-space: nowrap;
 }
 
-.total {
+.total-section {
   margin: 2.5rem 0;
   padding: 1.5rem;
   background-color: white;
   border: 1px solid rgba(139, 170, 173, 0.3);
   border-radius: var(--border-radius);
+}
+
+.total-details {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(139, 170, 173, 0.2);
+}
+
+.total-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+  color: var(--warm-gray);
+}
+
+.total-item:last-child {
+  margin-bottom: 0;
+}
+
+.total-amount {
   text-align: right;
 }
 
-.total h3 {
+.total-amount h3 {
   color: var(--dark-teal);
   margin: 0;
   font-size: 1.5rem;
@@ -605,6 +827,11 @@ select:focus {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
+  }
+
+  .material-controls {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .quantity {
