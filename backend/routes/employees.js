@@ -2,6 +2,10 @@ const express = require("express");
 const router = express.Router();
 const pool = require("../config/db");
 const validate = require("../validation");
+const authenticate = require("../middleware/auth");
+const bcrypt = require("bcrypt");
+
+router.use(authenticate);
 
 // Вспомогательная функция для валидации данных сотрудника
 function validateEmployeeData(data, isUpdate = false) {
@@ -315,6 +319,67 @@ router.put("/:id", async (req, res) => {
       success: false,
       message: "Ошибка сервера при обновлении сотрудника",
       error: process.env.NODE_ENV === "development" ? err.message : undefined,
+    });
+  } finally {
+    client.release();
+  }
+});
+
+// Изменение пароля сотрудника (только для старшего администратора)
+router.put("/:id/password", async (req, res) => {
+  console.log("User role:", req.user.role);
+
+  if (req.user?.role !== "Старший администратор") {
+    console.log("Access denied for user:", req.user);
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+
+  const { id } = req.params;
+  const { newPassword } = req.body;
+
+  if (!newPassword || newPassword.length < 6) {
+    return res.status(400).json({
+      error: "Пароль должен содержать минимум 6 символов",
+      details: {
+        password: "Минимум 6 символов",
+      },
+    });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // 1. Находим user_id сотрудника
+    const employee = await client.query(
+      "SELECT user_id FROM employees WHERE employee_id = $1",
+      [id]
+    );
+
+    if (employee.rows.length === 0) {
+      return res.status(404).json({ error: "Сотрудник не найден" });
+    }
+
+    const userId = employee.rows[0].user_id;
+
+    // 2. Хешируем новый пароль
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // 3. Обновляем пароль
+    await client.query(
+      "UPDATE users SET password_hash = $1 WHERE user_id = $2",
+      [hashedPassword, userId]
+    );
+
+    await client.query("COMMIT");
+    res.json({ success: true, message: "Пароль успешно изменен" });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("Password change error:", err);
+    res.status(500).json({
+      error: "Ошибка сервера",
+      details: process.env.NODE_ENV === "development" ? err.message : undefined,
     });
   } finally {
     client.release();

@@ -29,7 +29,6 @@
               <th>Должность</th>
               <th>Телефон</th>
               <th>Email</th>
-              <!-- <th v-if="isSuperAdmin">Пароль</th> -->
               <th class="actions-column">Действия</th>
             </tr>
           </thead>
@@ -43,16 +42,19 @@
               <td data-label="Должность">{{ employee.position }}</td>
               <td data-label="Телефон">{{ employee.phone_number }}</td>
               <td data-label="Email">{{ employee.email || "—" }}</td>
-              <!-- <td v-if="isSuperAdmin">
-                {{ employee.password_hash || "••••••" }}
-              </td> -->
               <td class="actions-column" data-label="Действия">
                 <template v-if="isSuperAdmin">
                   <button @click="openModal(employee)" class="edit-button">
                     Редактировать
                   </button>
                   <button
-                    @click="deleteEmployee(employee.employee_id)"
+                    @click="openPasswordModal(employee)"
+                    class="password-button"
+                  >
+                    Сменить пароль
+                  </button>
+                  <button
+                    @click="confirmDelete(employee.employee_id)"
                     class="delete-button"
                   >
                     Удалить
@@ -66,15 +68,13 @@
       </div>
     </div>
 
-    <!-- Единое модальное окно -->
+    <!-- Модальное окно редактирования/добавления -->
     <Modal :isOpen="isModalOpen" @close="closeModal">
       <div class="modal-form">
         <h3>{{ isEditing ? "Редактирование" : "Добавление" }} сотрудника</h3>
-
         <div v-if="formErrors._general" class="form-error">
           {{ formErrors._general }}
         </div>
-
         <form @submit.prevent="saveEmployee">
           <div class="form-group" :class="{ 'has-error': formErrors.fullname }">
             <label>ФИО:</label>
@@ -166,6 +166,80 @@
         </form>
       </div>
     </Modal>
+
+    <!-- Модальное окно смены пароля -->
+    <Modal :isOpen="isPasswordModalOpen" @close="closePasswordModal">
+      <div class="modal-form">
+        <h3>Смена пароля для {{ selectedEmployee?.fullname }}</h3>
+        <div v-if="passwordError" class="form-error">
+          {{ passwordError }}
+        </div>
+        <form @submit.prevent="confirmPasswordChange">
+          <div class="form-group">
+            <label>Новый пароль:</label>
+            <input
+              v-model="newPassword"
+              type="password"
+              required
+              placeholder="Не менее 6 символов"
+              @input="validatePassword"
+            />
+            <div
+              class="hint"
+              :class="{ 'error-hint': passwordError.details?.password }"
+            >
+              {{ passwordError.details?.password || "Минимум 6 символов" }}
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Подтвердите новый пароль:</label>
+            <input
+              v-model="confirmPassword"
+              type="password"
+              required
+              placeholder="Повторите пароль"
+              @input="validatePassword"
+            />
+            <div
+              class="hint"
+              v-if="newPassword && newPassword !== confirmPassword"
+            >
+              Пароли не совпадают
+            </div>
+          </div>
+          <div class="form-actions">
+            <button
+              type="button"
+              @click="closePasswordModal"
+              class="cancel-button"
+            >
+              Отмена
+            </button>
+            <button
+              type="submit"
+              class="submit-button"
+              :disabled="!isPasswordValid"
+            >
+              Сохранить пароль
+            </button>
+          </div>
+        </form>
+      </div>
+    </Modal>
+
+    <!-- Модальное окно подтверждения -->
+    <Modal :isOpen="isConfirmModalOpen" @close="closeConfirmModal">
+      <div class="confirmation-modal">
+        <h3>Подтверждение</h3>
+        <p>{{ confirmMessage }}</p>
+        <div class="confirmation-buttons">
+          <button @click="executePendingAction" class="confirm-button">
+            Да
+          </button>
+          <button @click="closeConfirmModal" class="cancel-button">Нет</button>
+        </div>
+      </div>
+    </Modal>
   </div>
 </template>
 
@@ -176,9 +250,16 @@ import Modal from "../Modal.vue";
 
 const store = useStore();
 
+// Состояния для таблицы
+const searchQuery = ref("");
+const error = computed(() => store.state.employees.error);
+const employees = computed(() => store.state.employees.employees);
+const jobPositions = computed(() => store.state.employees.jobPositions);
+const isSuperAdmin = computed(() => store.getters["auth/isSuperAdmin"]);
+
+// Состояния для модалок
 const isModalOpen = ref(false);
 const isEditing = ref(false);
-const searchQuery = ref("");
 const formData = ref({
   fullname: "",
   position: "",
@@ -188,64 +269,51 @@ const formData = ref({
 });
 const formErrors = ref({});
 
-const employees = computed(() => store.state.employees.employees);
-const jobPositions = computed(() => store.state.employees.jobPositions);
-const error = computed(() => store.state.employees.error);
+const isPasswordModalOpen = ref(false);
+const selectedEmployee = ref(null);
+const newPassword = ref("");
+const confirmPassword = ref("");
+const passwordError = ref("");
 
-const isSuperAdmin = computed(() => store.getters["auth/isSuperAdmin"]);
+const isConfirmModalOpen = ref(false);
+const confirmMessage = ref("");
+const pendingAction = ref(null);
 
+// Фильтрация сотрудников
 const filteredEmployees = computed(() => {
   if (!searchQuery.value) return employees.value;
-
   const query = searchQuery.value.toLowerCase();
-  return store.state.employees.employees.filter((employee) => {
-    return Object.values(employee).some((value) =>
+  return employees.value.filter((employee) =>
+    Object.values(employee).some((value) =>
       String(value).toLowerCase().includes(query)
-    );
-  });
+    )
+  );
 });
 
+// Методы для работы с сотрудниками
 const openModal = (employee = null) => {
   isEditing.value = !!employee;
-
-  if (employee) {
-    formData.value = {
-      ...employee,
-      password: "", // Пароль не хранится для редактирования
-    };
-  } else {
-    formData.value = {
-      fullname: "",
-      position: "",
-      phone_number: "",
-      email: "",
-      password: "",
-    };
-  }
-
+  formData.value = employee
+    ? { ...employee, password: "" }
+    : { fullname: "", position: "", phone_number: "", email: "", password: "" };
   isModalOpen.value = true;
 };
 
 const closeModal = () => {
   isModalOpen.value = false;
   formData.value = {};
-  formErrors.value = {}; // Сбрасываем ошибки при закрытии
-  store.commit("employees/SET_ERROR", null); // Сбрасываем глобальную ошибку
+  formErrors.value = {};
 };
 
 const saveEmployee = async () => {
   formErrors.value = {};
-
   try {
     const action = isEditing.value
       ? "employees/updateEmployeeAction"
       : "employees/addEmployeeAction";
 
     const payload = isEditing.value
-      ? {
-          id: formData.value.employee_id,
-          employeeData: formData.value,
-        }
+      ? { id: formData.value.employee_id, employeeData: formData.value }
       : formData.value;
 
     const result = await store.dispatch(action, payload);
@@ -261,24 +329,107 @@ const saveEmployee = async () => {
   }
 };
 
-const deleteEmployee = async (employeeId) => {
-  if (confirm("Вы уверены, что хотите удалить этого сотрудника?")) {
-    try {
-      await store.dispatch("employees/deleteEmployeeAction", employeeId);
-      store.commit("employees/SET_ERROR", ""); // Используем мутацию
-    } catch (err) {
-      store.commit("employees/SET_ERROR", "Ошибка при удалении сотрудника"); // Используем мутацию
+// Методы для смены пароля
+const validatePassword = () => {
+  if (newPassword.value.length < 6) {
+    passwordError.value = {
+      message: "",
+      details: { password: "Минимум 6 символов" },
+    };
+  } else if (newPassword.value !== confirmPassword.value) {
+    passwordError.value = {
+      message: "",
+      details: { password: "Пароли не совпадают" },
+    };
+  } else {
+    passwordError.value = { message: "", details: {} };
+  }
+};
+
+const isPasswordValid = computed(() => {
+  return (
+    newPassword.value.length >= 6 && newPassword.value === confirmPassword.value
+  );
+});
+
+const openPasswordModal = (employee) => {
+  selectedEmployee.value = employee;
+  newPassword.value = "";
+  confirmPassword.value = "";
+  passwordError.value = "";
+  isPasswordModalOpen.value = true;
+};
+
+const closePasswordModal = () => {
+  isPasswordModalOpen.value = false;
+};
+
+const changePassword = async () => {
+  if (newPassword.value !== confirmPassword.value) {
+    passwordError.value = "Пароли не совпадают";
+    return;
+  }
+
+  if (newPassword.value.length < 6) {
+    passwordError.value = "Пароль должен содержать минимум 6 символов";
+    return;
+  }
+
+  try {
+    const result = await store.dispatch("employees/changePassword", {
+      employeeId: selectedEmployee.value.employee_id,
+      newPassword: newPassword.value,
+    });
+
+    if (result.success) {
+      closePasswordModal();
+      showConfirmation("Пароль успешно изменен");
+    } else {
+      passwordError.value = result.message;
     }
+  } catch (error) {
+    passwordError.value = "Ошибка при изменении пароля";
   }
 };
 
-const clearError = (field) => {
-  if (formErrors.value[field]) {
-    formErrors.value = { ...formErrors.value, [field]: "" };
-  }
+// Методы подтверждения действий
+const showConfirmation = (message, action = null) => {
+  confirmMessage.value = message;
+  pendingAction.value = action;
+  isConfirmModalOpen.value = true;
 };
 
-// Загрузка данных при монтировании компонента
+const closeConfirmModal = () => {
+  isConfirmModalOpen.value = false;
+  pendingAction.value = null;
+};
+
+const executePendingAction = () => {
+  if (pendingAction.value) pendingAction.value();
+  closeConfirmModal();
+};
+
+const confirmPasswordChange = () => {
+  showConfirmation(
+    "Вы уверены, что хотите изменить пароль этого сотрудника?",
+    changePassword
+  );
+};
+
+const confirmDelete = (employeeId) => {
+  showConfirmation(
+    "Вы уверены, что хотите удалить этого сотрудника?",
+    async () => {
+      try {
+        await store.dispatch("employees/deleteEmployeeAction", employeeId);
+      } catch (err) {
+        store.commit("employees/SET_ERROR", "Ошибка при удалении сотрудника");
+      }
+    }
+  );
+};
+
+// Загрузка данных
 onMounted(async () => {
   await store.dispatch("employees/fetchEmployees");
   await store.dispatch("employees/fetchJobPositions");
@@ -314,6 +465,86 @@ onMounted(async () => {
   font-size: 0.8em;
   display: block;
   margin-top: 4px;
+}
+
+.error-hint {
+  color: #f44336;
+}
+
+.password-button {
+  background-color: var(--warning);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  margin-right: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.password-button:hover {
+  background-color: #e0a800;
+}
+
+.submit-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.cancel-button {
+  background-color: var(--danger);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.confirmation-modal {
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.confirmation-modal h3 {
+  color: var(--dark-teal);
+  margin-bottom: 1rem;
+}
+
+.confirmation-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.confirm-button {
+  background-color: var(--success);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.confirm-button:hover {
+  background-color: #218838;
+}
+
+.password-help {
+  display: block;
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 0.5rem;
 }
 
 .hint {

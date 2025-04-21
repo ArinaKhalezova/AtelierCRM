@@ -10,6 +10,9 @@ export default {
   updateEmployee(id, employeeData) {
     return apiClient.put(`/employees/${id}`, employeeData);
   },
+  changePassword(employeeId, newPassword) {
+    return apiClient.put(`/employees/${employeeId}/password`, { newPassword });
+  },
   deleteEmployee(id) {
     return apiClient.delete(`/employees/${id}`);
   },

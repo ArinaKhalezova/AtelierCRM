@@ -138,6 +138,31 @@ export default {
         };
       }
     },
+    async changePassword({ commit }, { employeeId, newPassword }) {
+      try {
+        const response = await api.changePassword(employeeId, newPassword);
+        commit("SET_ERROR", null);
+        return {
+          success: true,
+          message: response.data.message,
+        };
+      } catch (error) {
+        let message = "Ошибка при изменении пароля";
+        let details = {};
+
+        if (error.response) {
+          message = error.response.data.error || message;
+          details = error.response.data.details || {};
+        }
+
+        commit("SET_ERROR", { message, details });
+        return {
+          success: false,
+          message,
+          details,
+        };
+      }
+    },
     async deleteEmployeeAction({ commit }, id) {
       try {
         await api.deleteEmployee(id);
