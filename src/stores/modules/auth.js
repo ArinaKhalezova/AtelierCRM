@@ -13,12 +13,12 @@ export default {
     },
     SET_TOKEN(state, token) {
       state.token = token;
-      localStorage.setItem("authToken", token); // Сохраняем в localStorage
+      localStorage.setItem("authToken", token);
     },
     CLEAR_AUTH(state) {
       state.user = null;
       state.token = null;
-      localStorage.removeItem("authToken"); // Очищаем localStorage
+      localStorage.removeItem("authToken");
     },
     SET_ERROR(state, error) {
       state.error = error;
@@ -29,11 +29,12 @@ export default {
       try {
         const response = await api.login(credentials);
         commit("SET_TOKEN", response.data.token);
-        commit("SET_USER", response.data.user); // Если бэкенд возвращает user
+        commit("SET_USER", response.data.user);
         commit("SET_ERROR", null);
         return response.data;
       } catch (error) {
-        commit("SET_ERROR", "Ошибка входа");
+        const message = error.response?.data?.error || "Ошибка входа";
+        commit("SET_ERROR", message);
         throw error;
       }
     },
@@ -51,7 +52,7 @@ export default {
     },
     async logout({ commit }) {
       commit("CLEAR_AUTH");
-      await api.logout(); // Если есть API для логаута
+      await api.logout();
     },
     async checkAuth({ commit, state }) {
       try {

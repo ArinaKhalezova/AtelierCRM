@@ -14,14 +14,15 @@ async function initializeSuperAdmin() {
     );
 
     if (rows.length === 0) {
-      // Создаем супер-админа
+      // Хешируем пароль
       const hashedPassword = await bcrypt.hash("admin", 10);
 
+      // Создаем супер-админа
       const user = await client.query(
         `INSERT INTO users 
-   (fullname, phone_number, email, password_hash, role) 
-   VALUES ($1, $2, $3, $4, $5) 
-   RETURNING user_id`,
+         (fullname, phone_number, email, password_hash, role) 
+         VALUES ($1, $2, $3, $4, $5) 
+         RETURNING user_id`,
         [
           "Супер Админ",
           "+70000000000",
@@ -31,6 +32,7 @@ async function initializeSuperAdmin() {
         ]
       );
 
+      // Добавляем в таблицу сотрудников
       await client.query(
         `INSERT INTO employees 
          (user_id, position) 
@@ -38,13 +40,18 @@ async function initializeSuperAdmin() {
         [user.rows[0].user_id, "Старший администратор"]
       );
 
-      console.log("Супер-админ создан");
+      console.log(
+        "Супер-админ успешно создан. Email: admin@atelier.ru, пароль: admin"
+      );
+    } else {
+      console.log("Супер-админ уже существует в системе");
     }
 
     await client.query("COMMIT");
   } catch (err) {
     await client.query("ROLLBACK");
-    console.error("Ошибка инициализации:", err);
+    console.error("Ошибка инициализации супер-админа:", err);
+    throw err; // Пробрасываем ошибку дальше
   } finally {
     client.release();
   }

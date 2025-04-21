@@ -45,26 +45,45 @@ router.get("/me", authenticateToken, async (req, res) => {
 // Логин
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
-  console.log("Login attempt for:", email, "with password:", password);
+
+  // Валидация входных данных
+  if (!email || !password) {
+    return res.status(400).json({ error: "Email и пароль обязательны" });
+  }
 
   try {
-    // Временная заглушка - авторизуем любого существующего пользователя
     const user = await pool.query(
       "SELECT * FROM users WHERE email = $1 LIMIT 1",
       [email]
     );
 
     if (user.rows.length === 0) {
-      console.log("User not found");
-      return res.status(401).json({ error: "Пользователь не найден" });
+      return res.status(401).json({
+        error: "Пользователь с таким email не найден",
+        field: "email",
+      });
     }
 
-    console.log("Found user:", user.rows[0].email);
+    // Проверка пароля
+    const validPassword = await bcrypt.compare(
+      password,
+      user.rows[0].password_hash
+    );
 
-    // Игнорируем проверку пароля для теста
+    if (!validPassword) {
+      return res.status(401).json({
+        error: "Неверный пароль",
+        field: "password",
+      });
+    }
+
+    // Генерация токена
     const token = jwt.sign(
-      { userId: user.rows[0].user_id, role: user.rows[0].role },
-      "my_super_secret_key_at_least_32_chars",
+      {
+        userId: user.rows[0].user_id,
+        role: user.rows[0].role,
+      },
+      process.env.JWT_SECRET || "my_super_secret_key_at_least_32_chars",
       { expiresIn: "1h" }
     );
 
@@ -72,13 +91,17 @@ router.post("/login", async (req, res) => {
       token,
       user: {
         id: user.rows[0].user_id,
+        fullname: user.rows[0].fullname,
         email: user.rows[0].email,
         role: user.rows[0].role,
       },
     });
   } catch (err) {
     console.error("Login error:", err);
-    res.status(500).json({ error: "Server error", details: err.message });
+    res.status(500).json({
+      error: "Внутренняя ошибка сервера",
+      details: process.env.NODE_ENV === "development" ? err.message : undefined,
+    });
   }
 });
 

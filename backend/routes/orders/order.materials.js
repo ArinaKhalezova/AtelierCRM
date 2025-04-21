@@ -122,6 +122,51 @@ router.post("/:id/materials", async (req, res) => {
   }
 });
 
+router.put("/:orderId/materials/:materialId", async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const { quantity } = req.body;
+
+    // 1. Получаем текущее количество
+    const current = await client.query(
+      `SELECT material_id, quantity 
+       FROM order_materials 
+       WHERE order_material_id = $1`,
+      [req.params.materialId]
+    );
+
+    // 2. Вычисляем разницу
+    const diff = quantity - current.rows[0].quantity;
+
+    // 3. Обновляем запись
+    const updateResult = await client.query(
+      `UPDATE order_materials 
+       SET quantity = $1 
+       WHERE order_material_id = $2 
+       RETURNING *`,
+      [quantity, req.params.materialId]
+    );
+
+    // 4. Обновляем склад
+    await client.query(
+      `UPDATE materials 
+       SET quantity = quantity - $1 
+       WHERE material_id = $2`,
+      [diff, current.rows[0].material_id]
+    );
+
+    await client.query("COMMIT");
+    res.json(updateResult.rows[0]);
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  } finally {
+    client.release();
+  }
+});
+
 router.delete(
   "/:orderId/materials/:materialId",
   authenticate,

@@ -1,9 +1,18 @@
 const initializeSuperAdmin = require("./init");
 const app = require("./app");
-const port = 3000;
+const port = process.env.PORT || 3000;
 require("dotenv").config();
 
-app.listen(port, async () => {
-  await initializeSuperAdmin(); // Добавьте эту строку
-  console.log(`Server is running on port ${port}`);
-});
+async function startServer() {
+  try {
+    await initializeSuperAdmin();
+    app.listen(port, () => {
+      console.log(`Server is running on port ${port}`);
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error);
+    process.exit(1);
+  }
+}
+
+startServer();

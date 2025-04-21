@@ -44,33 +44,20 @@ router.post("/:id/services", async (req, res) => {
   }
 });
 
-// Редактирование заказа
-router.put("/:id", async (req, res) => {
-  const { id } = req.params;
-  const { deadline_date, comment } = req.body; 
-
+router.put("/:orderId/services/:serviceId", async (req, res) => {
   try {
+    const { quantity } = req.body;
     const { rows } = await pool.query(
-      `UPDATE orders 
-       SET 
-         deadline_date = $1,
-         comment = $2
-       WHERE order_id = $3
+      `UPDATE order_services 
+       SET quantity = $1
+       WHERE order_service_id = $2
        RETURNING *`,
-      [deadline_date, comment, id]
+      [quantity, req.params.serviceId]
     );
-
-    if (rows.length === 0) {
-      return res.status(404).json({ error: "Заказ не найден" });
-    }
-
     res.json(rows[0]);
   } catch (err) {
-    console.error("Error updating order:", err);
-    res.status(500).json({
-      error: "Ошибка при обновлении заказа",
-      details: err.message,
-    });
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 

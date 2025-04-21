@@ -11,7 +11,9 @@
             type="email"
             required
             placeholder="Введите ваш email"
+            :class="{ 'input-error': errorField === 'email' }"
           />
+          <p v-if="errorField === 'email'" class="error-message">{{ error }}</p>
         </div>
         <div class="form-group">
           <label for="password">Пароль</label>
@@ -21,14 +23,13 @@
             type="password"
             required
             placeholder="Введите пароль"
+            :class="{ 'input-error': errorField === 'password' }"
           />
+          <p v-if="errorField === 'password'" class="error-message">
+            {{ error }}
+          </p>
         </div>
         <button type="submit" class="login-btn">Войти</button>
-        <p class="register-link">
-          Нет аккаунта?
-          <router-link to="/register">Зарегистрироваться</router-link>
-        </p>
-        <p v-if="error" class="error-message">{{ error }}</p>
       </form>
     </div>
   </div>
@@ -44,23 +45,35 @@ export default {
     const email = ref("");
     const password = ref("");
     const error = ref("");
+    const errorField = ref("");
     const router = useRouter();
     const store = useStore();
 
     const handleLogin = async () => {
       try {
         error.value = "";
+        errorField.value = "";
+
         await store.dispatch("auth/login", {
           email: email.value,
           password: password.value,
         });
+
         router.push("/");
       } catch (err) {
-        error.value = store.getters["auth/error"] || "Ошибка при входе";
+        const authError = store.getters["auth/error"] || "Ошибка при входе";
+        error.value = authError;
+
+        // Определяем какое поле вызвало ошибку
+        if (authError.includes("email")) {
+          errorField.value = "email";
+        } else if (authError.includes("пароль")) {
+          errorField.value = "password";
+        }
       }
     };
 
-    return { email, password, error, handleLogin };
+    return { email, password, error, errorField, handleLogin };
   },
 };
 </script>
@@ -72,6 +85,16 @@ export default {
   align-items: center;
   height: 100vh;
   background-color: #f5f5f5;
+}
+
+.input-error {
+  border-color: #e74c3c !important;
+}
+
+.error-message {
+  color: #e74c3c;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
 }
 
 .login-card {

@@ -80,6 +80,21 @@ export default {
     SET_SERVICE_HISTORY(state, history) {
       state.serviceHistory = history;
     },
+    UPDATE_ORDER_SERVICE(state, updatedService) {
+      state.orderServices = state.orderServices.map((s) =>
+        s.order_service_id === updatedService.order_service_id
+          ? updatedService
+          : s
+      );
+    },
+
+    UPDATE_ORDER_MATERIAL(state, updatedMaterial) {
+      state.orderMaterials = state.orderMaterials.map((m) =>
+        m.order_material_id === updatedMaterial.order_material_id
+          ? updatedMaterial
+          : m
+      );
+    },
   },
   actions: {
     // Основной action для загрузки всех данных заказа
@@ -168,10 +183,38 @@ export default {
       }
     },
 
+    async updateOrderService({ commit }, { orderId, serviceId, quantity }) {
+      try {
+        const response = await apiClient.patch(
+          `/orders/${orderId}/services/${serviceId}`,
+          { quantity }
+        );
+        commit("UPDATE_ORDER_SERVICE", response.data);
+        return response.data;
+      } catch (error) {
+        commit("SET_ERROR", error.message);
+        throw error;
+      }
+    },
+
     async addMaterialToOrder({ commit }, { orderId, material }) {
       try {
         const response = await api.addOrderMaterial(orderId, material);
         commit("ADD_ORDER_MATERIAL", response.data);
+        return response.data;
+      } catch (error) {
+        commit("SET_ERROR", error.message);
+        throw error;
+      }
+    },
+
+    async updateOrderMaterial({ commit }, { orderId, materialId, quantity }) {
+      try {
+        const response = await apiClient.patch(
+          `/orders/${orderId}/materials/${materialId}`,
+          { quantity }
+        );
+        commit("UPDATE_ORDER_MATERIAL", response.data);
         return response.data;
       } catch (error) {
         commit("SET_ERROR", error.message);
