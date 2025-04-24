@@ -49,6 +49,18 @@ router.post("/:id/materials", async (req, res) => {
       });
     }
 
+    const orderCheck = await pool.query(
+      "SELECT use_own_materials FROM orders WHERE order_id = $1",
+      [req.params.id]
+    );
+
+    if (orderCheck.rows[0]?.use_own_materials) {
+      return res.status(400).json({
+        error: "Невозможно добавить материалы",
+        details: "Заказ использует материалы клиента",
+      });
+    }
+
     // 1. Проверка доступности материала
     const materialCheck = await client.query(
       `SELECT quantity, material_name FROM materials 

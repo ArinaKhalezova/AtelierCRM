@@ -72,7 +72,7 @@
 
     <div class="content-grid">
       <OverdueOrdersAlert />
-      <EmployeeWorkload />
+      <EmployeeWorkload v-if="isAdmin" />
       <Timeline />
       <Gant />
     </div>
@@ -96,6 +96,8 @@ const currentDate = new Date().toLocaleDateString("ru-RU", {
   month: "long",
   year: "numeric",
 });
+
+const isAdmin = computed(() => store.getters["auth/isAdmin"]);
 
 const activeOrdersCount = computed(
   () => store.getters["orders/activeOrdersCount"]

@@ -57,29 +57,25 @@ router.get("/status-counts", async (req, res) => {
 
 router.get("/assigned-to-me", authenticate, async (req, res) => {
   try {
-    console.log("Authenticated user:", req.user);
-
     const userId = req.user.user_id;
+
+    // 1. Получаем employee_id пользователя
     const { rows: employeeRows } = await pool.query(
       "SELECT employee_id FROM employees WHERE user_id = $1",
       [userId]
     );
-    console.log("User ID:", userId);
 
+    // 2. Проверяем что пользователь является сотрудником
     if (employeeRows.length === 0) {
-      return res.status(403).json({ error: "Доступ только для сотрудников" });
+      return res.status(403).json({
+        error: "Доступ только для зарегистрированных сотрудников",
+        details: `User ${userId} не привязан к сотруднику`,
+      });
     }
 
-    console.log("Employee query result:", employeeQuery.rows);
+    const employeeId = employeeRows[0].employee_id;
 
-    if (employeeQuery.rows.length === 0) {
-      console.log("Employee not found for user:", userId);
-      return res.status(404).json({ error: "Сотрудник не найден" });
-    }
-
-    const employeeId = employeeQuery.rows[0].employee_id;
-    console.log("Employee ID:", employeeId);
-
+    // 3. Получаем заказы сотрудника
     const { rows } = await pool.query(
       `SELECT 
         o.order_id,
@@ -100,23 +96,30 @@ router.get("/assigned-to-me", authenticate, async (req, res) => {
        ORDER BY o.created_at DESC`,
       [employeeId]
     );
-    console.log("Found orders:", rows.length);
 
-    res.json(
-      rows.map((row) => ({
-        ...row,
-        created_at: new Date(row.created_at).toISOString(),
-        deadline_date: row.deadline_date
-          ? new Date(row.deadline_date).toISOString()
-          : null,
-      }))
-    );
+    // 4. Форматируем даты
+    const formatted = rows.map((row) => ({
+      ...row,
+      created_at: new Date(row.created_at).toISOString(),
+      deadline_date: row.deadline_date
+        ? new Date(row.deadline_date).toISOString()
+        : null,
+    }));
+
+    res.json(formatted);
   } catch (err) {
-    console.error("Ошибка в /orders/assigned-to-me:", err);
-    res.status(500).json({
-      error: "Ошибка сервера",
-      details: err.message,
+    console.error("Ошибка в /orders/assigned-to-me:", {
+      error: err.message,
+      user: req.user,
       stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+    });
+
+    res.status(500).json({
+      error: "Ошибка получения данных",
+      details:
+        process.env.NODE_ENV === "development"
+          ? err.message
+          : "Обратитесь к администратору",
     });
   }
 });
@@ -200,8 +203,28 @@ router.get("/:id", async (req, res) => {
 
 // Создание заказа
 router.post("/", async (req, res) => {
-  const { client_id, fitting_date, deadline_date, comment, total_cost } =
-    req.body;
+  // 1. Добавляем use_own_materials в деструктуризацию
+  const {
+    client_id,
+    fitting_date,
+    deadline_date,
+    comment,
+    total_cost,
+    use_own_materials,
+  } = req.body;
+
+  // 2. Добавляем проверку на конфликт материалов
+  if (
+    use_own_materials &&
+    req.body.materials &&
+    req.body.materials.length > 0
+  ) {
+    return res.status(400).json({
+      error: "Конфликт материалов",
+      details:
+        "Нельзя использовать свои материалы и материалы ателье одновременно",
+    });
+  }
 
   if (!client_id || !total_cost) {
     return res.status(400).json({ error: "Необходимы client_id и total_cost" });
@@ -211,31 +234,37 @@ router.post("/", async (req, res) => {
   try {
     await client.query("BEGIN");
 
-    // Генерация tracking_number
-    const tracking_number = await generateDateBasedCode(client);
-
-    // Создаем заказ
+    // 3. Добавляем use_own_materials в INSERT-запрос
     const { rows } = await client.query(
       `INSERT INTO orders 
-       (client_id, tracking_number, status, fitting_date, deadline_date, comment, total_cost, created_at) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW()) RETURNING *`,
+       (client_id, tracking_number, status, fitting_date, deadline_date, 
+        comment, total_cost, use_own_materials, created_at) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW()) RETURNING *`,
       [
         client_id,
-        tracking_number,
+        await generateDateBasedCode(client),
         "Новый",
         fitting_date || null,
         deadline_date,
         comment || null,
         total_cost,
+        use_own_materials || false, // 4. Значение по умолчанию
       ]
     );
 
-    // Если указана дата примерки - создаем запись в fittings
+    // 5. Добавляем проверку при создании примерки
     if (fitting_date) {
       await client.query(
         `INSERT INTO fittings (order_id, fitting_date, result, notes)
          VALUES ($1, $2, $3, $4)`,
-        [rows[0].order_id, fitting_date, "Запланирована", "Основная примерка"]
+        [
+          rows[0].order_id,
+          fitting_date,
+          "Запланирована",
+          use_own_materials
+            ? "Основная примерка (материалы клиента)"
+            : "Основная примерка",
+        ]
       );
     }
 
@@ -243,11 +272,14 @@ router.post("/", async (req, res) => {
     res.status(201).json(rows[0]);
   } catch (err) {
     await client.query("ROLLBACK");
-    console.error("Error creating order:", err);
+    console.error("Error creating order:", {
+      error: err.message,
+      body: req.body,
+      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+    });
     res.status(500).json({
       error: "Ошибка при создании заказа",
       details: err.message,
-      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
     });
   } finally {
     client.release();

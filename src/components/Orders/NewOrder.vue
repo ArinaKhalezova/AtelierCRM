@@ -27,6 +27,18 @@
             {{ client.fullname }} ({{ client.phone_number }})
           </option>
         </select>
+        <div class="section">
+          <div class="group">
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                v-model="order.use_own_materials"
+                @change="handleOwnMaterialsChange"
+              />
+              <span>Клиент использует свои материалы</span>
+            </label>
+          </div>
+        </div>
       </div>
 
       <div class="section">
@@ -90,58 +102,66 @@
             {{ showMaterials ? "Скрыть" : "Показать" }}
           </button>
         </div>
-        <div class="search-box">
-          <input
-            v-model="materialSearch"
-            placeholder="Поиск материалов..."
-            class="search-input"
-          />
+
+        <div v-if="order.use_own_materials" class="notification">
+          ⓘ Используются материалы клиента
         </div>
-        <div v-if="showMaterials" class="materials">
-          <div
-            v-for="material in filteredMaterials"
-            :key="material.material_id"
-            class="material"
-          >
-            <label>
-              <input
-                type="checkbox"
-                v-model="selectedMaterials"
-                :value="material.material_id"
-                @change="calculateTotal"
-              />
-              <span class="material-info">
-                <span class="material-name">{{ material.material_name }}</span>
-                <span class="material-unit"
-                  >{{ material.cost_per_unit }} ₽ / {{ material.unit }}</span
-                >
-              </span>
-            </label>
-            <div class="material-controls">
-              <input
-                type="number"
-                v-model.number="materialQuantities[material.material_id]"
-                min="1"
-                :max="material.quantity"
-                @input="calculateTotal"
-                :disabled="!selectedMaterials.includes(material.material_id)"
-                class="quantity"
-                :class="{
-                  error:
-                    materialQuantities[material.material_id] >
-                    material.quantity,
-                }"
-              />
-              <span class="available">
-                Доступно: {{ material.quantity }} {{ material.unit }}
-              </span>
+
+        <div v-else>
+          <div class="search-box">
+            <input
+              v-model="materialSearch"
+              placeholder="Поиск материалов..."
+              class="search-input"
+            />
+          </div>
+          <div v-if="showMaterials" class="materials">
+            <div
+              v-for="material in filteredMaterials"
+              :key="material.material_id"
+              class="material"
+            >
+              <label>
+                <input
+                  type="checkbox"
+                  v-model="selectedMaterials"
+                  :value="material.material_id"
+                  @change="calculateTotal"
+                />
+                <span class="material-info">
+                  <span class="material-name">{{
+                    material.material_name
+                  }}</span>
+                  <span class="material-unit"
+                    >{{ material.cost_per_unit }} ₽ / {{ material.unit }}</span
+                  >
+                </span>
+              </label>
+              <div class="material-controls">
+                <input
+                  type="number"
+                  v-model.number="materialQuantities[material.material_id]"
+                  min="1"
+                  :max="material.quantity"
+                  @input="calculateTotal"
+                  :disabled="!selectedMaterials.includes(material.material_id)"
+                  class="quantity"
+                  :class="{
+                    error:
+                      materialQuantities[material.material_id] >
+                      material.quantity,
+                  }"
+                />
+                <span class="available">
+                  Доступно: {{ material.quantity }} {{ material.unit }}
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       <div class="section">
-        <h3>Информация о заказе</h3>
         <div class="row">
           <div class="group">
             <label>Дата примерки (необязательно)</label>
@@ -218,6 +238,7 @@ const order = ref({
   status: "Новый",
   total_cost: 0,
   created_at: new Date().toISOString().split("T")[0],
+  use_own_materials: false,
 });
 
 const errors = ref({
@@ -256,6 +277,14 @@ onMounted(async () => {
 const clients = computed(() => store.state.clients.clients);
 const availableServices = computed(() => store.state.services.services);
 const availableMaterials = computed(() => store.state.materials.materials);
+
+const handleOwnMaterialsChange = () => {
+  if (order.value.use_own_materials) {
+    selectedMaterials.value = [];
+    materialQuantities.value = {};
+  }
+  calculateTotal();
+};
 
 // Фильтрация клиентов
 const filteredClients = computed(() => {
@@ -299,16 +328,14 @@ const minDeadlineDate = computed(() => {
 });
 
 const isValid = computed(() => {
-  const hasServicesOrMaterials =
-    selectedServices.value.length > 0 || selectedMaterials.value.length > 0;
-  const hasNoDateErrors =
-    !errors.value.deadline_date && !errors.value.fitting_date;
+  const hasServices = selectedServices.value.length > 0;
+  const hasMaterials =
+    !order.value.use_own_materials && selectedMaterials.value.length > 0;
 
   return (
     order.value.client_id &&
     order.value.deadline_date &&
-    hasServicesOrMaterials &&
-    hasNoDateErrors
+    (hasServices || hasMaterials)
   );
 });
 
@@ -324,6 +351,8 @@ const servicesCost = computed(() => {
 });
 
 const materialsCost = computed(() => {
+  if (order.value.use_own_materials) return 0;
+
   return selectedMaterials.value.reduce((total, materialId) => {
     const material = availableMaterials.value.find(
       (m) => m.material_id === materialId
@@ -476,6 +505,18 @@ h2 {
   color: var(--dark-teal);
   margin-bottom: 2rem;
   font-size: 1.75rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.checkbox-label input {
+  width: 18px;
+  height: 18px;
 }
 
 .form {
