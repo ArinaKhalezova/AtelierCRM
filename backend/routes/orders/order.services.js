@@ -1,9 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("../../config/db");
+const authenticate = require("../../middleware/auth");
 
 // Получение услуг заказа
-router.get("/:id/services", async (req, res) => {
+router.get("/:id/services", authenticate, async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT os.*, s.name as service_name, s.base_cost 

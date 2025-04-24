@@ -11,7 +11,7 @@
           <input v-model="searchQuery" placeholder="Поиск сотрудников..." />
         </div>
         <button
-          @click="openModal"
+          @click="openModal()"
           class="add-employee-button"
           v-if="isSuperAdmin"
         >
@@ -292,6 +292,7 @@ const filteredEmployees = computed(() => {
 
 // Методы для работы с сотрудниками
 const openModal = (employee = null) => {
+  console.log("isEditing will be:", !!employee);
   isEditing.value = !!employee;
   formData.value = employee
     ? { ...employee, password: "" }
@@ -303,6 +304,7 @@ const closeModal = () => {
   isModalOpen.value = false;
   formData.value = {};
   formErrors.value = {};
+  isEditing.value = false;
 };
 
 const saveEmployee = async () => {
@@ -427,6 +429,13 @@ const confirmDelete = (employeeId) => {
       }
     }
   );
+};
+
+const clearError = (field) => {
+  if (formErrors.value[field]) {
+    delete formErrors.value[field];
+    formErrors.value = { ...formErrors.value };
+  }
 };
 
 // Загрузка данных

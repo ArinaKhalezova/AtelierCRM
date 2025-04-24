@@ -37,11 +37,17 @@ export default {
   actions: {
     async fetchDeliveries({ commit }) {
       commit("SET_LOADING", true);
+      commit("SET_ERROR", null);
       try {
         const response = await api.getDeliveries();
         commit("SET_DELIVERIES", response.data);
       } catch (error) {
-        commit("SET_ERROR", error.message);
+        const message = error.response?.data?.error || error.message;
+        commit("SET_ERROR", message);
+        console.error("Fetch deliveries error:", {
+          error: message,
+          details: error.response?.data?.details,
+        });
       } finally {
         commit("SET_LOADING", false);
       }

@@ -106,7 +106,7 @@
       </button>
     </div>
 
-    <Modal :isOpen="showMaterialModal" @close="closeMaterialModal">
+    <Modal :isOpen="showMaterialModal" @close="closeMaterialModal" size="lg">
       <div class="modal-container">
         <div class="modal-header">
           <h3>Добавить материал</h3>
@@ -588,12 +588,8 @@ small {
 .modal-container {
   display: flex;
   flex-direction: column;
-  max-height: 90vh;
-  width: 600px;
-  max-width: 95vw;
-  background: white;
-  border-radius: var(--border-radius);
-  overflow: hidden;
+  height: 100%;
+  width: 100%;
 }
 
 .modal-scrollable-content {
@@ -610,6 +606,10 @@ small {
 .modal-header {
   padding: 1.5rem;
   border-bottom: var(--border);
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 1;
 }
 
 .modal-scrollable {
@@ -635,7 +635,10 @@ small {
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  flex-shrink: 0;
+  background: white;
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
 }
 
 @media (max-width: 768px) {

@@ -7,7 +7,7 @@
         <div class="search-box">
           <input v-model="searchQuery" placeholder="Поиск клиентов..." />
         </div>
-        <button @click="openModal" class="add-client-button">
+        <button @click="openModal()" class="add-client-button">
           <span class="plus-icon">+</span> Добавить клиента
         </button>
       </div>

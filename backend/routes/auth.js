@@ -23,6 +23,24 @@ const authenticateToken = (req, res, next) => {
   );
 };
 
+router.post("/refresh", (req, res) => {
+  const refreshToken = req.body.refreshToken;
+
+  if (!refreshToken) return res.sendStatus(401);
+
+  jwt.verify(refreshToken, "refresh_secret", (err, user) => {
+    if (err) return res.sendStatus(403);
+
+    const newToken = jwt.sign(
+      { userId: user.userId, role: user.role },
+      "my_super_secret_key",
+      { expiresIn: "15m" }
+    );
+
+    res.json({ token: newToken });
+  });
+});
+
 // Проверка авторизации
 router.get("/me", authenticateToken, async (req, res) => {
   try {

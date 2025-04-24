@@ -1,0 +1,235 @@
+-------------------------------
+-- ENUM-типы для статических данных
+-------------------------------
+
+-- Роли пользователей
+CREATE TYPE user_role AS ENUM (
+    'Администратор',
+    'Работник'
+);
+ALTER TYPE user_role ADD VALUE 'Старший администратор';
+
+-- Типы материалов
+CREATE TYPE material_type AS ENUM (
+    'Ткань',
+    'Нитки',
+    'Фурнитура',
+    'Другое'
+);
+
+-- Категории услуг
+CREATE TYPE service_category AS ENUM (
+    'Пошив мужской одежды',
+    'Пошив женской одежды',
+    'Ремонт одежды',
+    'Пошив штор',
+    'Пошив детской одежды',
+    'Другое'
+);
+
+-- Статусы услуг
+CREATE TYPE order_service_status AS ENUM (
+    'Новый',
+    'Создание эскиза',
+    'Изготовление выкройки',
+    'На кройке',
+    'На пошиве',
+    'На примерке',
+    'Доработка и отделка',
+    'Исправляется',
+    'В работе',
+    'Готов'
+);
+
+-- Статусы заказа
+CREATE TYPE order_status AS ENUM (
+    'Новый',
+    'Принят',
+    'В работе',
+    'Готов',
+    'Выполнен',
+    'Отменен'
+);
+
+-- Должности сотрудников
+CREATE TYPE job_position AS ENUM (
+    'Швея',
+    'Закройщик',
+    'Старший администратор',
+    'Администратор',
+    'Модельер',
+    'Технолог'
+);
+
+-- Единицы измерения материалов
+CREATE TYPE material_unit AS ENUM (
+    'Метр',
+    'Штука',
+    'Упаковка',
+    'Комплект',
+    'Рулон'
+);
+
+-------------------------------
+-- Основные таблицы
+-------------------------------
+
+-- Пользователи системы
+CREATE TABLE users (
+    user_id bigserial PRIMARY KEY,
+    fullname varchar(50) NOT NULL,
+    phone_number varchar(20) NOT NULL UNIQUE,
+    email varchar(40) UNIQUE,
+    password_hash varchar(255) NOT NULL,
+    role user_role NOT NULL,
+    registration_date timestamp DEFAULT current_timestamp
+);
+
+-- Клиенты
+CREATE TABLE clients (
+    client_id bigserial PRIMARY KEY,
+    fullname varchar(50) NOT NULL,
+    phone_number varchar(20) NOT NULL UNIQUE,
+    email varchar(40) UNIQUE
+);
+
+-- Услуги ателье
+CREATE TABLE services (
+    service_id bigserial PRIMARY KEY,
+    category service_category NOT NULL,
+    name varchar(100) NOT NULL,
+    description text,
+    base_cost decimal NOT NULL
+);
+
+-- Материалы
+CREATE TABLE materials (
+    material_id bigserial PRIMARY KEY,
+    material_name varchar(50) NOT NULL,
+    type material_type NOT NULL,
+    unit material_unit NOT NULL,
+    quantity int NOT NULL CHECK (quantity >= 0),
+    cost_per_unit decimal NOT NULL
+);
+
+-- Поставщики
+CREATE TABLE suppliers (
+    supplier_id bigserial PRIMARY KEY,
+    org_name varchar(50) NOT NULL,
+    phone_number varchar(20) NOT NULL,
+    address varchar(100),
+    inn varchar(20) NOT NULL UNIQUE
+);
+
+-- Поставки материалов
+CREATE TABLE deliveries (
+    delivery_id bigserial PRIMARY KEY,
+    supplier_id bigint NOT NULL REFERENCES suppliers(supplier_id),
+    delivery_date date NOT NULL,
+    document_path varchar(255)
+);
+ALTER TABLE deliveries 
+ADD COLUMN delivery_number VARCHAR(20);
+ALTER TABLE deliveries 
+  ADD COLUMN document_name VARCHAR(255),
+  ADD COLUMN document_data BYTEA;
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+ 
+-- Материалы в поставках
+CREATE TABLE delivery_materials (
+    delivery_material_id bigserial PRIMARY KEY,
+    delivery_id bigint NOT NULL REFERENCES deliveries(delivery_id),
+    material_id bigint NOT NULL REFERENCES materials(material_id),
+    quantity int NOT NULL CHECK (quantity > 0),
+    cost_per_unit decimal NOT NULL
+);
+
+-- Сотрудники
+CREATE TABLE employees (
+    employee_id bigserial PRIMARY KEY,
+    user_id bigint NOT NULL REFERENCES users(user_id),
+    position job_position NOT NULL
+);
+
+-- Мерки клиентов
+CREATE TABLE measurements (
+    measurement_id bigserial PRIMARY KEY,
+    client_id bigint NOT NULL REFERENCES clients(client_id),
+    size varchar(10),
+    chest_size decimal,
+    waist_size decimal,
+    hip_size decimal,
+    shoulders_width decimal,
+    height decimal
+);
+
+-- Заказы
+CREATE TABLE orders (
+    order_id bigserial PRIMARY KEY,
+    client_id bigint NOT NULL REFERENCES clients(client_id),
+    tracking_number varchar(50) UNIQUE NOT NULL,
+    fitting_date date,
+    deadline_date date,
+    comment text,
+    status order_status NOT NULL DEFAULT 'Новый',
+    total_cost decimal NOT NULL,
+    assigned_to bigint REFERENCES users(user_id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+ALTER TABLE orders ADD COLUMN use_own_materials BOOLEAN NOT NULL DEFAULT false;
+
+-- Услуги в заказе
+CREATE TABLE order_services (
+    order_service_id bigserial PRIMARY KEY,
+    order_id bigint NOT NULL REFERENCES orders(order_id),
+    service_id bigint NOT NULL REFERENCES services(service_id),
+    quantity int NOT NULL CHECK (quantity > 0),
+    status order_service_status NOT NULL DEFAULT 'Новый'
+);
+
+-- Материалы в заказе
+CREATE TABLE order_materials (
+    order_material_id bigserial PRIMARY KEY,
+    order_id bigint NOT NULL REFERENCES orders(order_id),
+    material_id bigint NOT NULL REFERENCES materials(material_id),
+    quantity int NOT NULL CHECK (quantity > 0)
+);
+
+-- Сотрудники, работающие над заказом
+CREATE TABLE order_employees (
+    order_employee_id bigserial PRIMARY KEY,
+    order_id bigint NOT NULL REFERENCES orders(order_id),
+    employee_id bigint NOT NULL REFERENCES employees(employee_id)
+);
+
+-- История статусов заказа
+CREATE TABLE order_status_history_order (
+    history_id bigserial PRIMARY KEY,
+    order_id bigint NOT NULL REFERENCES orders(order_id),
+    old_status order_status,
+    new_status order_status NOT NULL,
+    changed_by bigint NOT NULL REFERENCES users(user_id),
+    changed_at timestamp DEFAULT current_timestamp
+);
+
+-- История статусов услуг в заказе
+CREATE TABLE order_status_history (
+    history_id bigserial PRIMARY KEY,
+    order_id bigint NOT NULL REFERENCES orders(order_id),
+    order_service_id bigint REFERENCES order_services(order_service_id),
+    old_status order_service_status,
+    new_status order_service_status NOT NULL,
+    changed_at timestamp DEFAULT current_timestamp,
+    changed_by bigint NOT NULL REFERENCES users(user_id)
+);
+
+-------------------------------
+-- Индексы для оптимизации
+-------------------------------
+CREATE INDEX idx_orders_status ON orders(status);
+CREATE INDEX idx_services_category ON services(category);
+CREATE INDEX idx_materials_type ON materials(type);
+CREATE INDEX idx_clients_phone ON clients(phone_number);
+CREATE INDEX idx_suppliers_inn ON suppliers(inn);

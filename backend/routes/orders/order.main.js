@@ -57,15 +57,19 @@ router.get("/status-counts", async (req, res) => {
 
 router.get("/assigned-to-me", authenticate, async (req, res) => {
   try {
-    console.log("Authenticated user:", req.user); // Логируем пользователя
+    console.log("Authenticated user:", req.user);
 
     const userId = req.user.user_id;
-    console.log("User ID:", userId);
-
-    const employeeQuery = await pool.query(
+    const { rows: employeeRows } = await pool.query(
       "SELECT employee_id FROM employees WHERE user_id = $1",
       [userId]
     );
+    console.log("User ID:", userId);
+
+    if (employeeRows.length === 0) {
+      return res.status(403).json({ error: "Доступ только для сотрудников" });
+    }
+
     console.log("Employee query result:", employeeQuery.rows);
 
     if (employeeQuery.rows.length === 0) {
@@ -176,7 +180,7 @@ router.get("/:id/employees", async (req, res) => {
 
 // Получение деталей заказа
 router.get("/:id", async (req, res) => {
-  const orderId = Number(req.params.id); 
+  const orderId = Number(req.params.id);
   try {
     const { rows } = await pool.query(
       `SELECT o.*, c.fullname as client_name, c.phone_number as client_phone_number 
@@ -252,7 +256,7 @@ router.post("/", async (req, res) => {
 
 // Назначение сотрудника на заказ
 router.post("/:id/assign-employee", authenticate, async (req, res) => {
-  if (req.user.role !== "Администратор") {
+  if (!["Администратор", "Старший администратор"].includes(req.user.role)) {
     return res.status(403).json({ error: "Доступ запрещен" });
   }
 
@@ -467,9 +471,10 @@ router.put("/:id", async (req, res) => {
 
 // Удаление заказа
 router.delete("/:id", authenticate, async (req, res) => {
-  if (req.user.role !== "Администратор") {
+  if (!["Администратор", "Старший администратор"].includes(req.user.role)) {
     return res.status(403).json({ error: "Доступ запрещен" });
   }
+
   const client = await pool.connect();
   try {
     await client.query("BEGIN");

@@ -7,7 +7,7 @@ export default {
   addFitting({ orderId, fittingData }) {
     return apiClient.post(`/orders/${orderId}/fittings`, fittingData);
   },
-  updateFitting(fittingId, fittingData) {
+  updateFitting({ fittingId, fittingData }) {
     return apiClient.put(`/orders/fittings/${fittingId}`, fittingData);
   },
   deleteFitting(fittingId) {

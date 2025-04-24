@@ -179,24 +179,18 @@ const handleDeliveryUpdate = async () => {
 
 const downloadDocument = async (deliveryId) => {
   try {
-    const response = await store.dispatch(
-      "deliveries/downloadDocument",
-      deliveryId
-    );
-
-    // Создаем ссылку для скачивания
-    const url = window.URL.createObjectURL(new Blob([response]));
-    const link = document.createElement("a");
-    link.href = url;
-
-    // Получаем имя файла
+    // Получаем данные о поставке
     const delivery = store.state.deliveries.deliveries.find(
       (d) => d.delivery_id === deliveryId
     );
-    console.log("Delivery data:", delivery);
-    const filename = delivery?.document_name || `document_${deliveryId}.pdf`;
 
-    link.setAttribute("download", filename);
+    const response = await api.downloadDocument(deliveryId);
+    const decodedFilename = decodeURIComponent(delivery.document_name);
+
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", decodedFilename);
     document.body.appendChild(link);
     link.click();
     link.remove();

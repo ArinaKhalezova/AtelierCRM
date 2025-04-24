@@ -81,16 +81,16 @@ router.get("/", async (req, res) => {
   try {
     const deliveriesQuery = await pool.query(
       `SELECT 
-          d.delivery_id,
-          d.delivery_number,
-          d.delivery_date,
-          d.document_name,
-          d.document_data,
-          s.supplier_id,
-          s.org_name AS supplier_name
-        FROM deliveries d
-       JOIN suppliers s ON d.supplier_id = s.supplier_id
-       ORDER BY d.delivery_date DESC`
+      d.delivery_id,
+      d.delivery_number,
+      d.delivery_date,
+      d.document_name,
+      d.document_data,
+      s.supplier_id,
+      s.org_name AS supplier_name
+    FROM deliveries d
+    LEFT JOIN suppliers s ON d.supplier_id = s.supplier_id
+    ORDER BY d.delivery_date DESC`
     );
 
     const deliveries = await Promise.all(
@@ -224,7 +224,8 @@ router.post("/", async (req, res) => {
     console.error("Error creating delivery:", err);
     res.status(500).json({
       error: "Ошибка сервера при создании поставки",
-      details: err.message,
+      details: process.env.NODE_ENV === "development" ? err.message : undefined,
+      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
     });
   } finally {
     client.release();
@@ -233,20 +234,18 @@ router.post("/", async (req, res) => {
 
 router.post("/upload", upload.single("document"), async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: "Файл не был загружен" });
-    }
-
-    const { delivery_id } = req.body;
+    const originalName = Buffer.from(req.file.originalname, "latin1").toString(
+      "utf8"
+    );
 
     await pool.query(
       `UPDATE deliveries 
        SET document_name = $1, document_data = $2
        WHERE delivery_id = $3`,
-      [req.file.originalname, req.file.buffer, delivery_id]
+      [originalName, req.file.buffer, req.body.delivery_id]
     );
 
-    res.json({ success: true, filename: req.file.originalname });
+    res.json({ success: true, filename: originalName });
   } catch (err) {
     console.error("Error uploading document:", err);
     res.status(500).json({ error: "Ошибка при загрузке документа" });
@@ -268,10 +267,11 @@ router.get("/:id/download", async (req, res) => {
 
     const { document_name, document_data } = rows[0];
 
+    const filename = encodeURIComponent(rows[0].document_name);
     res.setHeader("Content-Type", "application/octet-stream");
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="${document_name}"`
+      `attachment; filename="${filename}"; filename*=UTF-8''${filename}`
     );
     res.send(document_data);
   } catch (err) {

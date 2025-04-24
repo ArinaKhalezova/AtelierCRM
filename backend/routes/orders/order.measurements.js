@@ -1,12 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("../../config/db");
+const authenticate = require("../../middleware/auth");
 
 /**
  * Получение мерок клиента по ID заказа
  * GET /orders/:id/measurements
  */
-router.get("/:id/measurements", async (req, res) => {
+router.get("/:id/measurements", authenticate, async (req, res) => {
   const client = await pool.connect();
   try {
     // 1. Получаем client_id из заказа

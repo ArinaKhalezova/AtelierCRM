@@ -120,18 +120,24 @@ const handleSaveFitting = async (fittingData) => {
     if (fittingData.fitting_id) {
       await store.dispatch("fittings/updateFitting", {
         fittingId: fittingData.fitting_id,
-        fittingData,
+        fittingData: {
+          fitting_date: fittingData.fitting_date,
+          result: fittingData.result,
+          notes: fittingData.notes,
+        },
       });
     } else {
-      // Передаем orderId и fittingData отдельно
       await store.dispatch("fittings/addFitting", {
-        orderId: props.orderId, // Число, не объект
+        orderId: props.orderId,
         fittingData,
       });
     }
     closeModal();
   } catch (error) {
-    console.error("Ошибка сохранения примерки:", error);
+    console.error("Ошибка сохранения примерки:", {
+      message: error.message,
+      response: error.response?.data,
+    });
   }
 };
 

@@ -38,8 +38,15 @@ export default {
       try {
         const response = await api.getOrderFittings(orderId);
         commit("SET_FITTINGS", response.data);
+        commit("SET_ERROR", null);
       } catch (error) {
-        commit("SET_ERROR", error.message);
+        commit(
+          "SET_ERROR",
+          error.response?.data?.error ||
+            error.message ||
+            "Ошибка загрузки примерок"
+        );
+        throw error;
       } finally {
         commit("SET_LOADING", false);
       }
@@ -60,7 +67,10 @@ export default {
     async updateFitting({ commit }, { fittingId, fittingData }) {
       commit("SET_LOADING", true);
       try {
-        const response = await api.updateFitting(fittingId, fittingData);
+        const response = await api.updateFitting({
+          fittingId: fittingId,
+          fittingData: fittingData,
+        });
         commit("UPDATE_FITTING", response.data);
         return response.data;
       } catch (error) {

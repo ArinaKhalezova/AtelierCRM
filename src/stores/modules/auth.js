@@ -51,8 +51,13 @@ export default {
       }
     },
     async logout({ commit }) {
-      commit("CLEAR_AUTH");
-      await api.logout();
+      try {
+        await api.logout();
+      } finally {
+        commit("CLEAR_AUTH");
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("refreshToken");
+      }
     },
     async checkAuth({ commit, state }) {
       try {

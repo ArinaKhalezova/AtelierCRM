@@ -4,16 +4,38 @@ const pool = require("../../config/db");
 const authenticate = require("../../middleware/auth");
 
 // Получить все примерки для заказа
-router.get("/:orderId/fittings", async (req, res) => {
+router.get("/:orderId/fittings", authenticate, async (req, res) => {
   try {
-    const { rows } = await pool.query(
-      "SELECT * FROM fittings WHERE order_id = $1 ORDER BY fitting_date",
+    // Проверка существования заказа
+    const orderExists = await pool.query(
+      "SELECT 1 FROM orders WHERE order_id = $1",
       [req.params.orderId]
     );
+
+    if (orderExists.rowCount === 0) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    // Явное приведение типа для order_id
+    const { rows } = await pool.query(
+      "SELECT * FROM fittings WHERE order_id = $1::integer ORDER BY fitting_date",
+      [req.params.orderId]
+    );
+
     res.json(rows);
   } catch (err) {
-    console.error("Error fetching fittings:", err);
-    res.status(500).json({ error: "Database error", details: err.message });
+    console.error("Error fetching fittings:", {
+      query: "SELECT * FROM fittings",
+      params: req.params,
+      error: err.stack,
+    });
+    res.status(500).json({
+      error: "Database error",
+      details:
+        process.env.NODE_ENV === "development"
+          ? err.message
+          : "Internal server error",
+    });
   }
 });
 
@@ -57,6 +79,10 @@ router.post("/:orderId/fittings", authenticate, async (req, res) => {
 // Обновить примерку
 router.put("/fittings/:id", authenticate, async (req, res) => {
   const { fitting_date, result, notes } = req.body;
+
+  if (!req.params.id || isNaN(req.params.id)) {
+    return res.status(400).json({ error: "Invalid fitting ID" });
+  }
 
   try {
     await pool.query("BEGIN");

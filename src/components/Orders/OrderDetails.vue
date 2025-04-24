@@ -30,7 +30,7 @@
 
       <OrderComment v-if="order.comment" :comment="order.comment" />
 
-      <FittingsList :order-id="orderId" :can-edit="isAdmin" />
+      <FittingsList :order-id="orderId" :can-edit="isAdmin || !isAdmin" />
 
       <OrderMeasurements
         :measurements="measurements"
