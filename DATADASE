@@ -197,6 +197,19 @@ CREATE TABLE order_materials (
     quantity int NOT NULL CHECK (quantity > 0)
 );
 
+-- Договоры в заказе
+CREATE TABLE order_documents (
+  document_id bigserial PRIMARY KEY,
+  order_id bigint NOT NULL REFERENCES orders(order_id),
+  document_name varchar(255) NOT NULL,
+  document_data bytea NOT NULL,
+  document_type varchar(20) CHECK (document_type IN ('Акт', 'Чек', 'Договор')),
+  uploaded_by bigint NOT NULL REFERENCES users(user_id),
+  uploaded_at timestamp DEFAULT current_timestamp
+);
+
+CREATE INDEX idx_order_documents_order ON order_documents(order_id);
+
 -- Сотрудники, работающие над заказом
 CREATE TABLE order_employees (
     order_employee_id bigserial PRIMARY KEY,

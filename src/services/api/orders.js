@@ -51,4 +51,31 @@ export default {
   getEmployeesWorkload() {
     return apiClient.get("/orders/employees/workload");
   },
+  getOrderDocuments(orderId) {
+    return apiClient.get(`/orders/${orderId}/documents`);
+  },
+
+  uploadOrderDocuments(orderId, formData) {
+    return apiClient.post(`/orders/${orderId}/documents`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
+
+  downloadOrderDocument(documentId) {
+    return apiClient.get(`/orders/documents/${documentId}/download`, {
+      responseType: "blob",
+      transformResponse: (data, headers) => {
+        return {
+          data: data,
+          headers: headers,
+        };
+      },
+    });
+  },
+
+  deleteOrderDocument(documentId) {
+    return apiClient.delete(`/orders/documents/${documentId}`);
+  },
 };

@@ -9,6 +9,7 @@ const materialsRouter = require("./order.materials");
 const measurementsRouter = require("./order.measurements");
 const utilsRouter = require("./order.utils");
 const fittingsRouter = require("./order.fittings");
+const documentsRouter = require("./order.documents");
 
 // Композиция роутеров
 router.use("/", mainRouter);
@@ -18,5 +19,6 @@ router.use("/", materialsRouter);
 router.use("/", measurementsRouter);
 router.use("/", utilsRouter);
 router.use("/", fittingsRouter);
+router.use("/", documentsRouter);
 
 module.exports = router;

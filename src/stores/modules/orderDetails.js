@@ -356,6 +356,78 @@ export default {
         commit("SET_LOADING", false);
       }
     },
+    async fetchOrderDocuments({ commit }, orderId) {
+      try {
+        const response = await ordersApi.getOrderDocuments(orderId);
+        return response;
+      } catch (error) {
+        commit("SET_ERROR", error.message);
+        throw error;
+      }
+    },
+
+    async uploadOrderDocuments({ commit }, { orderId, files, type }) {
+      try {
+        const formData = new FormData();
+        files.forEach((file) => formData.append("documents", file));
+        formData.append("type", type);
+
+        const response = await ordersApi.uploadOrderDocuments(
+          orderId,
+          formData
+        );
+        return response.data;
+      } catch (error) {
+        commit("SET_ERROR", error.message);
+        throw error;
+      }
+    },
+
+    async downloadOrderDocument({ commit }, documentId) {
+      try {
+        const response = await ordersApi.downloadOrderDocument(documentId);
+
+        // Проверка наличия данных
+        if (!response || !response.data) {
+          throw new Error("Не удалось получить данные документа");
+        }
+
+        // Обработка имени файла
+        let filename = `document_${documentId}`;
+        if (response.headers && response.headers["content-disposition"]) {
+          const cd = response.headers["content-disposition"];
+          filename = cd.split("filename=")[1]?.replace(/"/g, "") || filename;
+        }
+
+        // Создание ссылки для скачивания
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        // Явный возврат для обработки в компоненте
+        return { success: true };
+      } catch (error) {
+        console.error("Download error:", {
+          error: error.message,
+          response: error.response,
+        });
+        commit("SET_ERROR", error.message);
+        throw error; // Пробрасываем ошибку дальше
+      }
+    },
+
+    async deleteOrderDocument({ commit }, documentId) {
+      try {
+        await ordersApi.deleteOrderDocument(documentId);
+      } catch (error) {
+        commit("SET_ERROR", error.message);
+        throw error;
+      }
+    },
   },
   getters: {
     orderHistory: (state) => state.orderHistory,

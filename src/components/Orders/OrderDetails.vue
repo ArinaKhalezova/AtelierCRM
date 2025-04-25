@@ -7,6 +7,8 @@
 
       <OrderMainInfo :order="order" />
 
+      <OrderDocuments :order-id="orderId" :can-edit="isAdmin" />
+
       <OrderEmployees
         :order-id="orderId"
         :can-edit="isAdmin"
@@ -87,6 +89,7 @@ import EditOrderModal from "./OrderDetails/EditOrderModal.vue";
 import OrderHistory from "./OrderDetails/OrderHistory.vue";
 import ServiceHistory from "./OrderDetails/ServiceHistory.vue";
 import FittingsList from "./OrderDetails/FittingsList.vue";
+import OrderDocuments from "./OrderDetails/OrderDocuments.vue";
 
 const store = useStore();
 const isAdmin = computed(() => store.getters["auth/isAdmin"]);
