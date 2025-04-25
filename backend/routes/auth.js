@@ -14,7 +14,7 @@ const authenticateToken = (req, res, next) => {
 
   jwt.verify(
     token,
-    "my_super_secret_key_at_least_32_chars" || "your_secret_key",
+    "my_super_secret_key_at_least_32_chars",
     (err, user) => {
       if (err) return res.sendStatus(403);
       req.user = user;

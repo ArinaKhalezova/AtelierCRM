@@ -19,17 +19,37 @@ export default {
       state.user = null;
       state.token = null;
       localStorage.removeItem("authToken");
+      localStorage.removeItem("userData");
     },
     SET_ERROR(state, error) {
       state.error = error;
     },
   },
   actions: {
+    initializeAuth({ commit }) {
+      const token = localStorage.getItem("authToken");
+      const userData = localStorage.getItem("userData");
+
+      if (token && userData) {
+        commit("SET_TOKEN", token);
+        commit("SET_USER", JSON.parse(userData));
+      }
+    },
     async login({ commit }, credentials) {
       try {
         const response = await api.login(credentials);
         commit("SET_TOKEN", response.data.token);
-        commit("SET_USER", response.data.user);
+
+        // Сохраняем данные пользователя
+        const userData = {
+          id: response.data.user.id,
+          fullname: response.data.user.fullname,
+          email: response.data.user.email,
+          role: response.data.user.role,
+        };
+
+        commit("SET_USER", userData);
+        localStorage.setItem("userData", JSON.stringify(userData));
         commit("SET_ERROR", null);
         return response.data;
       } catch (error) {

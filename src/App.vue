@@ -55,9 +55,17 @@ const handleLogout = () => {
   router.push("/login");
 };
 
-// Хук жизненного цикла
 onMounted(async () => {
-  await store.dispatch("auth/checkAuth");
+  await store.dispatch("auth/initializeAuth");
+
+  // Проверка актуальности токена
+  if (store.getters["auth/isAuthenticated"]) {
+    try {
+      await store.dispatch("auth/checkAuth");
+    } catch (error) {
+      store.dispatch("auth/logout");
+    }
+  }
 });
 </script>
 

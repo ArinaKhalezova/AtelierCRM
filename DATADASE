@@ -226,6 +226,69 @@ CREATE TABLE order_status_history (
 );
 
 -------------------------------
+-- Таблица примерок
+-------------------------------
+CREATE TABLE fittings (
+    fitting_id bigserial PRIMARY KEY,
+    order_id bigint NOT NULL REFERENCES orders(order_id),
+    fitting_date timestamp NOT NULL,
+    result varchar(100),
+    notes text,
+    created_at timestamp DEFAULT current_timestamp,
+    updated_at timestamp
+);
+
+-- Триггер для услуг
+CREATE OR REPLACE FUNCTION update_order_total_service()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE orders 
+  SET total_cost = (
+    SELECT COALESCE(SUM(s.base_cost * os.quantity), 0) 
+    FROM order_services os
+    JOIN services s ON os.service_id = s.service_id
+    WHERE os.order_id = COALESCE(NEW.order_id, OLD.order_id)
+  ) + (
+    SELECT COALESCE(SUM(m.cost_per_unit * om.quantity), 0)
+    FROM order_materials om
+    JOIN materials m ON om.material_id = m.material_id
+    WHERE om.order_id = COALESCE(NEW.order_id, OLD.order_id)
+  )
+  WHERE order_id = COALESCE(NEW.order_id, OLD.order_id);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Триггер для материалов
+CREATE OR REPLACE FUNCTION update_order_total_material()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE orders 
+  SET total_cost = (
+    SELECT COALESCE(SUM(s.base_cost * os.quantity), 0) 
+    FROM order_services os
+    JOIN services s ON os.service_id = s.service_id
+    WHERE os.order_id = COALESCE(NEW.order_id, OLD.order_id)
+  ) + (
+    SELECT COALESCE(SUM(m.cost_per_unit * om.quantity), 0)
+    FROM order_materials om
+    JOIN materials m ON om.material_id = m.material_id
+    WHERE om.order_id = COALESCE(NEW.order_id, OLD.order_id)
+  )
+  WHERE order_id = COALESCE(NEW.order_id, OLD.order_id);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Привязка триггеров
+CREATE TRIGGER order_services_trigger
+AFTER INSERT OR UPDATE OR DELETE ON order_services
+FOR EACH ROW EXECUTE FUNCTION update_order_total_service();
+
+CREATE TRIGGER order_materials_trigger
+AFTER INSERT OR UPDATE OR DELETE ON order_materials
+FOR EACH ROW EXECUTE FUNCTION update_order_total_material();
+-------------------------------
 -- Индексы для оптимизации
 -------------------------------
 CREATE INDEX idx_orders_status ON orders(status);
@@ -233,3 +296,5 @@ CREATE INDEX idx_services_category ON services(category);
 CREATE INDEX idx_materials_type ON materials(type);
 CREATE INDEX idx_clients_phone ON clients(phone_number);
 CREATE INDEX idx_suppliers_inn ON suppliers(inn);
+CREATE INDEX idx_fittings_order_id ON fittings(order_id);
+CREATE INDEX idx_fittings_date ON fittings(fitting_date);

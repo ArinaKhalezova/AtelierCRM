@@ -475,6 +475,26 @@ router.put("/:id", async (req, res) => {
     return res.status(400).json({ error: "Необходима дата завершения" });
   }
 
+  // Добавляем пересчет стоимости
+  const { rows: services } = await pool.query(
+    "SELECT SUM(s.base_cost * os.quantity) as total_services FROM order_services os JOIN services s ON os.service_id = s.service_id WHERE os.order_id = $1",
+    [id]
+  );
+
+  const { rows: materials } = await pool.query(
+    "SELECT SUM(m.cost_per_unit * om.quantity) as total_materials FROM order_materials om JOIN materials m ON om.material_id = m.material_id WHERE om.order_id = $1",
+    [id]
+  );
+
+  const totalCost =
+    parseFloat(services[0].total_services || 0) +
+    parseFloat(materials[0].total_materials || 0);
+
+  await pool.query("UPDATE orders SET total_cost = $1 WHERE order_id = $2", [
+    totalCost,
+    id,
+  ]);
+
   try {
     const { rows } = await pool.query(
       `UPDATE orders 

@@ -16,13 +16,15 @@
       />
 
       <OrderServices
+        :order-id="orderId"
         :services="services"
-        @remove-service="remove - service"
+        @remove-service="removeService"
         @status-updated="handleStatusUpdated"
         :can-edit="isAdmin"
       />
 
       <OrderMaterials
+        :order-id="orderId"
         :materials="materials"
         @remove-material="removeMaterial"
         :can-edit="isAdmin"

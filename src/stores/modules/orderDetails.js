@@ -232,6 +232,16 @@ export default {
       }
     },
 
+    async updateOrderTotal({ commit }, orderId) {
+      try {
+        const response = await ordersApi.getOrderDetails(orderId);
+        commit("SET_CURRENT_ORDER", response.data);
+        this.dispatch("orders/fetchOrders", null, { root: true });
+      } catch (error) {
+        commit("SET_ERROR", error.message);
+      }
+    },
+
     async fetchMeasurements({ commit }, orderId) {
       try {
         const response = await api.getOrderMeasurements(orderId);

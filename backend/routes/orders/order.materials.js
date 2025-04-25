@@ -183,9 +183,6 @@ router.delete(
   "/:orderId/materials/:materialId",
   authenticate,
   async (req, res) => {
-    if (!req.user.is_admin) {
-      return res.status(403).json({ error: "Недостаточно прав" });
-    }
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
