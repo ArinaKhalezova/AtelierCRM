@@ -235,9 +235,9 @@ h2 {
 }
 
 .add-button {
-  background-color: var(--dark-teal);
+  background-color: var(--success);
   color: white;
-  border: none;
+  border: 1px;
   padding: 0.6rem 1.2rem;
   border-radius: var(--border-radius);
   cursor: pointer;
@@ -250,7 +250,7 @@ h2 {
 }
 
 .add-button:hover {
-  background-color: #244a4b;
+  background-color: var(--dark-success);
   opacity: 0.95;
 }
 
@@ -326,26 +326,30 @@ h2 {
   font-weight: 500;
   display: inline-block;
 }
-
 .status.новый {
-  background-color: rgba(139, 170, 173, 0.2);
-  color: var(--dark-teal);
+  background-color: rgb(186, 216, 220);
+  color: #ffffff;
+}
+
+.status.принят {
+  background-color: rgb(158, 230, 172);
+  color: #ffffff;
 }
 .status.в-работе {
-  background-color: rgba(255, 160, 0, 0.2);
-  color: #ff8f00;
+  background-color: rgb(255, 190, 77);
+  color: #ffffff;
 }
 .status.готов {
-  background-color: rgba(76, 175, 80, 0.2);
-  color: #2e7d32;
+  background-color: rgb(48, 194, 89);
+  color: #ffffff;
 }
 .status.выполнен {
-  background-color: rgba(46, 125, 50, 0.2);
-  color: #1b5e20;
+  background-color: rgb(15, 159, 82);
+  color: #ffffff;
 }
 .status.отменен {
-  background-color: rgba(220, 53, 69, 0.2);
-  color: var(--danger);
+  background-color: rgb(139, 18, 18);
+  color: white;
 }
 
 .actions-column {
@@ -354,7 +358,7 @@ h2 {
 }
 
 .action-button {
-  background-color: var(--teal);
+  background-color: var(--info);
   color: white;
   border: none;
   padding: 0.5rem 1rem;
@@ -367,7 +371,7 @@ h2 {
 }
 
 .action-button:hover {
-  background-color: #7a9b9e;
+  background-color: var(--dark-info);
 }
 
 .delete-button {
@@ -438,17 +442,18 @@ h2 {
 }
 
 .reset-filters {
-  padding: 0.5rem 1rem;
-  background-color: #f0f0f0;
-  border: none;
+  background-color: white;
+  color: var(--danger);
+  border: 1px solid var(--danger);
   border-radius: var(--border-radius);
   cursor: pointer;
   transition: all 0.2s ease;
-  height: fit-content;
+  margin-bottom: 0.6rem;
 }
 
 .reset-filters:hover {
-  background-color: #e0e0e0;
+  background-color: var(--dark-danger);
+  color: white;
 }
 
 .sort-icon {
@@ -460,8 +465,6 @@ th {
   cursor: pointer;
   user-select: none;
 }
-
-
 
 @media (max-width: 768px) {
   .filters {

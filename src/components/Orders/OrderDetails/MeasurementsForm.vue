@@ -65,7 +65,7 @@
       <button @click="save" class="btn primary">
         {{ initialMeasurements ? "Обновить" : "Сохранить" }}
       </button>
-      <button @click="cancel" class="btn outline">Отмена</button>
+      <button @click="cancel" class="btn danger">Отмена</button>
     </div>
   </div>
 </template>
@@ -208,23 +208,24 @@ const cancel = () => {
 }
 
 .btn.primary {
-  background-color: var(--teal);
+  background-color: var(--success);
   color: white;
   border: none;
 }
 
 .btn.primary:hover {
-  background-color: var(--dark-teal);
+  background-color: var(--dark-success);
 }
 
-.btn.outline {
+.btn.danger {
   background-color: white;
-  border: 1px solid var(--teal);
-  color: var(--teal);
+  border: 1px solid var(--danger);
+  color: var(--danger);
 }
 
-.btn.outline:hover {
-  background-color: rgba(139, 170, 173, 0.1);
+.btn.danger:hover {
+  background-color: var(--danger);
+  color: white;
 }
 
 @media (max-width: 768px) {

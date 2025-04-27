@@ -179,23 +179,27 @@ const handleDeliveryUpdate = async () => {
 
 const downloadDocument = async (deliveryId) => {
   try {
-    // Получаем данные о поставке
     const delivery = store.state.deliveries.deliveries.find(
       (d) => d.delivery_id === deliveryId
     );
 
-    const response = await api.downloadDocument(deliveryId);
-    const decodedFilename = decodeURIComponent(delivery.document_name);
+    // Используем действие Vuex store вместо прямого вызова API
+    const blob = await store.dispatch(
+      "deliveries/downloadDocument",
+      deliveryId
+    );
 
-    const url = window.URL.createObjectURL(new Blob([response.data]));
+    // Создаем URL для скачивания
+    const url = window.URL.createObjectURL(new Blob([blob]));
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", decodedFilename);
+    link.setAttribute("download", delivery.document_name);
     document.body.appendChild(link);
     link.click();
     link.remove();
   } catch (error) {
     console.error("Ошибка скачивания файла:", error);
+    store.commit("deliveries/SET_ERROR", error.message);
   }
 };
 
@@ -250,7 +254,7 @@ onMounted(async () => {
 
 .controls {
   display: flex;
-  align-items: center;
+  align-items: start;
   gap: 1rem;
   flex-wrap: wrap;
 }
@@ -271,7 +275,7 @@ onMounted(async () => {
 }
 
 .add-button {
-  background-color: var(--dark-teal);
+  background-color: var(--success);
   color: white;
   border: none;
   padding: 0.6rem 1.2rem;
@@ -285,7 +289,7 @@ onMounted(async () => {
 }
 
 .add-button:hover {
-  background-color: #244a4b;
+  background-color: var(--dark-success);
   opacity: 0.95;
 }
 
@@ -323,31 +327,18 @@ onMounted(async () => {
   border-bottom: 1px dashed #eee;
 }
 
-.document-actions {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.btn {
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-  border: none;
-}
-
 .btn.small {
   padding: 0.3rem 0.6rem;
   font-size: 0.8rem;
 }
 
 .btn.primary {
-  background-color: var(--teal);
+  background-color: var(--info);
   color: white;
 }
 
 .btn.secondary {
-  background-color: #f0f0f0;
+  background-color: var(--info);
   color: #333;
 }
 
@@ -388,7 +379,7 @@ onMounted(async () => {
 }
 
 .edit-button {
-  background-color: var(--teal);
+  background-color: var(--info);
   color: white;
   border: none;
   padding: 0.5rem 1rem;
@@ -399,7 +390,7 @@ onMounted(async () => {
 }
 
 .edit-button:hover {
-  background-color: #7a9b9e;
+  background-color: var(--dark-info);
 }
 
 .delete-button {

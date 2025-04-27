@@ -6,7 +6,20 @@ const path = require("path");
 const authenticate = require("../../middleware/auth");
 
 const storage = multer.memoryStorage();
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB
+    files: 5, // Максимум 5 файлов
+  },
+  fileFilter: (req, file, cb) => {
+    // Логируем получение файлов
+    console.log(
+      `Received file: ${file.originalname}, Type: ${file.mimetype}, Size: ${file.size} bytes`
+    );
+    cb(null, true);
+  },
+}).array("documents"); // Явно указываем имя поля и количество
 
 // Проверка прав администратора
 const checkAdmin = (req, res, next) => {
@@ -45,20 +58,44 @@ router.post(
   "/:orderId/documents",
   authenticate,
   checkAdmin,
-  upload.array("documents"),
+  (req, res, next) => {
+    // Обрабатываем загрузку через middleware
+    upload(req, res, (err) => {
+      if (err) {
+        console.error("Multer upload error:", err);
+        return res.status(400).json({
+          error:
+            err instanceof multer.MulterError
+              ? `Ошибка загрузки файлов: ${err.message}`
+              : "Ошибка обработки файлов",
+        });
+      }
+      next();
+    });
+  },
   async (req, res) => {
     try {
-      const files = req.files;
-      if (!files || files.length === 0) {
-        return res.status(400).json({ error: "Не выбраны файлы для загрузки" });
+      console.log("Upload request body:", req.body);
+      console.log("Uploaded files:", req.files);
+
+      if (!req.files || req.files.length === 0) {
+        return res
+          .status(400)
+          .json({ error: "Файлы не были получены сервером" });
       }
 
       const documents = await Promise.all(
-        files.map(async (file) => {
-          const { originalname, buffer } = file;
-          const documentName = Buffer.from(originalname, "latin1").toString(
-            "utf8"
-          );
+        // req.files.map(async (file) => {
+        //   const documentName = Buffer.from(
+        //     file.originalname,
+        //     "latin1"
+        //   ).toString("utf8");
+        req.files.map(async (file) => {
+          // Исправляем декодирование имени файла
+          const documentName = Buffer.from(
+            file.originalname,
+            "latin1"
+          ).toString("utf8");
 
           const { rows } = await pool.query(
             `INSERT INTO order_documents 
@@ -68,7 +105,7 @@ router.post(
             [
               req.params.orderId,
               documentName,
-              buffer,
+              file.buffer,
               req.body.type,
               req.user.user_id,
             ]
@@ -78,14 +115,21 @@ router.post(
             document_id: rows[0].document_id,
             document_name: documentName,
             document_type: req.body.type,
+            status: "success",
           };
         })
       );
 
-      res.json(documents);
+      res.json({
+        message: "Файлы успешно загружены",
+        uploadedFiles: documents,
+      });
     } catch (err) {
-      console.error("Error uploading documents:", err);
-      res.status(500).json({ error: "Ошибка загрузки документов" });
+      console.error("Server processing error:", err);
+      res.status(500).json({
+        error: "Внутренняя ошибка сервера",
+        details: err.message,
+      });
     }
   }
 );
@@ -98,8 +142,8 @@ router.get(
     try {
       const { rows } = await pool.query(
         `SELECT document_name, document_data 
-       FROM order_documents 
-       WHERE document_id = $1`,
+         FROM order_documents 
+         WHERE document_id = $1`,
         [req.params.documentId]
       );
 
@@ -108,14 +152,27 @@ router.get(
       }
 
       const { document_name, document_data } = rows[0];
-      const safeFilename = encodeURIComponent(
-        document_name.trim() || `document_${req.params.documentId}`
-      );
+      const safeFilename = encodeURIComponent(document_name);
 
-      res.setHeader("Content-Type", "application/octet-stream");
+      // Определяем MIME-тип по расширению файла
+      const ext = path.extname(document_name).toLowerCase();
+      const mimeTypes = {
+        ".pdf": "application/pdf",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".doc": "application/msword",
+        ".docx":
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      };
+
+      res.setHeader(
+        "Content-Type",
+        mimeTypes[ext] || "application/octet-stream"
+      );
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename="${safeFilename}"; filename*=UTF-8''${safeFilename}`
+        `attachment; filename*=UTF-8''${safeFilename}`
       );
       res.send(document_data);
     } catch (err) {

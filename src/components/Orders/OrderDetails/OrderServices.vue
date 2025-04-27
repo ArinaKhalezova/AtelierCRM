@@ -222,14 +222,6 @@ h3 {
   grid-column: 1 / span 2;
 }
 
-.status {
-  font-size: 0.85rem;
-  padding: 0.25rem 0.75rem;
-  border-radius: 1rem;
-  background-color: rgba(139, 170, 173, 0.2);
-  color: var(--dark-teal);
-}
-
 .quantity,
 .total {
   font-size: 0.9rem;
@@ -242,20 +234,24 @@ h3 {
   font-size: 1.1rem;
 }
 
-.btn.danger {
-  padding: 0.5rem 1rem;
-  border-radius: var(--border-radius);
-  background-color: var(--danger);
+.btn.primary {
+  background-color: var(--info);
   color: white;
-  border: none;
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: all 0.2s ease;
-  white-space: nowrap;
+}
+
+.btn.primary:hover {
+  background-color: var(--dark-info);
+}
+
+.btn.danger {
+  background-color: white;
+  border: 1px solid var(--danger);
+  color: var(--danger);
 }
 
 .btn.danger:hover {
-  background-color: #c82333;
+  background-color: var(--danger);
+  color: white;
 }
 
 .empty {

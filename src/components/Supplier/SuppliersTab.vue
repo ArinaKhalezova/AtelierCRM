@@ -12,9 +12,6 @@
         </button>
       </div>
     </div>
-
-    <div v-if="error" class="error-message">{{ error }}</div>
-
     <div class="table-wrapper">
       <table class="suppliers-table">
         <thead>
@@ -286,7 +283,7 @@ onMounted(async () => {
 
 .controls {
   display: flex;
-  align-items: center;
+  align-items: start;
   gap: 1rem;
   flex-wrap: wrap;
 }
@@ -307,7 +304,7 @@ onMounted(async () => {
 }
 
 .add-button {
-  background-color: var(--dark-teal);
+  background-color: var(--success);
   color: white;
   border: none;
   padding: 0.6rem 1.2rem;
@@ -321,8 +318,7 @@ onMounted(async () => {
 }
 
 .add-button:hover {
-  background-color: #244a4b;
-  opacity: 0.95;
+  background-color: var(--dark-success);
 }
 
 .table-wrapper {
@@ -361,7 +357,7 @@ onMounted(async () => {
 }
 
 .edit-button {
-  background-color: var(--teal);
+  background-color: var(--info);
   color: white;
   border: none;
   padding: 0.5rem 1rem;
@@ -372,7 +368,7 @@ onMounted(async () => {
 }
 
 .edit-button:hover {
-  background-color: #7a9b9e;
+  background-color: var(--dark-info);
 }
 
 .delete-button {
@@ -427,7 +423,7 @@ onMounted(async () => {
 }
 
 .submit-button {
-  background-color: var(--dark-teal);
+  background-color: var(--success);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -440,7 +436,7 @@ onMounted(async () => {
 }
 
 .submit-button:hover {
-  background-color: #244a4b;
+  background-color: var(--dark-success);
   opacity: 0.95;
 }
 

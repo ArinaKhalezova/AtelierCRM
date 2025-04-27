@@ -1,139 +1,150 @@
 <template>
   <div class="edit-delivery-form">
-    <h3>Редактирование поставки №{{ delivery.delivery_number }}</h3>
+    <div class="form-content-container">
+      <h3>Редактирование поставки №{{ delivery.delivery_number }}</h3>
 
-    <!-- Общая ошибка формы -->
-    <div v-if="error" class="error-message">{{ error }}</div>
+      <!-- Общая ошибка формы -->
+      <div v-if="error" class="error-message">{{ error }}</div>
 
-    <form @submit.prevent="handleSubmit">
-      <div
-        class="form-group"
-        :class="{ 'has-error': formErrors.delivery_number }"
-      >
-        <label>Номер поставки</label>
-        <input v-model="formData.delivery_number" required />
-        <span v-if="formErrors.delivery_number" class="field-error">
-          {{ formErrors.delivery_number }}
-        </span>
-      </div>
-
-      <div
-        class="form-group"
-        :class="{ 'has-error': formErrors.delivery_date }"
-      >
-        <label>Дата поставки</label>
-        <input v-model="formData.delivery_date" type="date" required />
-        <span v-if="formErrors.delivery_date" class="field-error">
-          {{ formErrors.delivery_date }}
-        </span>
-      </div>
-
-      <div class="form-group" :class="{ 'has-error': formErrors.supplier_id }">
-        <label>Поставщик</label>
-        <select v-model="formData.supplier_id" required>
-          <option
-            v-for="supplier in suppliers"
-            :key="supplier.supplier_id"
-            :value="supplier.supplier_id"
-          >
-            {{ supplier.org_name }}
-          </option>
-        </select>
-        <span v-if="formErrors.supplier_id" class="field-error">
-          {{ formErrors.supplier_id }}
-        </span>
-      </div>
-
-      <!-- Список материалов -->
-      <div class="materials-section">
-        <h4>Материалы</h4>
+      <form @submit.prevent="handleSubmit">
         <div
-          v-for="(material, index) in formData.materials"
-          :key="index"
-          class="material-item"
+          class="form-group"
+          :class="{ 'has-error': formErrors.delivery_number }"
         >
-          <div
-            class="form-group"
-            :class="{
-              'has-error': formErrors[`materials.${index}.material_name`],
-            }"
-          >
-            <input
-              v-model="material.material_name"
-              placeholder="Название"
-              required
-            />
-            <span
-              v-if="formErrors[`materials.${index}.material_name`]"
-              class="field-error"
-            >
-              {{ formErrors[`materials.${index}.material_name`] }}
-            </span>
-          </div>
+          <label>Номер поставки</label>
+          <input v-model="formData.delivery_number" required />
+          <span v-if="formErrors.delivery_number" class="field-error">
+            {{ formErrors.delivery_number }}
+          </span>
+        </div>
 
-          <div
-            class="form-group"
-            :class="{ 'has-error': formErrors[`materials.${index}.quantity`] }"
-          >
-            <input
-              v-model="material.quantity"
-              type="number"
-              min="1"
-              placeholder="Количество"
-              required
-            />
-            <span
-              v-if="formErrors[`materials.${index}.quantity`]"
-              class="field-error"
-            >
-              {{ formErrors[`materials.${index}.quantity`] }}
-            </span>
-          </div>
+        <div
+          class="form-group"
+          :class="{ 'has-error': formErrors.delivery_date }"
+        >
+          <label>Дата поставки</label>
+          <input v-model="formData.delivery_date" type="date" required />
+          <span v-if="formErrors.delivery_date" class="field-error">
+            {{ formErrors.delivery_date }}
+          </span>
+        </div>
 
-          <div
-            class="form-group"
-            :class="{
-              'has-error': formErrors[`materials.${index}.cost_per_unit`],
-            }"
-          >
-            <input
-              v-model="material.cost_per_unit"
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="Цена за единицу"
-              required
-            />
-            <span
-              v-if="formErrors[`materials.${index}.cost_per_unit`]"
-              class="field-error"
+        <div
+          class="form-group"
+          :class="{ 'has-error': formErrors.supplier_id }"
+        >
+          <label>Поставщик</label>
+          <select v-model="formData.supplier_id" required>
+            <option
+              v-for="supplier in suppliers"
+              :key="supplier.supplier_id"
+              :value="supplier.supplier_id"
             >
-              {{ formErrors[`materials.${index}.cost_per_unit`] }}
-            </span>
-          </div>
+              {{ supplier.org_name }}
+            </option>
+          </select>
+          <span v-if="formErrors.supplier_id" class="field-error">
+            {{ formErrors.supplier_id }}
+          </span>
+        </div>
 
+        <!-- Список материалов -->
+        <div class="materials-section">
+          <h4>Материалы</h4>
+          <div
+            v-for="(material, index) in formData.materials"
+            :key="index"
+            class="material-item"
+          >
+            <div
+              class="form-group"
+              :class="{
+                'has-error': formErrors[`materials.${index}.material_name`],
+              }"
+            >
+              <input
+                v-model="material.material_name"
+                placeholder="Название"
+                required
+              />
+              <span
+                v-if="formErrors[`materials.${index}.material_name`]"
+                class="field-error"
+              >
+                {{ formErrors[`materials.${index}.material_name`] }}
+              </span>
+            </div>
+
+            <div
+              class="form-group"
+              :class="{
+                'has-error': formErrors[`materials.${index}.quantity`],
+              }"
+            >
+              <input
+                v-model="material.quantity"
+                type="number"
+                min="1"
+                placeholder="Количество"
+                required
+              />
+              <span
+                v-if="formErrors[`materials.${index}.quantity`]"
+                class="field-error"
+              >
+                {{ formErrors[`materials.${index}.quantity`] }}
+              </span>
+            </div>
+
+            <div
+              class="form-group"
+              :class="{
+                'has-error': formErrors[`materials.${index}.cost_per_unit`],
+              }"
+            >
+              <input
+                v-model="material.cost_per_unit"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Цена за единицу"
+                required
+              />
+              <span
+                v-if="formErrors[`materials.${index}.cost_per_unit`]"
+                class="field-error"
+              >
+                {{ formErrors[`materials.${index}.cost_per_unit`] }}
+              </span>
+            </div>
+
+            <button
+              @click="removeMaterial(index)"
+              type="button"
+              class="delete-button"
+            >
+              Удалить
+            </button>
+          </div>
           <button
-            @click="removeMaterial(index)"
+            @click="addMaterial"
             type="button"
-            class="delete-button"
+            class="add-material-button"
           >
-            Удалить
+            + Добавить материал
           </button>
         </div>
-        <button @click="addMaterial" type="button" class="add-material-button">
-          + Добавить материал
-        </button>
-      </div>
 
-      <div class="form-actions">
-        <button type="button" @click="$emit('cancel')" class="cancel-button">
-          Отмена
-        </button>
-        <button type="submit" :disabled="isSubmitting" class="submit-button">
-          {{ isSubmitting ? "Сохранение..." : "Сохранить" }}
-        </button>
-      </div>
-    </form>
+        <div class="form-actions">
+          <button type="button" @click="$emit('cancel')" class="cancel-button">
+            Отмена
+          </button>
+          <button type="submit" :disabled="isSubmitting" class="submit-button">
+            {{ isSubmitting ? "Сохранение..." : "Сохранить" }}
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 </template>
 
@@ -210,6 +221,17 @@ const handleSubmit = async () => {
   padding: 1.5rem;
   max-width: 900px;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 100px);
+  max-height: 800px;
+}
+
+.form-content-container {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .edit-delivery-form h3 {
@@ -286,14 +308,14 @@ const handleSubmit = async () => {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr auto;
   gap: 1rem;
-  align-items: flex-end;
+  align-items: start;
   margin-bottom: 1rem;
   padding-bottom: 1rem;
   border-bottom: 1px dashed var(--warm-gray);
 }
 
 .add-material-button {
-  background-color: var(--teal);
+  background-color: var(--info);
   color: white;
   border: none;
   padding: 0.6rem 1rem;
@@ -307,7 +329,7 @@ const handleSubmit = async () => {
 }
 
 .add-material-button:hover {
-  background-color: #7a9b9e;
+  background-color: var(--dark-info);
 }
 
 .delete-button {
@@ -327,15 +349,21 @@ const handleSubmit = async () => {
 }
 
 .form-actions {
+  position: sticky;
+  bottom: 0;
+  background: white;
+  padding: 1rem 0;
+  margin-top: auto;
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  margin-top: 2rem;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  z-index: 1;
 }
 
 .cancel-button {
-  background-color: var(--warm-gray);
-  color: var(--dark-gray);
+  background-color: var(--danger);
+  color: white;
   border: none;
   padding: 0.75rem 1.5rem;
   border-radius: var(--border-radius);
@@ -345,11 +373,11 @@ const handleSubmit = async () => {
 }
 
 .cancel-button:hover {
-  background-color: #d1d1d1;
+  background-color: var(--dark-danger);
 }
 
 .submit-button {
-  background-color: var(--dark-teal);
+  background-color: var(--success);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -360,7 +388,7 @@ const handleSubmit = async () => {
 }
 
 .submit-button:hover {
-  background-color: #244a4b;
+  background-color: var(--dark-success);
   opacity: 0.95;
 }
 

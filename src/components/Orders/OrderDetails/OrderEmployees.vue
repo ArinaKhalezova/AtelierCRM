@@ -40,9 +40,10 @@
 
         <div v-if="canEdit" class="assign-form">
           <div class="workload-hint">
-            * Сотрудники отсортированы по загруженности (от наименее загруженных)
+            * Сотрудники отсортированы по загруженности (от наименее
+            загруженных)
           </div>
-          
+
           <select
             v-model="selectedEmployeeId"
             class="employee-select"
@@ -53,16 +54,19 @@
               v-for="employee in sortedAvailableEmployees"
               :key="employee.employee_id"
               :value="employee.employee_id"
-              :disabled="isEmployeeAssigned(employee.employee_id) || isEmployeeOverloaded(employee.employee_id)"
+              :disabled="
+                isEmployeeAssigned(employee.employee_id) ||
+                isEmployeeOverloaded(employee.employee_id)
+              "
             >
-              {{ employee.fullname }} ({{ employee.position }}) - 
+              {{ employee.fullname }} ({{ employee.position }}) -
               {{ getEmployeeWorkload(employee.employee_id) }}/5 заказов
             </option>
           </select>
 
           <button
             @click="assignEmployee"
-            class="btn assign-btn"
+            class="btn add"
             :disabled="!selectedEmployeeId || isAssigning"
           >
             Назначить
@@ -116,7 +120,7 @@ const sortedAvailableEmployees = computed(() => {
 
 // Проверяем, назначен ли уже сотрудник на этот заказ
 const isEmployeeAssigned = (employeeId) => {
-  return assignedEmployees.value.some(e => e.employee_id === employeeId);
+  return assignedEmployees.value.some((e) => e.employee_id === employeeId);
 };
 
 // Проверяем, перегружен ли сотрудник
@@ -168,10 +172,12 @@ const removeEmployee = async (employeeId) => {
 // Загружаем загруженность сотрудников
 const fetchEmployeesWorkload = async () => {
   try {
-    const response = await store.dispatch("orderDetails/fetchEmployeesWorkload");
+    const response = await store.dispatch(
+      "orderDetails/fetchEmployeesWorkload"
+    );
     // Преобразуем массив в объект для быстрого доступа
     const workloadMap = {};
-    response.forEach(emp => {
+    response.forEach((emp) => {
       workloadMap[emp.employee_id] = emp.active_orders_count;
     });
     employeesWorkload.value = workloadMap;
@@ -186,7 +192,7 @@ onMounted(async () => {
     await Promise.all([
       store.dispatch("employees/fetchEmployees"),
       store.dispatch("orderDetails/fetchOrderEmployees", props.orderId),
-      fetchEmployeesWorkload()
+      fetchEmployeesWorkload(),
     ]);
   } catch (error) {
     console.error("Error loading data:", error);
@@ -252,6 +258,19 @@ h3 {
   margin-right: 1rem;
 }
 
+.btn.add {
+  background-color: var(--success);
+  color: white;
+}
+
+.btn.add:hover {
+  background-color: var(--dark-success);
+}
+
+.btn.add:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
 .remove-btn {
   background: none;
   border: none;
@@ -291,27 +310,6 @@ h3 {
 .employee-select:focus {
   outline: none;
   border-color: #20c997;
-}
-
-.assign-btn {
-  padding: 0.6rem 1.25rem;
-  background-color: #20c997;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.95rem;
-  transition: background-color 0.2s;
-  align-self: flex-start;
-}
-
-.assign-btn:hover:not(:disabled) {
-  background-color: #199d7a;
-}
-
-.assign-btn:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
 }
 
 .error {

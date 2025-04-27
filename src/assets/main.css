@@ -17,25 +17,28 @@ a,
 
 :root {
   /* Основные цвета из вашей палитры */
-  --dark: #000F08;
-  --dark-teal: #1C3738;
-  --warm-gray: #4D4847;
-  --light: #F4FFF8;
-  --teal: #8BAAAD;
-  
+  --dark: #000f08;
+  --dark-teal: #1c3738;
+  --warm-gray: #4d4847;
+  --light: #f4fff8;
+  --teal: #8baaad;
+
   /* Дополнительные цвета для UI */
   --primary: var(--dark-teal);
   --secondary: var(--teal);
   --text: var(--dark);
   --bg: var(--light);
   --surface: white;
-  
+
   /* Статусные цвета */
   --success: #28a745;
+  --dark-success: #24973f;
   --warning: #ffc107;
   --danger: #dc3545;
+  --dark-danger: #b62b39;
   --info: #17a2b8;
-  
+  --dark-info: #1393a7;
+
   /* Тени и границы */
   --shadow-sm: 0 1px 3px rgba(0, 15, 8, 0.1);
   --shadow-md: 0 4px 6px rgba(0, 15, 8, 0.1);
@@ -45,7 +48,7 @@ a,
 
 body {
   margin: 0;
-  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-family: "Segoe UI", system-ui, sans-serif;
   color: var(--text);
   background-color: var(--bg);
 }

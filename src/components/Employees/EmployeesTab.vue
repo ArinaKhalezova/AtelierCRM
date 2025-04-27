@@ -334,17 +334,11 @@ const saveEmployee = async () => {
 // Методы для смены пароля
 const validatePassword = () => {
   if (newPassword.value.length < 6) {
-    passwordError.value = {
-      message: "",
-      details: { password: "Минимум 6 символов" },
-    };
+    passwordError.value = "Пароль должен содержать минимум 6 символов";
   } else if (newPassword.value !== confirmPassword.value) {
-    passwordError.value = {
-      message: "",
-      details: { password: "Пароли не совпадают" },
-    };
+    passwordError.value = "Пароли не совпадают";
   } else {
-    passwordError.value = { message: "", details: {} };
+    passwordError.value = ""; // Очищаем ошибку, если всё правильно
   }
 };
 
@@ -503,7 +497,7 @@ onMounted(async () => {
 
 .form-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 1rem;
   margin-top: 1.5rem;
 }
@@ -515,7 +509,14 @@ onMounted(async () => {
   padding: 0.75rem 1.5rem;
   border-radius: var(--border-radius);
   cursor: pointer;
+  font-size: 1rem;
+  width: 100%;
+  margin-top: 1rem;
   transition: all 0.2s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .confirmation-modal {
@@ -533,6 +534,7 @@ onMounted(async () => {
   justify-content: center;
   gap: 1rem;
   margin-top: 1.5rem;
+  align-items: center;
 }
 
 .confirm-button {
@@ -542,11 +544,18 @@ onMounted(async () => {
   padding: 0.75rem 1.5rem;
   border-radius: var(--border-radius);
   cursor: pointer;
+  font-size: 1rem;
+  width: 100%;
+  margin-top: 1rem;
   transition: all 0.2s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .confirm-button:hover {
-  background-color: #218838;
+  background-color: var(--dark-success);
 }
 
 .password-help {
@@ -581,7 +590,7 @@ onMounted(async () => {
 
 .controls {
   display: flex;
-  align-items: center;
+  align-items: start;
   gap: 1rem;
   flex-wrap: wrap;
 }
@@ -608,7 +617,7 @@ h2 {
 }
 
 .add-employee-button {
-  background-color: var(--dark-teal);
+  background-color: var(--success);
   color: white;
   border: none;
   padding: 0.6rem 1.2rem;
@@ -622,7 +631,7 @@ h2 {
 }
 
 .add-employee-button:hover {
-  background-color: #244a4b;
+  background-color: var(--dark-success);
   opacity: 0.95;
 }
 
@@ -679,7 +688,7 @@ h2 {
 }
 
 .edit-button {
-  background-color: var(--teal);
+  background-color: var(--info);
   color: white;
   border: none;
   padding: 0.5rem 1rem;
@@ -690,7 +699,7 @@ h2 {
 }
 
 .edit-button:hover {
-  background-color: #7a9b9e;
+  background-color: var(--dark-info);
 }
 
 .delete-button {
@@ -710,22 +719,21 @@ h2 {
   opacity: 0.95;
 }
 
-/* Стили для модального окна и формы */
 .modal-form {
   padding: 1.5rem;
-  max-width: 500px;
+  width: 100%;
   margin: 0 auto;
 }
 
 .modal-form h3 {
   color: var(--dark-teal);
-  margin-bottom: 1.5rem;
+  margin-bottom: ;
   text-align: center;
   font-size: 1.25rem;
 }
 
 .form-group {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 }
 
 .form-group label {
@@ -754,7 +762,7 @@ h2 {
 }
 
 .submit-button {
-  background-color: var(--dark-teal);
+  background-color: var(--success);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -771,7 +779,7 @@ h2 {
 }
 
 .submit-button:hover {
-  background-color: #244a4b;
+  background-color: var(--dark-success);
   opacity: 0.95;
 }
 

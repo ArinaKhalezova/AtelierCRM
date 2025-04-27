@@ -30,7 +30,7 @@
       <button
         @click="uploadDocuments"
         :disabled="!selectedFiles.length"
-        class="btn primary"
+        class="btn add"
       >
         Загрузить выбранные файлы
       </button>
@@ -115,11 +115,18 @@ const handleFileSelect = (e) => {
 const uploadDocuments = async () => {
   if (!selectedFiles.value.length) return;
 
+  error.value = null;
+  const formData = new FormData();
+  formData.append("type", documentType.value);
+
+  selectedFiles.value.forEach((file) => {
+    formData.append("documents", file);
+  });
+
   try {
     await store.dispatch("orderDetails/uploadOrderDocuments", {
       orderId: props.orderId,
-      files: selectedFiles.value,
-      type: documentType.value,
+      formData, // Передаем FormData напрямую
     });
 
     await fetchDocuments();
@@ -127,19 +134,36 @@ const uploadDocuments = async () => {
     fileInput.value.value = "";
     selectedFiles.value = [];
   } catch (err) {
-    error.value = "Ошибка загрузки файлов";
+    error.value =
+      "Ошибка загрузки: " + (err.response?.data?.error || err.message);
   }
 };
 
 const downloadDocument = async (documentId) => {
   try {
-    await store.dispatch("orderDetails/downloadOrderDocument", documentId);
+    const response = await store.dispatch(
+      "orderDetails/downloadOrderDocument",
+      documentId
+    );
+
+    // Создаем Blob с явным указанием MIME-типа
+    const blob = new Blob([response.data], { type: response.data.type });
+    const url = window.URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = response.filename || `document_${documentId}`;
+    document.body.appendChild(link);
+    link.click();
+
+    // Очистка
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(link);
   } catch (err) {
-    error.value = "Ошибка скачивания файла";
+    error.value = "Ошибка скачивания файла: " + err.message;
     console.error("Download error details:", err);
   }
 };
-
 const deleteDocument = async (documentId) => {
   if (!confirm("Вы уверены, что хотите удалить этот документ?")) return;
 
@@ -232,6 +256,35 @@ fetchDocuments();
   padding: 1rem;
   text-align: center;
   color: #666;
+}
+
+.btn.primary {
+  background-color: var(--info);
+  color: white;
+}
+
+.btn.primary:hover {
+  background-color: var(--dark-info);
+}
+
+.btn.add {
+  background-color: var(--success);
+  color: white;
+}
+
+.btn.add:hover {
+  background-color: var(--dark-success);
+}
+
+.btn.danger {
+  background-color: white;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+}
+
+.btn.danger:hover {
+  background-color: var(--danger);
+  color: white;
 }
 
 .error-message {

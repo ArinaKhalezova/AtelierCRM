@@ -240,12 +240,12 @@ select:focus {
 }
 
 .btn.primary {
-  background-color: var(--teal);
+  background-color: var(--success);
   color: white;
 }
 
 .btn.primary:hover {
-  background-color: var(--dark-teal);
+  background-color: var(--dark-success);
 }
 
 .btn.primary:disabled {
@@ -254,12 +254,12 @@ select:focus {
 }
 
 .btn.secondary {
-  background-color: #f0f0f0;
-  color: #333;
+  background-color: var(--danger);
+  color: #ffffff;
 }
 
 .btn.secondary:hover {
-  background-color: #e0e0e0;
+  background-color:  var(--dark-danger);
 }
 
 .error-message {

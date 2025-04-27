@@ -77,7 +77,6 @@ onMounted(async () => {
 .app {
   min-height: 100vh;
   display: flex;
-  background-color: var(--bg);
 }
 
 .auth-pages {
@@ -85,7 +84,6 @@ onMounted(async () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #f5f5f5;
 }
 
 .main-nav {

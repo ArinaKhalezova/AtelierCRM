@@ -257,12 +257,12 @@ onMounted(async () => {
 }
 
 .btn.primary {
-  background-color: var(--teal);
+  background-color: var(--info);
   color: white;
 }
 
 .btn.primary:hover {
-  background-color: var(--dark-teal);
+  background-color: var(--dark-info);
 }
 
 .btn.danger {

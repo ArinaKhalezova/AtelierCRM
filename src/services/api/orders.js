@@ -69,7 +69,13 @@ export default {
       transformResponse: (data, headers) => {
         return {
           data: data,
-          headers: headers,
+          filename: headers["content-disposition"]
+            ? decodeURIComponent(
+                headers["content-disposition"]
+                  .split("filename*=UTF-8''")[1]
+                  .split(";")[0]
+              )
+            : `document_${documentId}`,
         };
       },
     });

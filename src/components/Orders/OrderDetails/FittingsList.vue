@@ -234,27 +234,27 @@ onMounted(() => {
 }
 
 .btn.primary {
-  background-color: var(--teal);
+  background-color: var(--info);
   color: white;
 }
 
 .btn.primary:hover {
-  background-color: var(--dark-teal);
+  background-color: var(--dark-info);
 }
 
 .btn.secondary {
-  background-color: #f0f0f0;
-  color: #333;
+  background-color: var(--info);
+  color: #ffffff;
 }
 
 .btn.secondary:hover {
-  background-color: #e0e0e0;
+  background-color: var(--dark-info);
 }
 
 .btn.danger {
-  background-color: #fff0f0;
-  color: var(--danger);
+  background-color: white;
   border: 1px solid var(--danger);
+  color: var(--danger);
 }
 
 .btn.danger:hover {

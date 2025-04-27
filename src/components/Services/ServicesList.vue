@@ -305,7 +305,7 @@ const deleteService = async (serviceId) => {
 
 .controls {
   display: flex;
-  align-items: center;
+  align-items: start;
   gap: 1rem;
   flex-wrap: wrap;
 }
@@ -326,7 +326,7 @@ const deleteService = async (serviceId) => {
 }
 
 .add-button {
-  background-color: var(--dark-teal);
+  background-color: var(--success);
   color: white;
   border: none;
   padding: 0.6rem 1.2rem;
@@ -340,7 +340,7 @@ const deleteService = async (serviceId) => {
 }
 
 .add-button:hover {
-  background-color: #244a4b;
+  background-color: var(--dark-success);
   opacity: 0.95;
 }
 
@@ -384,7 +384,7 @@ const deleteService = async (serviceId) => {
 }
 
 .edit-button {
-  background-color: var(--teal);
+  background-color: var(--info);
   color: white;
   border: none;
   padding: 0.5rem 1rem;
@@ -395,7 +395,7 @@ const deleteService = async (serviceId) => {
 }
 
 .edit-button:hover {
-  background-color: #7a9b9e;
+  background-color: var(--dark-info);
 }
 
 .delete-button {
@@ -492,7 +492,7 @@ const deleteService = async (serviceId) => {
 }
 
 .cancel-button {
-  background-color: var(--warm-gray);
+  background-color: var(--danger);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -502,12 +502,12 @@ const deleteService = async (serviceId) => {
 }
 
 .cancel-button:hover {
-  background-color: #5e5756;
+  background-color: var(--dark-danger);
   opacity: 0.95;
 }
 
 .submit-button {
-  background-color: var(--dark-teal);
+  background-color: var(--success);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -517,7 +517,7 @@ const deleteService = async (serviceId) => {
 }
 
 .submit-button:hover:not(:disabled) {
-  background-color: #244a4b;
+  background-color: var(--dark-success);
   opacity: 0.95;
 }
 

@@ -95,6 +95,18 @@ export default {
           : m
       );
     },
+
+    SET_ORDER_DOCUMENTS(state, documents) {
+      state.documents = documents;
+    },
+    ADD_ORDER_DOCUMENT(state, document) {
+      state.documents.push(document);
+    },
+    REMOVE_ORDER_DOCUMENT(state, documentId) {
+      state.documents = state.documents.filter(
+        (d) => d.document_id !== documentId
+      );
+    },
   },
   actions: {
     // Основной action для загрузки всех данных заказа
@@ -366,12 +378,8 @@ export default {
       }
     },
 
-    async uploadOrderDocuments({ commit }, { orderId, files, type }) {
+    async uploadOrderDocuments({ commit }, { orderId, formData }) {
       try {
-        const formData = new FormData();
-        files.forEach((file) => formData.append("documents", file));
-        formData.append("type", type);
-
         const response = await ordersApi.uploadOrderDocuments(
           orderId,
           formData
@@ -383,40 +391,17 @@ export default {
       }
     },
 
+    // В orderDetails.js
     async downloadOrderDocument({ commit }, documentId) {
+      commit("SET_LOADING", true);
       try {
         const response = await ordersApi.downloadOrderDocument(documentId);
-
-        // Проверка наличия данных
-        if (!response || !response.data) {
-          throw new Error("Не удалось получить данные документа");
-        }
-
-        // Обработка имени файла
-        let filename = `document_${documentId}`;
-        if (response.headers && response.headers["content-disposition"]) {
-          const cd = response.headers["content-disposition"];
-          filename = cd.split("filename=")[1]?.replace(/"/g, "") || filename;
-        }
-
-        // Создание ссылки для скачивания
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", filename);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-
-        // Явный возврат для обработки в компоненте
-        return { success: true };
+        return response;
       } catch (error) {
-        console.error("Download error:", {
-          error: error.message,
-          response: error.response,
-        });
         commit("SET_ERROR", error.message);
-        throw error; // Пробрасываем ошибку дальше
+        throw error;
+      } finally {
+        commit("SET_LOADING", false);
       }
     },
 

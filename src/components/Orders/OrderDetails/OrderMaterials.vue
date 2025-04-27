@@ -205,22 +205,25 @@ h3 {
   color: var(--dark-teal);
 }
 
-.btn.danger {
-  padding: 0.5rem 1rem;
-  border-radius: var(--border-radius);
-  background-color: var(--danger);
+.btn.primary {
+  background-color: var(--info);
   color: white;
-  border: none;
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: all 0.2s ease;
-  white-space: nowrap;
+}
+
+.btn.primary:hover {
+  background-color: var(--dark-info);
+}
+
+.btn.danger {
+  background-color: white;
+  border: 1px solid var(--danger);
+  color: var(--danger);
 }
 
 .btn.danger:hover {
-  background-color: #c82333;
+  background-color: var(--danger);
+  color: white;
 }
-
 .empty {
   text-align: center;
   padding: 2rem;

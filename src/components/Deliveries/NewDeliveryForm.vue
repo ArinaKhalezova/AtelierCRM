@@ -3,107 +3,110 @@
     <div v-if="errorMessage" class="error-message">
       {{ errorMessage }}
     </div>
+    <div class="form-sections-container">
+      <div class="form-section">
+        <h3>Основные данные</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Поставщик</label>
+            <select v-model="formData.supplier_id" required>
+              <option value="" disabled>Выберите поставщика</option>
+              <option
+                v-for="supplier in suppliers"
+                :key="supplier.supplier_id"
+                :value="supplier.supplier_id"
+              >
+                {{ supplier.org_name }}
+              </option>
+            </select>
+          </div>
 
-    <div class="form-section">
-      <h3>Основные данные</h3>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Поставщик</label>
-          <select v-model="formData.supplier_id" required>
-            <option value="" disabled>Выберите поставщика</option>
-            <option
-              v-for="supplier in suppliers"
-              :key="supplier.supplier_id"
-              :value="supplier.supplier_id"
-            >
-              {{ supplier.org_name }}
-            </option>
-          </select>
+          <div class="form-group">
+            <label>Дата поставки</label>
+            <input v-model="formData.delivery_date" type="date" required />
+          </div>
+
+          <div class="form-group">
+            <label>Номер поставки (из накладной)</label>
+            <input
+              v-model="formData.delivery_number"
+              placeholder="Введите номер из накладной"
+              required
+            />
+          </div>
         </div>
 
         <div class="form-group">
-          <label>Дата поставки</label>
-          <input v-model="formData.delivery_date" type="date" required />
-        </div>
-
-        <div class="form-group">
-          <label>Номер поставки (из накладной)</label>
+          <label>Накладная</label>
           <input
-            v-model="formData.delivery_number"
-            placeholder="Введите номер из накладной"
-            required
+            type="file"
+            @change="handleFileUpload"
+            ref="fileInput"
+            accept=".pdf,.jpg,.jpeg,.png"
           />
+          <small v-if="uploadedFile"
+            >Выбран файл: {{ uploadedFile.name }}</small
+          >
         </div>
       </div>
 
-      <div class="form-group">
-        <label>Накладная</label>
-        <input
-          type="file"
-          @change="handleFileUpload"
-          ref="fileInput"
-          accept=".pdf,.jpg,.jpeg,.png"
-        />
-        <small v-if="uploadedFile">Выбран файл: {{ uploadedFile.name }}</small>
-      </div>
-    </div>
+      <div class="form-section">
+        <div class="section-header">
+          <h3>Материалы в поставке</h3>
+          <button type="button" @click="openMaterialModal" class="add-button">
+            <span class="plus-icon">+</span> Добавить материал
+          </button>
+        </div>
 
-    <div class="form-section">
-      <div class="section-header">
-        <h3>Материалы в поставке</h3>
-        <button type="button" @click="openMaterialModal" class="add-button">
-          <span class="plus-icon">+</span> Добавить материал
+        <div v-if="formData.materials.length > 0" class="materials-table">
+          <div class="table-header">
+            <div>Название</div>
+            <div>Тип</div>
+            <div>Кол-во</div>
+            <div>Цена</div>
+            <div class="actions-column"></div>
+          </div>
+          <div
+            v-for="(material, index) in formData.materials"
+            :key="index"
+            class="table-row"
+          >
+            <div>
+              {{
+                material.material_name || getMaterialName(material.material_id)
+              }}
+            </div>
+            <div>{{ material.type }}</div>
+            <div>{{ material.quantity }} {{ material.unit }}</div>
+            <div>{{ material.cost_per_unit }} ₽</div>
+            <div class="actions-column">
+              <button
+                @click="removeMaterial(index)"
+                type="button"
+                class="delete-button"
+              >
+                Удалить
+              </button>
+            </div>
+          </div>
+        </div>
+        <div v-else class="empty-state">
+          <p>Нет добавленных материалов</p>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" @click="cancel" class="cancel-button">
+          Отмена
+        </button>
+        <button
+          type="submit"
+          :disabled="isSubmitting || !canSubmit"
+          class="submit-button"
+        >
+          {{ isSubmitting ? "Сохранение..." : "Создать поставку" }}
         </button>
       </div>
-
-      <div v-if="formData.materials.length > 0" class="materials-table">
-        <div class="table-header">
-          <div>Название</div>
-          <div>Тип</div>
-          <div>Кол-во</div>
-          <div>Цена</div>
-          <div class="actions-column"></div>
-        </div>
-        <div
-          v-for="(material, index) in formData.materials"
-          :key="index"
-          class="table-row"
-        >
-          <div>
-            {{
-              material.material_name || getMaterialName(material.material_id)
-            }}
-          </div>
-          <div>{{ material.type }}</div>
-          <div>{{ material.quantity }} {{ material.unit }}</div>
-          <div>{{ material.cost_per_unit }} ₽</div>
-          <div class="actions-column">
-            <button
-              @click="removeMaterial(index)"
-              type="button"
-              class="delete-button"
-            >
-              Удалить
-            </button>
-          </div>
-        </div>
-      </div>
-      <div v-else class="empty-state">
-        <p>Нет добавленных материалов</p>
-      </div>
-    </div>
-
-    <div class="form-actions">
-      <button type="button" @click="cancel" class="cancel-button">
-        Отмена
-      </button>
-      <button
-        type="submit"
-        :disabled="isSubmitting || !canSubmit"
-        class="submit-button"
-      >
-        {{ isSubmitting ? "Сохранение..." : "Создать поставку" }}
-      </button>
     </div>
 
     <Modal :isOpen="showMaterialModal" @close="closeMaterialModal" size="lg">
@@ -394,7 +397,8 @@ const handleSubmit = async () => {
 .delivery-form {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  height: calc(100vh - 100px); /* Задаем высоту формы */
+  max-height: 800px; /* Максимальная высота для больших экранов */
   padding: 1rem;
 }
 
@@ -403,6 +407,14 @@ const handleSubmit = async () => {
   border-radius: var(--border-radius);
   box-shadow: var(--shadow-sm);
   padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-sections-container {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .section-header {
@@ -460,7 +472,7 @@ small {
 }
 
 .add-button {
-  background-color: var(--dark-teal);
+  background-color: var(--info);
   color: white;
   border: none;
   padding: 0.6rem 1.2rem;
@@ -474,7 +486,7 @@ small {
 }
 
 .add-button:hover {
-  background-color: #244a4b;
+  background-color: var(--dark-info);
   opacity: 0.95;
 }
 
@@ -537,13 +549,20 @@ small {
 }
 
 .form-actions {
+  position: sticky;
+  bottom: 0;
+  background: white;
+  padding: 1rem 0;
+  margin-top: auto;
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  z-index: 1;
 }
 
 .cancel-button {
-  background-color: var(--warm-gray);
+  background-color: var(--danger);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -553,12 +572,12 @@ small {
 }
 
 .cancel-button:hover {
-  background-color: #5e5756;
+  background-color: var(--dark-danger);
   opacity: 0.95;
 }
 
 .submit-button {
-  background-color: var(--dark-teal);
+  background-color: var(--success);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -567,13 +586,13 @@ small {
   transition: all 0.2s ease;
 }
 
-.submit-button:hover:not(:disabled) {
-  background-color: #244a4b;
+.submit-button:hover {
+  background-color: var(--dark-success);
   opacity: 0.95;
 }
 
 .submit-button:disabled {
-  opacity: 0.6;
+  background-color: #565656;
   cursor: not-allowed;
 }
 
@@ -589,18 +608,19 @@ small {
   display: flex;
   flex-direction: column;
   height: 100%;
-  width: 100%;
+  min-height: 400px; /* Минимальная высота */
 }
 
 .modal-scrollable-content {
   flex: 1;
   overflow-y: auto;
   padding: 0 1.5rem;
+  max-height: 60vh; /* Ограничиваем высоту контента */
 }
 
 .modal-form-content {
-  min-height: min-content;
   padding: 1rem 0;
+  min-height: min-content;
 }
 
 .modal-header {
@@ -639,6 +659,7 @@ small {
   position: sticky;
   bottom: 0;
   margin-top: auto;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05); /* Добавляем тень для разделения */
 }
 
 @media (max-width: 768px) {

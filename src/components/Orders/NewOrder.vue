@@ -825,12 +825,12 @@ select:focus {
 }
 
 .btn.primary {
-  background-color: var(--teal);
+  background-color: var(--success);
   color: white;
 }
 
 .btn.primary:hover {
-  background-color: var(--dark-teal);
+  background-color: var(--dark-success);
 }
 
 .btn.primary:disabled {
@@ -841,12 +841,13 @@ select:focus {
 
 .btn.secondary {
   background-color: white;
-  border: 1px solid var(--teal);
-  color: var(--teal);
+  border: 1px solid var(--danger);
+  color: var(--danger);
 }
 
 .btn.secondary:hover {
-  background-color: rgba(139, 170, 173, 0.1);
+  background-color: var(--danger);
+  color: white;
 }
 
 @media (max-width: 768px) {

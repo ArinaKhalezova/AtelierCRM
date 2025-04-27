@@ -260,7 +260,7 @@ onMounted(async () => {
 
 .controls {
   display: flex;
-  align-items: center;
+  align-items: start;
   gap: 1rem;
   flex-wrap: wrap;
 }
@@ -287,7 +287,7 @@ h2 {
 }
 
 .add-client-button {
-  background-color: var(--dark-teal);
+  background-color: var(--success);
   color: white;
   border: none;
   padding: 0.6rem 1.2rem;
@@ -301,7 +301,7 @@ h2 {
 }
 
 .add-client-button:hover {
-  background-color: #244a4b;
+  background-color: var(--dark-success);
   opacity: 0.95;
 }
 
@@ -366,7 +366,7 @@ h2 {
 }
 
 .edit-button {
-  background-color: var(--teal);
+  background-color: var(--info);
   color: white;
   border: none;
   padding: 0.5rem 1rem;
@@ -377,7 +377,7 @@ h2 {
 }
 
 .edit-button:hover {
-  background-color: #7a9b9e;
+  background-color: var(--dark-info);
 }
 
 .delete-button {
@@ -399,7 +399,7 @@ h2 {
 /* Стили для модального окна */
 .modal-form {
   padding: 1.5rem;
-  max-width: 500px;
+  width: 100%;
   margin: 0 auto;
 }
 
@@ -438,7 +438,7 @@ h2 {
 }
 
 .submit-button {
-  background-color: var(--dark-teal);
+  background-color: var(--success);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -451,7 +451,7 @@ h2 {
 }
 
 .submit-button:hover {
-  background-color: #244a4b;
+  background-color: var(--dark-success);
   opacity: 0.95;
 }
 

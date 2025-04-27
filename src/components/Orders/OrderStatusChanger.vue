@@ -73,24 +73,16 @@ const updateStatus = async () => {
 </script>
 
 <style scoped>
-.status-changer {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
 
 .status-select {
-  padding: 0.5rem 1rem;
+  padding: 10px 20px;
+  text-align: center;
   border-radius: 1rem;
-  border: none;
+  border: 1px solid;
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
   appearance: none;
-  padding-right: 2rem;
-  background-color: rgba(139, 170, 173, 0.2);
-  color: var(--dark-teal);
-  transition: all 0.2s ease;
 }
 
 .status-select:hover {
@@ -115,28 +107,28 @@ const updateStatus = async () => {
 
 /* Status colors */
 .status-новый {
-  background-color: rgba(88, 102, 104, 0.2);
-  color: var(--dark-teal);
+  background-color: rgb(186, 216, 220);
+  color: #ffffff;
 }
 .status-принят {
-  background-color: rgba(24, 165, 231, 0.2);
-  color: #2e7d32;
+  background-color: rgb(158, 230, 172);
+  color: #ffffff;
 }
 .status-в-работе {
-  background-color: rgba(255, 160, 0, 0.2);
-  color: #ff8f00;
+  background-color: rgb(255, 190, 77);
+  color: #ffffff;
 }
 .status-готов {
-  background-color: rgba(76, 175, 80, 0.2);
-  color: #2e7d32;
+  background-color: rgb(48, 194, 89);
+  color: #ffffff;
 }
 .status-выполнен {
-  background-color: rgba(46, 125, 50, 0.2);
-  color: #1b5e20;
+  background-color: rgb(15, 159, 82);
+  color: #ffffff;
 }
 .status-отменен {
-  background-color: rgba(220, 53, 69, 0.2);
-  color: var(--danger);
+  background-color: rgb(139, 18, 18);
+  color: white;
 }
 
 @keyframes spin {

@@ -1,31 +1,10 @@
 <template>
   <div v-if="isOpen" class="modal-overlay">
     <div class="modal-content">
-      <h2>Редактирование заказа #{{ order.order_id }}</h2>
-
-      <div class="tabs">
-        <button
-          @click="currentTab = 'main'"
-          :class="{ active: currentTab === 'main' }"
-        >
-          Основное
-        </button>
-        <button
-          @click="currentTab = 'services'"
-          :class="{ active: currentTab === 'services' }"
-        >
-          Услуги ({{ orderServices.length }})
-        </button>
-        <button
-          @click="currentTab = 'materials'"
-          :class="{ active: currentTab === 'materials' }"
-        >
-          Материалы ({{ orderMaterials.length }})
-        </button>
-      </div>
+      <h2>Редактирование заказа #{{ order.tracking_number }}</h2>
 
       <form @submit.prevent="handleSubmit">
-        <div v-show="currentTab === 'main'" class="form-section">
+        <div class="form-section">
           <h3>Основная информация</h3>
 
           <div class="form-group">
@@ -58,124 +37,6 @@
               class="textarea"
               placeholder="Введите комментарий..."
             ></textarea>
-          </div>
-        </div>
-
-        <!-- Редактирование услуг -->
-        <div v-show="currentTab === 'services'" class="form-section">
-          <div class="services-list">
-            <div
-              v-for="service in orderServices"
-              :key="service.order_service_id"
-              class="service-item"
-            >
-              <div class="service-info">
-                <span>{{ service.service_name }}</span>
-                <input
-                  type="number"
-                  v-model.number="service.quantity"
-                  min="1"
-                  class="quantity-input"
-                />
-              </div>
-              <button
-                type="button"
-                @click="removeService(service.order_service_id)"
-                class="btn danger small"
-              >
-                Удалить
-              </button>
-            </div>
-
-            <div class="add-service">
-              <select v-model="newService.service_id">
-                <option value="">Выберите услугу</option>
-                <option
-                  v-for="service in availableServices"
-                  :key="service.service_id"
-                  :value="service.service_id"
-                >
-                  {{ service.name }} ({{ service.base_cost }} ₽)
-                </option>
-              </select>
-              <input
-                type="number"
-                v-model.number="newService.quantity"
-                min="1"
-                placeholder="Количество"
-              />
-              <button
-                type="button"
-                @click="addService"
-                class="btn primary small"
-              >
-                Добавить
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Редактирование материалов -->
-        <div v-show="currentTab === 'materials'" class="form-section">
-          <div class="materials-list">
-            <div
-              v-for="material in orderMaterials"
-              :key="material.order_material_id"
-              class="material-item"
-            >
-              <div class="material-info">
-                <span>{{ material.material_name }}</span>
-                <div class="quantity-controls">
-                  <input
-                    type="number"
-                    v-model.number="material.quantity"
-                    :min="1"
-                    :max="material.available + material.quantity"
-                    class="quantity-input"
-                  />
-                  <span class="available">
-                    Доступно: {{ material.available + material.quantity }}
-                    {{ material.unit }}
-                  </span>
-                </div>
-              </div>
-              <button
-                type="button"
-                @click="removeMaterial(material.order_material_id)"
-                class="btn danger small"
-              >
-                Удалить
-              </button>
-            </div>
-
-            <div class="add-material">
-              <select v-model="newMaterial.material_id">
-                <option value="">Выберите материал</option>
-                <option
-                  v-for="material in availableMaterials"
-                  :key="material.material_id"
-                  :value="material.material_id"
-                >
-                  {{ material.material_name }} ({{
-                    material.cost_per_unit
-                  }}
-                  ₽/{{ material.unit }})
-                </option>
-              </select>
-              <input
-                type="number"
-                v-model.number="newMaterial.quantity"
-                min="1"
-                placeholder="Количество"
-              />
-              <button
-                type="button"
-                @click="addMaterial"
-                class="btn primary small"
-              >
-                Добавить
-              </button>
-            </div>
           </div>
         </div>
 
@@ -213,22 +74,6 @@ const isAdmin = computed(() => store.getters["auth/isAdmin"]);
 const formData = ref(initializeFormData());
 const isSubmitting = ref(false);
 const error = ref(null);
-
-const currentTab = ref("main");
-const orderServices = ref([]);
-const orderMaterials = ref([]);
-const availableServices = ref([]);
-const availableMaterials = ref([]);
-
-const newService = ref({
-  service_id: null,
-  quantity: 1,
-});
-
-const newMaterial = ref({
-  material_id: null,
-  quantity: 1,
-});
 
 function initializeFormData() {
   if (!props.order) return { comment: "" };
@@ -331,76 +176,6 @@ const handleSubmit = async () => {
     isSubmitting.value = false;
   }
 };
-
-async function loadServices() {
-  const response = await store.dispatch("services/fetchServices");
-  availableServices.value = response.data;
-}
-
-async function loadMaterials() {
-  const response = await store.dispatch("materials/fetchMaterials");
-  availableMaterials.value = response.data;
-}
-
-async function updateServiceQuantity(serviceId, quantity) {
-  await store.dispatch("orderDetails/updateOrderService", {
-    orderId: props.order.order_id,
-    serviceId,
-    quantity,
-  });
-}
-
-async function updateMaterialQuantity(materialId, quantity) {
-  await store.dispatch("orderDetails/updateOrderMaterial", {
-    orderId: props.order.order_id,
-    materialId,
-    quantity,
-  });
-}
-
-async function addService() {
-  if (!newService.value.service_id || newService.value.quantity < 1) return;
-
-  await store.dispatch("orderDetails/addServiceToOrder", {
-    orderId: props.order.order_id,
-    service: newService.value,
-  });
-
-  newService.value = { service_id: null, quantity: 1 };
-  await loadServices();
-}
-
-async function addMaterial() {
-  if (!newMaterial.value.material_id || newMaterial.value.quantity < 1) return;
-
-  await store.dispatch("orderDetails/addMaterialToOrder", {
-    orderId: props.order.order_id,
-    material: newMaterial.value,
-  });
-
-  newMaterial.value = { material_id: null, quantity: 1 };
-  await loadMaterials();
-}
-
-async function removeService(serviceId) {
-  await store.dispatch("orderDetails/removeServiceFromOrder", {
-    orderId: props.order.order_id,
-    serviceId,
-  });
-  orderServices.value = orderServices.value.filter(
-    (s) => s.order_service_id !== serviceId
-  );
-}
-
-async function removeMaterial(materialId) {
-  await store.dispatch("orderDetails/removeMaterialFromOrder", {
-    orderId: props.order.order_id,
-    materialId,
-  });
-  orderMaterials.value = orderMaterials.value.filter(
-    (m) => m.order_material_id !== materialId
-  );
-}
 </script>
 
 <style scoped>
@@ -425,48 +200,6 @@ async function removeMaterial(materialId) {
   max-width: 700px;
   max-height: 90vh;
   overflow-y: auto;
-}
-
-.tabs {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.tabs button {
-  padding: 0.5rem 1rem;
-  border: none;
-  background: none;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-}
-
-.tabs button.active {
-  border-color: var(--teal);
-}
-
-.service-item,
-.material-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  background: #f8f9fa;
-  border-radius: 6px;
-}
-
-.quantity-input {
-  width: 80px;
-  padding: 0.5rem;
-  margin-left: 1rem;
-}
-
-.add-service,
-.add-material {
-  display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
 }
 
 .btn.small {
@@ -519,14 +252,6 @@ async function removeMaterial(materialId) {
   resize: vertical;
 }
 
-.fitting-item {
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background: #f9f9f9;
-  border-radius: 6px;
-  position: relative;
-}
-
 .btn {
   padding: 0.75rem 1.5rem;
   border-radius: 6px;
@@ -538,21 +263,21 @@ async function removeMaterial(materialId) {
 }
 
 .btn.primary {
-  background-color: var(--teal);
+  background-color: var(--success);
   color: white;
 }
 
 .btn.primary:hover {
-  background-color: var(--dark-teal);
+  background-color: var(--dark-success);
 }
 
 .btn.secondary {
-  background-color: #f0f0f0;
-  color: #333;
+  background-color: var(--danger);
+  color: #ffffff;
 }
 
 .btn.secondary:hover {
-  background-color: #e0e0e0;
+  background-color: var(--dark-danger);
 }
 
 .btn.danger {
@@ -586,36 +311,5 @@ async function removeMaterial(materialId) {
   background-color: #fff0f0;
   border-radius: 6px;
   text-align: center;
-}
-
-.comment-preview {
-  margin-bottom: 1rem;
-  padding: 1rem;
-  background: #f8f9fa;
-  border-radius: 6px;
-  border-left: 3px solid #ddd;
-}
-
-.comment-part {
-  margin-bottom: 1rem;
-  white-space: pre-wrap;
-}
-
-.fitting-part {
-  padding: 0.75rem;
-  background: #f0f7f4;
-  border-radius: 4px;
-  margin-top: 1rem;
-}
-
-.fitting-header {
-  font-weight: 500;
-  color: var(--teal);
-  margin-bottom: 0.5rem;
-}
-
-.fitting-content {
-  white-space: pre-wrap;
-  color: #444;
 }
 </style>

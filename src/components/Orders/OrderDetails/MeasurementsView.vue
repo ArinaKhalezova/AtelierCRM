@@ -88,7 +88,7 @@ defineProps({
   align-self: flex-start;
   padding: 0.75rem 1.5rem;
   border-radius: var(--border-radius);
-  background-color: var(--teal);
+  background-color: var(--info);
   color: white;
   border: none;
   cursor: pointer;
@@ -97,7 +97,7 @@ defineProps({
 }
 
 .btn.primary:hover {
-  background-color: #7a9b9e;
+  background-color: var(--dark-info);
 }
 
 @media (max-width: 768px) {
