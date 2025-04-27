@@ -154,25 +154,13 @@ router.get(
       const { document_name, document_data } = rows[0];
       const safeFilename = encodeURIComponent(document_name);
 
-      // Определяем MIME-тип по расширению файла
-      const ext = path.extname(document_name).toLowerCase();
-      const mimeTypes = {
-        ".pdf": "application/pdf",
-        ".jpg": "image/jpeg",
-        ".jpeg": "image/jpeg",
-        ".png": "image/png",
-        ".doc": "application/msword",
-        ".docx":
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      };
+      console.log("SAGE FILENAME!!!! " + safeFilename);
+      console.log("FILENAME!!!! " + document_name);
 
-      res.setHeader(
-        "Content-Type",
-        mimeTypes[ext] || "application/octet-stream"
-      );
+      res.setHeader("Content-Type", "application/octet-stream");
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename*=UTF-8''${safeFilename}`
+        `attachment; filename="${safeFilename}"; filename*=UTF-8''${safeFilename}`
       );
       res.send(document_data);
     } catch (err) {

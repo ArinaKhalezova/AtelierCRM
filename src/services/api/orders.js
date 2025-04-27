@@ -66,18 +66,6 @@ export default {
   downloadOrderDocument(documentId) {
     return apiClient.get(`/orders/documents/${documentId}/download`, {
       responseType: "blob",
-      transformResponse: (data, headers) => {
-        return {
-          data: data,
-          filename: headers["content-disposition"]
-            ? decodeURIComponent(
-                headers["content-disposition"]
-                  .split("filename*=UTF-8''")[1]
-                  .split(";")[0]
-              )
-            : `document_${documentId}`,
-        };
-      },
     });
   },
 

@@ -391,7 +391,6 @@ export default {
       }
     },
 
-    // В orderDetails.js
     async downloadOrderDocument({ commit }, documentId) {
       commit("SET_LOADING", true);
       try {

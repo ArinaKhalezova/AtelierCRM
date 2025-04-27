@@ -146,13 +146,16 @@ const downloadDocument = async (documentId) => {
       documentId
     );
 
+    const orderDocument = documents.value.find(
+      (d) => d.document_id === documentId
+    );
+    console.log(orderDocument);
     // Создаем Blob с явным указанием MIME-типа
     const blob = new Blob([response.data], { type: response.data.type });
     const url = window.URL.createObjectURL(blob);
-
     const link = document.createElement("a");
     link.href = url;
-    link.download = response.filename || `document_${documentId}`;
+    link.download = orderDocument.document_name || "document_${documentId}";
     document.body.appendChild(link);
     link.click();
 
@@ -164,6 +167,7 @@ const downloadDocument = async (documentId) => {
     console.error("Download error details:", err);
   }
 };
+
 const deleteDocument = async (documentId) => {
   if (!confirm("Вы уверены, что хотите удалить этот документ?")) return;
 
