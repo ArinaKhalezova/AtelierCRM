@@ -241,18 +241,15 @@ const saveService = async () => {
           base_cost: parseFloat(formData.value.base_cost),
         };
 
-    const result = await store.dispatch(action, payload);
-
-    if (result?.success) {
-      await store.dispatch("services/fetchServices");
-      closeModal();
-    } else if (result?.errors) {
-      formErrors.value = result.errors;
-    }
+    await store.dispatch(action, payload);
+    await store.dispatch("services/fetchServices");
+    closeModal(); 
   } catch (err) {
     console.error("Ошибка при сохранении услуги:", err);
     if (err.response?.data?.errors) {
       formErrors.value = err.response.data.errors;
+    } else {
+      formErrors.value._general = "Произошла ошибка при сохранении услуги";
     }
   } finally {
     isSubmitting.value = false;

@@ -51,8 +51,15 @@ export default {
         commit("SET_JOB_POSITIONS", response.data);
         commit("SET_ERROR", null);
       } catch (error) {
-        commit("SET_ERROR", "Ошибка при загрузке должностей");
+        const message =
+          error.response?.data?.error ||
+          "Ошибка при загрузке списка должностей";
+        commit("SET_ERROR", message);
         console.error("Error fetching job positions:", error);
+
+        // Возвращаем дефолтный список для продолжения работы
+        const defaultPositions = ["Швея", "Закройщик", "Модельер", "Технолог"];
+        commit("SET_JOB_POSITIONS", defaultPositions);
       }
     },
     async addEmployeeAction({ commit }, employeeData) {

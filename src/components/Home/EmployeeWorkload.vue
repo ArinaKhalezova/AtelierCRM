@@ -8,7 +8,6 @@
         <div class="header-name">Сотрудник</div>
         <div class="header-position">Должность</div>
         <div class="header-workload">В работе</div>
-        <div class="header-ready">Готово</div>
         <div class="header-deadline">Ближайший срок</div>
         <div class="header-capacity">Загруженность</div>
       </div>
@@ -21,7 +20,6 @@
         <div class="employee-name">{{ employee.fullname }}</div>
         <div class="employee-position">{{ employee.position }}</div>
         <div class="employee-count">{{ employee.active_orders_count }}</div>
-        <div class="employee-ready">{{ employee.ready_orders_count }}</div>
         <div class="employee-deadline">
           {{ formatDeadline(employee.nearest_deadline) }}
         </div>
@@ -111,7 +109,7 @@ onMounted(fetchData);
 .workload-header,
 .workload-row {
   display: grid;
-  grid-template-columns: 2fr 1.5fr 0.8fr 0.8fr 1.2fr 2fr;
+  grid-template-columns: 2fr 1.5fr 0.8fr 1.2fr 2fr;
   gap: 1rem;
   padding: 0.75rem 1rem;
   align-items: center;

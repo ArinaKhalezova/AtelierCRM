@@ -15,6 +15,11 @@ function validateEmployeeData(data, isUpdate = false) {
   const fullnameError = validate.fullname(data.fullname);
   if (fullnameError) errors.fullname = fullnameError;
 
+  const validPositions = ["Администратор", "Менеджер", "Мастер"];
+  if (!validPositions.includes(data.position)) {
+    errors.position = "Некорректная должность";
+  }
+
   // Валидация телефона
   const phoneError = validate.phone(data.phone_number);
   if (phoneError) errors.phone_number = phoneError;
@@ -81,13 +86,25 @@ router.get("/", async (req, res) => {
 // Получение списка должностей
 router.get("/job-positions", async (req, res) => {
   try {
-    const { rows } = await pool.query(
-      "SELECT unnest(enum_range(NULL::job_position)) AS position"
-    );
-    res.json(rows.map((row) => row.position));
+    const { rows } = await pool.query(`
+      SELECT unnest(enum_range(NULL::job_position)) AS position
+      ORDER BY position
+    `);
+
+    let positions = rows.map((row) => row.position);
+    // Добавляем фильтрацию для администратора
+    if (req.user?.role !== "Старший администратор") {
+      positions = positions.filter(
+        (p) => !["Старший администратор", "Администратор"].includes(p)
+      );
+    }
+    res.json(positions);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Ошибка сервера" });
+    console.error("Error fetching job positions:", err);
+    res.status(500).json({
+      error: "Ошибка при загрузке должностей",
+      details: process.env.NODE_ENV === "development" ? err.message : undefined,
+    });
   }
 });
 
@@ -139,11 +156,17 @@ router.post("/", async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const userResult = await pool.query(
-      "INSERT INTO users (fullname, phone_number, email, password_hash, role) VALUES ($1, $2, $3, $4, 'Работник') RETURNING user_id",
-      [fullname, phone_number, email, hashedPassword]
-    );
+    const determineRole = (position) => {
+      if (position === "Старший администратор") return "Старший администратор";
+      if (position === "Администратор") return "Администратор";
+      return "Работник";
+    };
 
+    const role = determineRole(position);
+    const userResult = await pool.query(
+      "INSERT INTO users (fullname, phone_number, email, password_hash, role) VALUES ($1, $2, $3, $4, $5) RETURNING user_id",
+      [fullname, phone_number, email, hashedPassword, role]
+    );
     const userId = userResult.rows[0].user_id;
 
     // Создание сотрудника
@@ -197,39 +220,27 @@ router.put("/:id", async (req, res) => {
   const { id } = req.params;
   const { fullname, phone_number, email, position } = req.body;
 
-  // Проверка обязательных полей
-  const requiredFields = {
-    fullname: "ФИО",
-    phone_number: "Телефон",
-    position: "Должность",
-  };
-
-  const missingFields = Object.entries(requiredFields)
-    .filter(([field]) => !req.body[field])
-    .map(([_, name]) => name);
-
-  if (missingFields.length > 0) {
+  // 1. Проверка обязательных полей
+  if (!fullname || !phone_number || !position) {
     return res.status(400).json({
       success: false,
       message: "Не заполнены обязательные поля",
       errors: {
-        _general: `Заполните обязательные поля: ${missingFields.join(", ")}`,
-        ...Object.fromEntries(
-          Object.keys(requiredFields)
-            .filter((field) => !req.body[field])
-            .map((field) => [field, "Обязательное поле"])
-        ),
+        ...(!fullname && { fullname: "ФИО обязательно" }),
+        ...(!phone_number && { phone_number: "Телефон обязателен" }),
+        ...(!position && { position: "Должность обязательна" }),
       },
     });
   }
 
-  // Валидация данных
-  const validationErrors = validateEmployeeData(req.body, true);
-  if (validationErrors) {
-    return res.status(400).json({
+  // 2. Проверка прав для админских должностей
+  if (
+    ["Старший администратор", "Администратор"].includes(position) &&
+    req.user?.role !== "Старший администратор"
+  ) {
+    return res.status(403).json({
       success: false,
-      message: "Ошибки валидации данных",
-      errors: validationErrors,
+      message: "Недостаточно прав для назначения этой должности",
     });
   }
 
@@ -238,45 +249,52 @@ router.put("/:id", async (req, res) => {
   try {
     await client.query("BEGIN");
 
-    // 1. Проверяем существование сотрудника
-    const employeeExists = await client.query(
-      "SELECT user_id FROM employees WHERE employee_id = $1",
+    // 3. Получаем текущие данные сотрудника
+    const currentEmployee = await client.query(
+      `SELECT e.position as current_position, u.user_id, u.role
+       FROM employees e
+       JOIN users u ON e.user_id = u.user_id
+       WHERE e.employee_id = $1`,
       [id]
     );
 
-    if (!employeeExists.rowCount) {
-      return res.status(404).json({
-        success: false,
-        message: "Сотрудник не найден",
-        errors: {
-          _general: "Сотрудник с указанным ID не существует",
-        },
-      });
+    if (!currentEmployee.rows.length) {
+      return res.status(404).json({ error: "Сотрудник не найден" });
     }
 
-    const userId = employeeExists.rows[0].user_id;
+    const { user_id, current_position, role } = currentEmployee.rows[0];
 
-    // 2. Обновляем данные пользователя
+    // 4. Если меняется должность на админскую - обновляем и роль
+    let newRole = role;
+    if (position !== current_position) {
+      if (["Старший администратор", "Администратор"].includes(position)) {
+        newRole = position;
+      } else if (
+        ["Старший администратор", "Администратор"].includes(current_position)
+      ) {
+        newRole = "Работник";
+      }
+    }
+
+    // 5. Обновляем данные
     await client.query(
-      `UPDATE users SET 
+      `UPDATE users SET
         fullname = $1,
         phone_number = $2,
-        email = $3
-       WHERE user_id = $4`,
-      [fullname, phone_number, email, userId]
+        email = $3,
+        role = $4
+       WHERE user_id = $5`,
+      [fullname, phone_number, email, newRole, user_id]
     );
 
-    // 3. Обновляем должность сотрудника
     await client.query(
-      `UPDATE employees SET 
-        position = $1
-       WHERE employee_id = $2`,
+      `UPDATE employees SET position = $1 WHERE employee_id = $2`,
       [position, id]
     );
 
-    // 4. Получаем обновленные данные
-    const updatedEmployee = await client.query(
-      `SELECT e.employee_id, u.fullname, u.phone_number, u.email, e.position 
+    // 6. Возвращаем обновленные данные
+    const updatedData = await client.query(
+      `SELECT e.employee_id, e.position, u.fullname, u.phone_number, u.email, u.role
        FROM employees e
        JOIN users u ON e.user_id = u.user_id
        WHERE e.employee_id = $1`,
@@ -287,37 +305,21 @@ router.put("/:id", async (req, res) => {
 
     res.json({
       success: true,
-      data: updatedEmployee.rows[0],
-      message: "Данные сотрудника успешно обновлены",
+      data: updatedData.rows[0],
+      message: "Данные сотрудника обновлены",
     });
   } catch (err) {
     await client.query("ROLLBACK");
-    console.error("Ошибка обновления сотрудника:", err);
+    console.error("Ошибка обновления:", err);
 
-    // Обработка ошибки дубликата
+    let message = "Ошибка сервера";
     if (err.code === "23505") {
-      const detail = err.detail.toLowerCase();
-      let field = "";
-      if (detail.includes("email")) field = "email";
-      if (detail.includes("phone_number")) field = "phone_number";
-
-      return res.status(400).json({
-        success: false,
-        message: "Ошибка при обновлении сотрудника",
-        errors: {
-          [field]: `Такой ${
-            field === "email" ? "email" : "телефон"
-          } уже существует`,
-          _general: `Сотрудник с таким ${
-            field === "email" ? "email" : "телефоном"
-          } уже зарегистрирован`,
-        },
-      });
+      message = "Такой телефон или email уже существует";
     }
 
     res.status(500).json({
       success: false,
-      message: "Ошибка сервера при обновлении сотрудника",
+      message,
       error: process.env.NODE_ENV === "development" ? err.message : undefined,
     });
   } finally {

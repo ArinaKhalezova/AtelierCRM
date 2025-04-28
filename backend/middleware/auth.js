@@ -16,6 +16,7 @@ module.exports = async function authenticate(req, res, next) {
     }
 
     const decoded = jwt.verify(token, "my_super_secret_key_at_least_32_chars");
+    req.user = decoded;
 
     const { rows } = await pool.query(
       "SELECT user_id, fullname, email, role FROM users WHERE user_id = $1",

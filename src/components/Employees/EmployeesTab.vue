@@ -29,7 +29,7 @@
               <th>Должность</th>
               <th>Телефон</th>
               <th>Email</th>
-              <th class="actions-column">Действия</th>
+              <th class="actions-column" v-if="isSuperAdmin">Действия</th>
             </tr>
           </thead>
 
@@ -60,7 +60,6 @@
                     Удалить
                   </button>
                 </template>
-                <span v-else>-</span>
               </td>
             </tr>
           </tbody>
@@ -310,15 +309,23 @@ const closeModal = () => {
 const saveEmployee = async () => {
   formErrors.value = {};
   try {
+    const payload = {
+      fullname: formData.value.fullname,
+      phone_number: formData.value.phone_number,
+      email: formData.value.email,
+      position: formData.value.position,
+    };
+
     const action = isEditing.value
       ? "employees/updateEmployeeAction"
       : "employees/addEmployeeAction";
 
-    const payload = isEditing.value
-      ? { id: formData.value.employee_id, employeeData: formData.value }
-      : formData.value;
-
-    const result = await store.dispatch(action, payload);
+    const result = await store.dispatch(
+      action,
+      isEditing.value
+        ? { id: formData.value.employee_id, employeeData: payload }
+        : { ...payload, password: formData.value.password }
+    );
 
     if (result.success) {
       await store.dispatch("employees/fetchEmployees");
@@ -327,7 +334,8 @@ const saveEmployee = async () => {
       formErrors.value = result.errors || {};
     }
   } catch (err) {
-    console.error("Ошибка сохранения сотрудника:", err);
+    console.error("Ошибка сохранения:", err);
+    formErrors.value._general = err.response?.data?.message || "Ошибка сервера";
   }
 };
 
