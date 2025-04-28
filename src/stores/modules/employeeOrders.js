@@ -41,4 +41,13 @@ export default {
       }
     },
   },
+  getters: {
+    activeOrdersCount: (state) => {
+      const activeStatuses = ["Принят", "В работе"];
+      return state.orders.filter((o) => activeStatuses.includes(o.status))
+        .length;
+    },
+    notStartedOrdersCount: (state) =>
+      state.orders.filter((o) => o.status === "Новый").length,
+  },
 };

@@ -99,19 +99,34 @@ const currentDate = new Date().toLocaleDateString("ru-RU", {
 
 const isAdmin = computed(() => store.getters["auth/isAdmin"]);
 
-const activeOrdersCount = computed(
-  () => store.getters["orders/activeOrdersCount"]
-);
-const notStartedOrdersCount = computed(
-  () => store.getters["orders/notStartedOrdersCount"]
-);
+const activeOrdersCount = computed(() => {
+  return isAdmin.value
+    ? store.getters["orders/activeOrdersCount"]
+    : store.getters["employeeOrders/activeOrdersCount"];
+});
+
+const notStartedOrdersCount = computed(() => {
+  return isAdmin.value
+    ? store.getters["orders/notStartedOrdersCount"]
+    : store.getters["employeeOrders/notStartedOrdersCount"];
+});
 
 onMounted(async () => {
   try {
-    await Promise.all([
-      store.dispatch("orders/fetchOrders"),
-      store.dispatch("orders/fetchOrdersCountByStatus"),
-    ]);
+    const promises = [];
+
+    if (isAdmin.value) {
+      // Для админа загружаем общие данные
+      promises.push(
+        store.dispatch("orders/fetchOrders"),
+        store.dispatch("orders/fetchOrdersCountByStatus")
+      );
+    } else {
+      // Для сотрудника - только назначенные заказы
+      promises.push(store.dispatch("employeeOrders/fetchOrders"));
+    }
+
+    await Promise.all(promises);
   } catch (e) {
     error.value = "Ошибка загрузки данных";
     console.error("HomeView error:", e);

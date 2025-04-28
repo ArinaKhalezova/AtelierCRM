@@ -3,13 +3,15 @@ import api from "@/services/api/auth";
 export default {
   namespaced: true,
   state: () => ({
-    user: null,
+    user: JSON.parse(localStorage.getItem("userData")) || null,
     token: localStorage.getItem("authToken") || null,
     error: null,
+    isLoading: false,
   }),
   mutations: {
     SET_USER(state, user) {
       state.user = user;
+      localStorage.setItem("userData", JSON.stringify(user));
     },
     SET_TOKEN(state, token) {
       state.token = token;
@@ -18,29 +20,35 @@ export default {
     CLEAR_AUTH(state) {
       state.user = null;
       state.token = null;
+      state.error = null;
       localStorage.removeItem("authToken");
       localStorage.removeItem("userData");
+      localStorage.removeItem("refreshToken");
     },
     SET_ERROR(state, error) {
       state.error = error;
     },
+    SET_LOADING(state, loading) {
+      state.isLoading = loading;
+    },
   },
   actions: {
-    initializeAuth({ commit }) {
+    async initializeAuth({ commit, dispatch }) {
       const token = localStorage.getItem("authToken");
-      const userData = localStorage.getItem("userData");
-
-      if (token && userData) {
+      if (token) {
         commit("SET_TOKEN", token);
-        commit("SET_USER", JSON.parse(userData));
+        // Проверяем валидность токена
+        await dispatch("checkAuth");
       }
     },
+
     async login({ commit }, credentials) {
+      commit("SET_LOADING", true);
       try {
         const response = await api.login(credentials);
+
         commit("SET_TOKEN", response.data.token);
 
-        // Сохраняем данные пользователя
         const userData = {
           id: response.data.user.id,
           fullname: response.data.user.fullname,
@@ -49,67 +57,55 @@ export default {
         };
 
         commit("SET_USER", userData);
-        localStorage.setItem("userData", JSON.stringify(userData));
-        commit("SET_ERROR", null);
+
+        if (response.data.refreshToken) {
+          localStorage.setItem("refreshToken", response.data.refreshToken);
+        }
+
         return response.data;
       } catch (error) {
         const message = error.response?.data?.error || "Ошибка входа";
         commit("SET_ERROR", message);
         throw error;
+      } finally {
+        commit("SET_LOADING", false);
       }
     },
-    async register({ commit }, userData) {
+
+    async checkAuth({ commit, state }) {
+      if (!state.token) return false;
+
       try {
-        const response = await api.register(userData);
-        commit("SET_TOKEN", response.data.token);
-        commit("SET_USER", response.data.user);
-        commit("SET_ERROR", null);
-        return response.data;
+        const response = await api.checkAuth();
+        if (response.data) {
+          commit("SET_USER", response.data);
+          return true;
+        }
       } catch (error) {
-        commit("SET_ERROR", "Ошибка регистрации");
-        throw error;
+        console.error("Auth check failed:", error);
+        if (error.response?.status === 401) {
+          commit("CLEAR_AUTH");
+          return false;
+        }
       }
+      return false;
     },
+
     async logout({ commit }) {
       try {
         await api.logout();
       } finally {
         commit("CLEAR_AUTH");
-        localStorage.removeItem("authToken");
-        localStorage.removeItem("refreshToken");
-      }
-    },
-    async checkAuth({ commit, state }) {
-      try {
-        // Проверяем наличие токена
-        if (!state.token) {
-          return false;
-        }
-
-        // Проверяем валидность токена на сервере
-        const response = await api.checkAuth();
-
-        if (response.data) {
-          commit("SET_USER", response.data);
-          return true;
-        }
-
-        // Если ответ пустой, очищаем аутентификацию
-        commit("CLEAR_AUTH");
-        return false;
-      } catch (error) {
-        console.error("Auth check failed:", error);
-        commit("CLEAR_AUTH");
-        return false;
       }
     },
   },
   getters: {
-    isSuperAdmin: (state) => state.user?.role === "Старший администратор",
-    isAdmin: (state) =>
-      ["Администратор", "Старший администратор"].includes(state.user?.role),
     isAuthenticated: (state) => !!state.token,
     currentUser: (state) => state.user,
     error: (state) => state.error,
+    isLoading: (state) => state.isLoading,
+    isAdmin: (state) =>
+      ["Администратор", "Старший администратор"].includes(state.user?.role),
+    isSuperAdmin: (state) => state.user?.role === "Старший администратор",
   },
 };

@@ -14,9 +14,12 @@ const authenticateToken = (req, res, next) => {
 
   jwt.verify(
     token,
-    "my_super_secret_key_at_least_32_chars",
+    process.env.JWT_SECRET || "my_super_secret_key_at_least_32_chars",
     (err, user) => {
-      if (err) return res.sendStatus(403);
+      if (err) {
+        console.error("JWT verify error:", err);
+        return res.sendStatus(403);
+      }
       req.user = user;
       next();
     }
@@ -97,16 +100,20 @@ router.post("/login", async (req, res) => {
 
     // Генерация токена
     const token = jwt.sign(
-      {
-        userId: user.rows[0].user_id,
-        role: user.rows[0].role,
-      },
+      { userId: user.rows[0].user_id, role: user.rows[0].role },
       process.env.JWT_SECRET || "my_super_secret_key_at_least_32_chars",
       { expiresIn: "1h" }
     );
 
+    const refreshToken = jwt.sign(
+      { userId: user.rows[0].user_id },
+      process.env.REFRESH_SECRET || "refresh_secret_key",
+      { expiresIn: "7d" }
+    );
+
     res.json({
       token,
+      refreshToken,
       user: {
         id: user.rows[0].user_id,
         fullname: user.rows[0].fullname,
